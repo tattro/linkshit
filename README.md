@@ -1,36 +1,41 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# linksh.it
 
-## Getting Started
+All your shit. One link. Users claim a handle and get a public page at `linksh.it/<handle>` listing their links.
 
-First, run the development server:
+## Stack
+
+- Next.js 16 (App Router, server actions) + TypeScript + Tailwind CSS 4
+- Postgres via Drizzle ORM
+- Email + password auth with hashed, DB-backed session cookies (bcrypt)
+
+## Features
+
+- Claim a handle with a live availability check; reserved route names are blocked
+- Add, edit, delete and reorder links; only http(s) and mailto URLs are accepted
+- Display name, bio and five themes, with a live phone preview in the dashboard
+- Per-link click counting via `/go/<id>` redirects
+
+## Running locally
 
 ```bash
+cp .env.example .env          # point DATABASE_URL at a Postgres database
+npm install
+npx drizzle-kit migrate       # create tables
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Deploying
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. Create a Postgres database (Neon, Supabase or Vercel Postgres all work).
+2. Import the repo into Vercel and set `DATABASE_URL`.
+3. Run `npx drizzle-kit migrate` against the production database.
+4. Add `linksh.it` as a domain in Vercel and set the DNS records it shows you.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Project layout
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `src/app/[handle]` – public profile pages
+- `src/app/dashboard` – link and profile editor
+- `src/app/actions` – server actions for auth and links
+- `src/app/go/[id]` – click-tracking redirect
+- `src/db/schema.ts` – database schema (migrations live in `drizzle/`)
+- `src/lib/handles.ts` – handle rules and the reserved list
