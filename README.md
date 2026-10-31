@@ -20,7 +20,7 @@ All your shit. One link. Users claim a handle and get a public page at `linksh.i
 ```bash
 cp .env.example .env          # point DATABASE_URL at a Postgres database
 npm install
-npx drizzle-kit migrate       # create tables
+npm run db:migrate           # create tables (also runs on every build)
 npm run dev
 ```
 
@@ -28,7 +28,7 @@ npm run dev
 
 1. Create a Postgres database (Neon, Supabase or Vercel Postgres all work).
 2. Import the repo into Vercel and set `DATABASE_URL`.
-3. Run `npx drizzle-kit migrate` against the production database.
+3. Deploy. The build runs pending migrations automatically.
 4. Add `linksh.it` as a domain in Vercel and set the DNS records it shows you.
 
 ## Project layout
