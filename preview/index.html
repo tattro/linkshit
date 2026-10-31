@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>linksh.it preview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;900&family=Geist+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>if(window.tailwind)tailwind.config={theme:{extend:{fontFamily:{sans:['Geist','system-ui','sans-serif'],mono:['"Geist Mono"','monospace']}}}}</script>
+<style>body{font-family:Geist,system-ui,sans-serif}</style>
+</head>
+<body class="antialiased">
+<div class="bg-amber-300 px-4 py-1.5 text-center text-xs font-medium text-stone-900">
+  Preview build: everything you create is stored only in this browser. <button id="reset" class="underline">Reset demo</button>
+</div>
+<div id="app"></div>
+<script>
+(() => {
+const RESERVED = new Set("admin administrator api app auth login logout signin signup register dashboard settings account go help support about terms privacy legal blog pricing static public assets images img _next www mail root staff official linksh linkshit null undefined me you edit new explore search status security billing contact jobs careers".split(" "));
+const THEMES = [
+  {id:"classic",name:"Classic",page:"bg-stone-100 text-stone-900",button:"bg-white text-stone-900 border border-stone-300 hover:bg-stone-900 hover:text-white",muted:"text-stone-500",avatar:"bg-stone-900/10"},
+  {id:"midnight",name:"Midnight",page:"bg-slate-950 text-slate-100",button:"bg-slate-800 text-slate-100 border border-slate-700 hover:bg-indigo-500 hover:border-indigo-400",muted:"text-slate-400",avatar:"bg-white/10"},
+  {id:"toxic",name:"Toxic",page:"bg-black text-lime-300",button:"bg-lime-400 text-black font-bold border-2 border-lime-300 hover:bg-black hover:text-lime-300",muted:"text-lime-600",avatar:"bg-lime-300/15"},
+  {id:"sunset",name:"Sunset",page:"bg-gradient-to-b from-orange-300 via-pink-400 to-purple-600 text-white",button:"bg-white/20 backdrop-blur text-white border border-white/40 hover:bg-white hover:text-pink-600",muted:"text-white/80",avatar:"bg-white/20"},
+  {id:"brown",name:"Number Two",page:"bg-amber-100 text-amber-950",button:"bg-amber-800 text-amber-50 hover:bg-amber-950 rounded-full",muted:"text-amber-700",avatar:"bg-amber-900/10"},
+];
+const theme = id => THEMES.find(t => t.id === id) || THEMES[0];
+const KEY = "linkshit-preview-v1";
+const seed = () => ({ nextId: 10, session: null, users: [{
+  email: "demo@linksh.it", pw: "password123", handle: "dumpsterfire", displayName: "Dumpster Fire",
+  bio: "making things, breaking things", theme: "toxic",
+  links: [{id:1,title:"My podcast (lol)",url:"https://example.com/podcast",clicks:12},{id:2,title:"Merch nobody asked for",url:"https://example.com/shop",clicks:3},{id:3,title:"Instagram",url:"https://instagram.com/",clicks:41}]
+}]});
+let db; try { db = JSON.parse(localStorage.getItem(KEY)) || seed(); } catch { db = seed(); }
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(db)); } catch {} };
+
+let view = { name: db.session ? "dashboard" : "home" };
+let flash = {};
+const me = () => db.users.find(u => u.handle === db.session) || null;
+const byHandle = h => db.users.find(u => u.handle === h);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const norm = h => h.trim().replace(/^@/, "").toLowerCase();
+function handleProblem(h) {
+  if (h.length < 3) return "Handles need at least 3 characters.";
+  if (h.length > 30) return "Keep it to 30 characters or fewer.";
+  if (!/^[a-z0-9_]+$/.test(h)) return "Use only letters, numbers and underscores.";
+  if (RESERVED.has(h)) return "That one's reserved. Try another.";
+  if (byHandle(h)) return "Already claimed. Someone beat you to it.";
+  return null;
+}
+function normalizeUrl(raw) {
+  let v = raw.trim(); if (!v) return null;
+  if (!/^[a-z][a-z0-9+.-]*:/i.test(v)) v = "https://" + v;
+  try { const u = new URL(v);
+    if (u.protocol === "mailto:") return u.toString();
+    if (!["http:","https:"].includes(u.protocol) || !u.hostname.includes(".")) return null;
+    return u.toString(); } catch { return null; }
+}
+const go = (name, extra = {}) => { view = { name, ...extra }; flash = {}; render(); window.scrollTo(0,0); };
+
+const logo = `<button data-go="home" class="font-mono text-xl font-bold tracking-tight">linksh<span class="text-lime-500">.</span>it</button>`;
+const inputCls = "w-full rounded-xl border-2 border-stone-900 bg-white px-4 py-3 outline-none focus:ring-4 focus:ring-lime-300";
+const bigBtn = "w-full rounded-xl bg-stone-900 py-3 font-bold text-white hover:bg-lime-500 hover:text-stone-900";
+const input = "w-full rounded-lg border-2 border-stone-300 px-3 py-2 outline-none focus:border-stone-900";
+const btn = "rounded-lg bg-stone-900 px-4 py-2 font-semibold text-white hover:bg-lime-500 hover:text-stone-900";
+const ghost = "rounded-lg border-2 border-stone-300 px-2 py-1 text-sm hover:border-stone-900 disabled:opacity-30";
+const handleInput = (val = "") => `
+  <div class="flex items-center rounded-xl border-2 border-stone-900 bg-white focus-within:ring-4 focus-within:ring-lime-300">
+    <span class="pl-4 font-mono text-stone-500">linksh.it/</span>
+    <input name="handle" data-handle value="${esc(val)}" autocomplete="off" spellcheck="false" placeholder="yourname" maxlength="30" class="w-full bg-transparent py-3 pr-4 font-mono outline-none">
+  </div>
+  <p data-handle-msg class="mt-1 h-5 text-sm"></p>`;
+
+function profileView(u, preview) {
+  const t = theme(u.theme), name = u.displayName || u.handle;
+  return `<div class="flex min-h-full flex-col items-center px-5 py-12 ${t.page}">
+    <div class="flex w-full max-w-md flex-1 flex-col items-center">
+      <div class="flex h-24 w-24 items-center justify-center rounded-full ${t.avatar} text-4xl font-black uppercase">${esc(name.slice(0,1))}</div>
+      <h1 class="mt-4 text-xl font-bold">${esc(name)}</h1>
+      <p class="text-sm ${t.muted}">@${esc(u.handle)}</p>
+      ${u.bio ? `<p class="mt-3 text-center">${esc(u.bio)}</p>` : ""}
+      <ul class="mt-8 w-full space-y-3">
+        ${u.links.map(l => `<li><a href="${esc(l.url)}" target="_blank" rel="noopener noreferrer nofollow" ${preview ? "" : `data-click="${l.id}"`} class="block rounded-xl px-5 py-4 text-center font-semibold transition ${t.button}">${esc(l.title)}</a></li>`).join("")}
+        ${u.links.length ? "" : `<li class="text-center text-sm ${t.muted}">Nothing here yet. Check back soon.</li>`}
+      </ul>
+    </div>
+    <button data-go="home" class="mt-12 font-mono text-xs ${t.muted} hover:underline">made with linksh.it</button>
+  </div>`;
+}
+
+const views = {
+  home() {
+    const u = me();
+    return `<div class="min-h-screen bg-stone-100 text-stone-900">
+      <header class="mx-auto flex max-w-5xl items-center justify-between p-6">${logo}
+        <nav class="flex gap-3 text-sm font-medium">${u
+          ? `<button data-go="dashboard" class="rounded-full bg-stone-900 px-4 py-2 text-white">Dashboard</button>`
+          : `<button data-go="login" class="px-4 py-2">Log in</button><button data-go="signup" class="rounded-full bg-stone-900 px-4 py-2 text-white">Sign up</button>`}</nav>
+      </header>
+      <main class="mx-auto grid max-w-5xl items-center gap-12 px-6 pb-24 pt-10 md:grid-cols-2">
+        <section>
+          <h1 class="text-5xl font-black leading-[1.05] tracking-tight md:text-6xl">All your shit.<br><span class="bg-lime-300 px-2">One link.</span></h1>
+          <p class="mt-6 max-w-md text-lg text-stone-600">Your socials, your shop, your mixtape, that one blog post. Stick it all on one page and drop a single link in your bio.</p>
+          <form data-form="claim" class="mt-8 max-w-md space-y-2">${handleInput()}<button class="${bigBtn}">Claim my linksh.it</button></form>
+          <p class="mt-4 text-sm text-stone-500">Or see an example: <button data-profile="dumpsterfire" class="font-mono underline">linksh.it/dumpsterfire</button></p>
+        </section>
+        <section aria-hidden="true" class="mx-auto w-full max-w-xs rotate-2 rounded-[2.5rem] border-8 border-stone-900 bg-black p-6 text-lime-300 shadow-2xl">
+          <div class="mx-auto h-20 w-20 rounded-full bg-lime-400"></div>
+          <p class="mt-4 text-center font-bold">@dumpsterfire</p>
+          <p class="text-center text-sm text-lime-600">making things, breaking things</p>
+          <div class="mt-6 space-y-3">${["My podcast (lol)","Merch nobody asked for","Instagram","Venmo me for coffee"].map(t => `<div class="rounded-lg border-2 border-lime-300 bg-lime-400 py-3 text-center text-sm font-bold text-black">${t}</div>`).join("")}</div>
+        </section>
+      </main></div>`;
+  },
+  signup() {
+    const f = flash.fields || {};
+    return shell("Claim your spot", `<form data-form="signup" class="space-y-3">
+      ${handleInput(f.handle ?? view.handle ?? "")}
+      <input name="email" type="email" required placeholder="Email" value="${esc(f.email)}" class="${inputCls}">
+      <input name="password" type="password" required minlength="8" placeholder="Password (8+ characters)" class="${inputCls}">
+      ${flash.error ? `<p class="text-sm text-red-600">${esc(flash.error)}</p>` : ""}
+      <button class="${bigBtn}">Create my page</button></form>
+      <p class="mt-6 text-center text-sm text-stone-500">Already have one? <button data-go="login" class="font-semibold text-stone-900 underline">Log in</button></p>`);
+  },
+  login() {
+    const f = flash.fields || {};
+    return shell("Welcome back", `<form data-form="login" class="space-y-3">
+      <input name="email" type="email" required placeholder="Email" value="${esc(f.email)}" class="${inputCls}">
+      <input name="password" type="password" required placeholder="Password" class="${inputCls}">
+      ${flash.error ? `<p class="text-sm text-red-600">${esc(flash.error)}</p>` : ""}
+      <button class="${bigBtn}">Log in</button></form>
+      <p class="mt-4 rounded-lg bg-stone-100 p-3 text-xs text-stone-600">Demo account: demo@linksh.it / password123</p>
+      <p class="mt-6 text-center text-sm text-stone-500">New here? <button data-go="signup" class="font-semibold text-stone-900 underline">Claim a handle</button></p>`);
+  },
+  dashboard() {
+    const u = me(); if (!u) { view = { name: "login" }; return views.login(); }
+    const total = u.links.reduce((n, l) => n + l.clicks, 0);
+    return `<div class="min-h-screen bg-stone-100 text-stone-900">
+      <header class="border-b-2 border-stone-900 bg-white"><div class="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">${logo}
+        <div class="flex items-center gap-4 text-sm">
+          <button data-profile="${esc(u.handle)}" class="font-mono font-semibold underline decoration-lime-500 decoration-2 underline-offset-4">linksh.it/${esc(u.handle)} ↗</button>
+          <button data-action="logout" class="text-stone-500 hover:text-stone-900">Log out</button></div></div></header>
+      <main class="mx-auto grid max-w-6xl gap-8 px-6 py-8 lg:grid-cols-[1fr_360px]"><div class="space-y-8">
+        ${view.welcome ? `<div class="rounded-2xl border-2 border-stone-900 bg-lime-300 p-5"><p class="font-bold">linksh.it/${esc(u.handle)} is officially yours. 🎉</p><p class="text-sm">Add some links below, then paste that URL into every bio you own.</p></div>` : ""}
+        <section class="rounded-2xl border-2 border-stone-900 bg-white p-6"><h2 class="mb-4 text-lg font-black">Add a link</h2>
+          <form data-form="add" class="grid gap-3 sm:grid-cols-[1fr_1.5fr_auto]">
+            <input name="title" required maxlength="100" placeholder="Title (e.g. My Instagram)" value="${esc(flash.add?.title)}" class="${input}">
+            <input name="url" required placeholder="instagram.com/you" value="${esc(flash.add?.url)}" class="${input}">
+            <button class="${btn}">Add</button>
+            ${flash.addError ? `<p class="text-sm text-red-600 sm:col-span-3">${esc(flash.addError)}</p>` : ""}
+          </form></section>
+        <section class="rounded-2xl border-2 border-stone-900 bg-white p-6">
+          <div class="mb-4 flex items-baseline justify-between"><h2 class="text-lg font-black">Your links</h2><span class="text-sm text-stone-500">${total} total click${total === 1 ? "" : "s"}</span></div>
+          ${u.links.length ? `<ul class="space-y-3">${u.links.map((l, i) => linkItem(l, i, u.links.length)).join("")}</ul>` : `<p class="text-stone-500">No links yet. Your page is looking pretty empty.</p>`}
+        </section>
+        <section class="rounded-2xl border-2 border-stone-900 bg-white p-6"><h2 class="mb-4 text-lg font-black">Profile &amp; look</h2>
+          <form data-form="profile" class="space-y-4">
+            <label class="block"><span class="text-sm font-semibold">Display name</span><input name="displayName" value="${esc(u.displayName)}" maxlength="60" class="${input}"></label>
+            <label class="block"><span class="text-sm font-semibold">Bio</span><textarea name="bio" maxlength="160" rows="2" class="${input}" placeholder="Say something. Or don't.">${esc(u.bio)}</textarea></label>
+            <fieldset><legend class="mb-2 text-sm font-semibold">Theme</legend><div class="grid grid-cols-2 gap-2 sm:grid-cols-5">
+              ${THEMES.map(t => `<label class="cursor-pointer"><input type="radio" name="theme" value="${t.id}" ${u.theme === t.id ? "checked" : ""} class="peer sr-only"><div class="flex h-16 items-end rounded-lg p-2 text-xs font-bold ring-stone-900 ring-offset-2 peer-checked:ring-4 ${t.page}">${t.name}</div></label>`).join("")}
+            </div></fieldset>
+            <div class="flex items-center gap-3"><button class="${btn}">Save profile</button>${flash.saved ? `<span class="text-sm text-lime-700">Saved.</span>` : ""}</div>
+          </form></section>
+      </div>
+      <aside class="lg:sticky lg:top-8 lg:self-start"><p class="mb-2 text-center text-sm font-semibold text-stone-500">Live preview</p>
+        <div data-preview class="mx-auto h-[640px] w-full max-w-[340px] overflow-y-auto rounded-[2.5rem] border-8 border-stone-900 shadow-xl [&>div]:min-h-full">${profileView(u, true)}</div></aside>
+      </main></div>`;
+  },
+  profile() {
+    const u = byHandle(view.handle);
+    const back = me() ? `<button data-go="dashboard" class="fixed bottom-4 right-4 z-10 rounded-full bg-stone-900 px-4 py-2 text-sm font-semibold text-white shadow-lg">← Dashboard</button>`
+                      : `<button data-go="home" class="fixed bottom-4 right-4 z-10 rounded-full bg-stone-900 px-4 py-2 text-sm font-semibold text-white shadow-lg">← Home</button>`;
+    if (!u) return `<div class="flex min-h-screen flex-col items-center justify-center bg-stone-100 px-6 text-center text-stone-900">
+      <p class="text-7xl">🧻</p><h1 class="mt-4 text-3xl font-black">Nobody's here.</h1><p class="mt-2 text-stone-600">This handle is unclaimed, or it got flushed.</p>
+      <button data-go="signup" class="mt-6 rounded-full bg-stone-900 px-6 py-3 font-bold text-white hover:bg-lime-500 hover:text-stone-900">Claim a handle</button></div>`;
+    return `<div class="min-h-screen [&>div]:min-h-screen">${profileView(u, false)}</div>
+      <div class="fixed left-1/2 top-12 z-10 -translate-x-1/2 rounded-full bg-white/90 px-3 py-1 font-mono text-xs text-stone-700 shadow">linksh.it/${esc(u.handle)}</div>${back}`;
+  },
+};
+
+function linkItem(l, i, n) {
+  if (view.editing === l.id) return `<li class="rounded-xl border-2 border-stone-200 p-3"><form data-form="edit" data-id="${l.id}" class="space-y-2">
+    <input name="title" value="${esc(l.title)}" required maxlength="100" class="${input}"><input name="url" value="${esc(l.url)}" required class="${input}">
+    ${flash.editError ? `<p class="text-sm text-red-600">${esc(flash.editError)}</p>` : ""}
+    <div class="flex gap-2"><button class="${btn}">Save</button><button type="button" data-action="cancel-edit" class="${ghost}">Cancel</button></div></form></li>`;
+  const confirming = view.confirmDelete === l.id;
+  return `<li class="rounded-xl border-2 border-stone-200 p-3"><div class="flex items-center gap-3">
+    <div class="flex flex-col gap-1"><button data-move="up" data-id="${l.id}" ${i === 0 ? "disabled" : ""} class="${ghost}" aria-label="Move up">↑</button><button data-move="down" data-id="${l.id}" ${i === n - 1 ? "disabled" : ""} class="${ghost}" aria-label="Move down">↓</button></div>
+    <div class="min-w-0 flex-1"><p class="truncate font-semibold">${esc(l.title)}</p><p class="truncate text-sm text-stone-500">${esc(l.url)}</p></div>
+    <span class="shrink-0 rounded-full bg-stone-100 px-2 py-1 text-xs text-stone-600">${l.clicks} click${l.clicks === 1 ? "" : "s"}</span>
+    ${confirming
+      ? `<button data-action="delete" data-id="${l.id}" class="rounded-lg bg-red-600 px-2 py-1 text-sm font-semibold text-white">Flush it</button><button data-action="cancel-delete" class="${ghost}">Keep</button>`
+      : `<button data-action="edit" data-id="${l.id}" class="${ghost}">Edit</button><button data-action="ask-delete" data-id="${l.id}" class="${ghost} hover:border-red-600 hover:text-red-600">Delete</button>`}
+  </div></li>`;
+}
+
+const shell = (title, body) => `<div class="flex min-h-screen flex-col items-center justify-center bg-stone-100 px-6 py-12 text-stone-900">
+  <div class="mb-8 text-2xl">${logo}</div>
+  <div class="w-full max-w-sm rounded-2xl border-2 border-stone-900 bg-white p-8 shadow-[6px_6px_0_0_#1c1917]"><h1 class="mb-6 text-2xl font-black">${title}</h1>${body}</div></div>`;
+
+const app = document.getElementById("app");
+function render() {
+  app.innerHTML = views[view.name]();
+  app.querySelectorAll("[data-handle]").forEach(el => { const upd = () => { el.value = el.value.toLowerCase().replace(/\s/g, ""); checkHandle(el); }; el.addEventListener("input", upd); if (el.value) checkHandle(el); });
+}
+function checkHandle(el) {
+  const msg = el.closest("form").querySelector("[data-handle-msg]"); const h = norm(el.value);
+  if (!h) { msg.textContent = ""; return; }
+  const p = handleProblem(h);
+  msg.textContent = p || "✓ It's yours if you want it.";
+  msg.className = `mt-1 h-5 text-sm ${p ? "text-red-600" : "text-lime-700"}`;
+}
+
+app.addEventListener("click", e => {
+  const t = e.target.closest("[data-go],[data-profile],[data-action],[data-move],[data-click]"); if (!t) return;
+  const u = me();
+  if (t.dataset.go) return go(t.dataset.go);
+  if (t.dataset.profile) return go("profile", { handle: t.dataset.profile });
+  if (t.dataset.click) { const owner = byHandle(view.handle); const l = owner?.links.find(x => x.id == t.dataset.click); if (l) { l.clicks++; save(); } return; }
+  if (t.dataset.move) {
+    const i = u.links.findIndex(l => l.id == t.dataset.id), j = i + (t.dataset.move === "up" ? -1 : 1);
+    if (i >= 0 && j >= 0 && j < u.links.length) { [u.links[i], u.links[j]] = [u.links[j], u.links[i]]; save(); }
+    view = { name: "dashboard" }; return render();
+  }
+  const a = t.dataset.action, id = Number(t.dataset.id);
+  if (a === "logout") { db.session = null; save(); return go("home"); }
+  if (a === "edit") { view = { name: "dashboard", editing: id }; flash = {}; return render(); }
+  if (a === "cancel-edit" || a === "cancel-delete") { view = { name: "dashboard" }; return render(); }
+  if (a === "ask-delete") { view = { name: "dashboard", confirmDelete: id }; return render(); }
+  if (a === "delete") { u.links = u.links.filter(l => l.id !== id); save(); view = { name: "dashboard" }; return render(); }
+});
+
+app.addEventListener("submit", e => {
+  e.preventDefault();
+  const f = e.target, d = Object.fromEntries(new FormData(f)), kind = f.dataset.form;
+  if (kind === "claim") return go("signup", { handle: norm(d.handle || "") });
+  if (kind === "signup") {
+    const handle = norm(d.handle || ""), email = d.email.trim().toLowerCase();
+    const fields = { handle, email };
+    const p = handleProblem(handle);
+    if (p) { flash = { error: p, fields }; return render(); }
+    if (d.password.length < 8) { flash = { error: "Passwords need at least 8 characters.", fields }; return render(); }
+    if (db.users.some(u => u.email === email)) { flash = { error: "There's already an account with that email. Log in instead?", fields }; return render(); }
+    db.users.push({ email, pw: d.password, handle, displayName: handle, bio: "", theme: "classic", links: [] });
+    db.session = handle; save(); return go("dashboard", { welcome: true });
+  }
+  if (kind === "login") {
+    const email = d.email.trim().toLowerCase(), u = db.users.find(x => x.email === email);
+    if (!u || u.pw !== d.password) { flash = { error: "Wrong email or password.", fields: { email } }; return render(); }
+    db.session = u.handle; save(); return go("dashboard");
+  }
+  const u = me(); if (!u) return go("login");
+  if (kind === "add") {
+    const title = d.title.trim().slice(0, 100), url = normalizeUrl(d.url);
+    flash = {};
+    if (!title) flash = { addError: "Give the link a title.", add: d };
+    else if (!url) flash = { addError: "That doesn't look like a valid web address.", add: d };
+    else if (u.links.length >= 100) flash = { addError: "You've hit the 100 link limit. Impressive.", add: d };
+    else { u.links.push({ id: db.nextId++, title, url, clicks: 0 }); save(); }
+    view = { name: "dashboard", welcome: view.welcome }; return render();
+  }
+  if (kind === "edit") {
+    const l = u.links.find(x => x.id == f.dataset.id), title = d.title.trim().slice(0, 100), url = normalizeUrl(d.url);
+    if (!title || !url) { flash = { editError: !title ? "Title can't be empty." : "That doesn't look like a valid web address." }; return render(); }
+    Object.assign(l, { title, url }); save(); view = { name: "dashboard" }; flash = {}; return render();
+  }
+  if (kind === "profile") {
+    Object.assign(u, { displayName: d.displayName.trim().slice(0, 60), bio: d.bio.trim().slice(0, 160), theme: THEMES.some(t => t.id === d.theme) ? d.theme : u.theme });
+    save(); flash = { saved: true }; view = { name: "dashboard", welcome: view.welcome }; return render();
+  }
+});
+
+// Live preview: theme/name/bio changes show in the phone before saving
+app.addEventListener("input", e => {
+  const f = e.target.closest('[data-form="profile"]'); if (!f) return;
+  const u = me(), d = Object.fromEntries(new FormData(f));
+  app.querySelector("[data-preview]").innerHTML = profileView({ ...u, displayName: d.displayName, bio: d.bio, theme: d.theme }, true);
+});
+
+document.getElementById("reset").addEventListener("click", () => { db = seed(); save(); go("home"); });
+render();
+})();
+</script>
+</body>
+</html>

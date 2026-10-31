@@ -39,3 +39,7 @@ npm run dev
 - `src/app/go/[id]` – click-tracking redirect
 - `src/db/schema.ts` – database schema (migrations live in `drizzle/`)
 - `src/lib/handles.ts` – handle rules and the reserved list
+
+## Clickable preview
+
+`preview/index.html` is a standalone, browser-only mock of the app (data lives in localStorage). Open it directly in a browser to click through the flows without a database.
