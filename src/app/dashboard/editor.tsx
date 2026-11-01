@@ -585,13 +585,26 @@ export function LookForm({ user, avatar, background }: { user: { theme: string; 
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           {THEMES.map((t) => (
             <label key={t.id} className="cursor-pointer">
-              <input type="radio" name="theme" value={t.id} defaultChecked={user.theme === t.id} className="peer sr-only" />
+              <input
+                type="radio"
+                name="theme"
+                value={t.id}
+                defaultChecked={user.theme === t.id}
+                // Picking a theme means "use this theme": drop stolen/custom colours and gradients
+                onClick={() => setCustom(false)}
+                className="peer sr-only"
+              />
               <div data-keep-colors className={`flex h-16 items-end rounded-lg p-2 text-xs font-bold ring-stone-900 ring-offset-2 peer-checked:ring-4 peer-focus-visible:ring-4 ${t.page}`}>
                 {t.name}
               </div>
             </label>
           ))}
         </div>
+        {custom && (
+          <p className="mt-2 text-xs text-stone-500">
+            Your own colours are on top of the theme right now. Tap any theme to go back to its original colours.
+          </p>
+        )}
       </fieldset>
 
       <fieldset>
