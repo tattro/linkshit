@@ -405,6 +405,8 @@ export function LookForm({ user, avatar, background }: { user: { theme: string; 
   const [bgDir, setBgDir] = useState<string>(s.bgDir ?? "down");
   const [stealing, setStealing] = useState(false);
 
+  const extraFont = FONTS.find((f) => f.more && f.id === s.font);
+  const [moreFonts, setMoreFonts] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
   function publishDraft() {
     const form = formRef.current;
@@ -471,13 +473,22 @@ export function LookForm({ user, avatar, background }: { user: { theme: string; 
       <fieldset>
         <legend className="mb-2 text-sm font-semibold">Font</legend>
         <div className="flex flex-wrap gap-2">
-          {FONTS.map((f) => (
-            <label key={f.id} className="cursor-pointer">
-              <input type="radio" name="font" value={f.id} defaultChecked={(s.font ?? "sans") === f.id} className="peer sr-only" />
-              <span style={{ fontFamily: f.css }} className="inline-block rounded-lg border-2 border-stone-300 px-4 py-2 text-lg peer-checked:border-stone-900 peer-checked:bg-lime-200 peer-focus-visible:ring-4 peer-focus-visible:ring-lime-300">
-                {f.name}
-              </span>
-            </label>
+          {FONTS.filter((f) => !f.more).map((f) => (
+            <FontChip key={f.id} font={f} current={s.font} />
+          ))}
+          <button
+            type="button"
+            onClick={() => setMoreFonts((o) => !o)}
+            aria-expanded={moreFonts}
+            className="rounded-lg border-2 border-dashed border-stone-400 px-4 py-2 text-sm font-semibold text-stone-600 hover:border-stone-900 hover:text-stone-900"
+          >
+            {moreFonts ? "Fewer fonts ▴" : `More fonts ▾${extraFont ? ` (${extraFont.name})` : ""}`}
+          </button>
+        </div>
+        {/* Always rendered so a picked extra font still submits when the list is closed */}
+        <div className={`mt-2 grid grid-cols-2 gap-2 rounded-xl border-2 border-stone-200 bg-stone-50 p-2 sm:grid-cols-4 ${moreFonts ? "" : "hidden"}`}>
+          {FONTS.filter((f) => f.more).map((f) => (
+            <FontChip key={f.id} font={f} current={s.font} small />
           ))}
         </div>
       </fieldset>
@@ -707,5 +718,21 @@ export function SignupSettings({ enabled, prompt, count }: { enabled: boolean; p
         )}
       </div>
     </form>
+  );
+}
+
+function FontChip({ font, current, small }: { font: { id: string; name: string; css: string }; current?: string; small?: boolean }) {
+  return (
+    <label className="cursor-pointer">
+      <input type="radio" name="font" value={font.id} defaultChecked={(current ?? "sans") === font.id} className="peer sr-only" />
+      <span
+        style={{ fontFamily: font.css }}
+        className={`block truncate rounded-lg border-2 border-stone-300 bg-white text-center peer-checked:border-stone-900 peer-checked:bg-lime-200 peer-focus-visible:ring-4 peer-focus-visible:ring-lime-300 ${
+          small ? "px-2 py-2 text-base" : "inline-block px-4 py-2 text-lg"
+        }`}
+      >
+        {font.name}
+      </span>
+    </label>
   );
 }

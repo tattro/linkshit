@@ -29,7 +29,7 @@ export type Style = {
   button?: string;
   buttonText?: string;
   shape?: "rounded" | "pill" | "square" | "outline";
-  font?: "sans" | "serif" | "mono" | "rounded" | "display";
+  font?: string; // id from FONTS in lib/style.ts
   bgTint?: "dark" | "light"; // wash over a background photo so text stays readable
 };
 
