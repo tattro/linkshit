@@ -1,13 +1,14 @@
 import { asc, eq } from "drizzle-orm";
 import QRCode from "qrcode";
-import { db, links } from "@/db";
+import { db, links, subscribers } from "@/db";
+import { sql } from "drizzle-orm";
 import { isAdmin, requireUser } from "@/lib/auth";
 import { siteUrl } from "@/lib/request";
 import { PLATFORMS } from "@/lib/socials";
 import { avatarUrl, backgroundUrl, liveLinks } from "@/components/ProfileView";
 import { LivePreview } from "./LivePreview";
 import { DashboardHeader } from "./DashboardHeader";
-import { AddLinkForm, AvatarForm, BackgroundForm, LinkItem, LookForm, ProfileForm, ShareCard, SocialsForm, VerifyBanner } from "./editor";
+import { AddLinkForm, AvatarForm, BackgroundForm, SignupSettings, TipsForm, LinkItem, LookForm, ProfileForm, ShareCard, SocialsForm, VerifyBanner } from "./editor";
 
 export const metadata = { title: "Dashboard" };
 
@@ -32,6 +33,7 @@ export default async function Dashboard({ searchParams }: PageProps<"/dashboard"
     .where(eq(links.userId, user.id))
     .orderBy(asc(links.position), asc(links.id));
   const totalClicks = rows.reduce((n, l) => n + l.clicks, 0);
+  const [{ subs }] = await db.select({ subs: sql<number>`count(*)::int` }).from(subscribers).where(eq(subscribers.userId, user.id));
   const pageUrl = `${await siteUrl()}/${user.handle}`;
   const qrSvg = await QRCode.toString(pageUrl, { type: "svg", margin: 1, color: { dark: "#1c1917", light: "#ffffff" } });
   const platforms = PLATFORMS.map(({ id, label, path, placeholder }) => ({ id, label, path, placeholder }));
@@ -83,6 +85,16 @@ export default async function Dashboard({ searchParams }: PageProps<"/dashboard"
             <SocialsForm socials={user.socials} platforms={platforms} />
           </Section>
 
+          <Section title="Tip jar">
+            <p className="-mt-2 mb-4 text-sm text-stone-500">Adds a 💸 Tip jar button to your page. Fill in any you use. Money goes straight to you.</p>
+            <TipsForm tips={user.tips} />
+          </Section>
+
+          <Section title="Email list">
+            <p className="-mt-2 mb-4 text-sm text-stone-500">Let visitors leave their email. Download the list any time and import it into Mailchimp, Substack, or whatever.</p>
+            <SignupSettings enabled={user.signupEnabled} prompt={user.signupPrompt} count={subs} />
+          </Section>
+
           <Section title="Look & feel">
             <div className="space-y-6">
               <BackgroundForm current={backgroundUrl(user)} />
@@ -102,6 +114,7 @@ export default async function Dashboard({ searchParams }: PageProps<"/dashboard"
               user={{
                 id: user.id, handle: user.handle, displayName: user.displayName, bio: user.bio, theme: user.theme,
                 avatarVersion: user.avatarVersion, bgVersion: user.bgVersion, style: user.style, socials: user.socials,
+                tips: user.tips, signupEnabled: user.signupEnabled, signupPrompt: user.signupPrompt,
               }}
               links={liveLinks(rows)}
             />

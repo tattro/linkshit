@@ -26,6 +26,14 @@ function parseWhen(value: FormDataEntryValue | null, tzOffset: number): Date | n
   return Number.isNaN(asUtc) ? null : new Date(asUtc + tzOffset * 60_000);
 }
 
+/** Keep a single emoji (or a short emoji sequence); anything else is dropped. */
+function cleanIcon(raw: string): string {
+  const v = raw.trim();
+  if (!v) return "";
+  const first = [...new Intl.Segmenter(undefined, { granularity: "grapheme" }).segment(v)][0]?.segment ?? "";
+  return /\p{Extended_Pictographic}/u.test(first) && first.length <= 16 ? first : "";
+}
+
 async function readLinkForm(formData: FormData) {
   const title = String(formData.get("title") ?? "").trim().slice(0, 100);
   const url = normalizeUrl(String(formData.get("url") ?? ""));
@@ -38,7 +46,10 @@ async function readLinkForm(formData: FormData) {
   const endsAt = parseWhen(formData.get("endsAt"), tz);
   if (startsAt && endsAt && endsAt <= startsAt) return { error: "The end time needs to be after the start time." } as const;
   const embed = formData.get("embed") === "on" && embedFor(url) !== null;
-  return { value: { title, url, startsAt, endsAt, embed } } as const;
+  const sensitive = formData.get("sensitive") === "on";
+  const spotlight = formData.get("spotlight") === "on";
+  const icon = cleanIcon(String(formData.get("icon") ?? ""));
+  return { value: { title, url, startsAt, endsAt, embed, sensitive, spotlight, icon } } as const;
 }
 
 export async function addLink(_prev: ActionState, formData: FormData): Promise<ActionState> {

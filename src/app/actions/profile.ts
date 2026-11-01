@@ -2,7 +2,8 @@
 
 import { eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
-import { avatars, backgrounds, db, users, type Socials } from "@/db";
+import { avatars, backgrounds, db, users, type Socials, type Tips } from "@/db";
+import { TIP_PROVIDERS } from "@/lib/tips";
 import { requireUser } from "@/lib/auth";
 import { rateLimit, TOO_MANY } from "@/lib/ratelimit";
 import { PLATFORMS } from "@/lib/socials";
@@ -111,4 +112,28 @@ export async function removeBackground() {
   await db.delete(backgrounds).where(eq(backgrounds.userId, user.id));
   await db.update(users).set({ bgVersion: 0 }).where(eq(users.id, user.id));
   refresh(user.handle);
+}
+
+export async function updateTips(_prev: ProfileState, formData: FormData): Promise<ProfileState> {
+  const user = await requireUser();
+  const tips: Tips = {};
+  for (const p of TIP_PROVIDERS) {
+    const raw = String(formData.get(p.id) ?? "").trim();
+    if (!raw) continue;
+    const url = p.toUrl(raw);
+    if (!url) return { error: `That ${p.label} doesn't look right. Use a username or a ${p.label} link.` };
+    tips[p.id] = url;
+  }
+  await db.update(users).set({ tips }).where(eq(users.id, user.id));
+  refresh(user.handle);
+  return { ok: true };
+}
+
+export async function updateSignup(_prev: ProfileState, formData: FormData): Promise<ProfileState> {
+  const user = await requireUser();
+  const signupEnabled = formData.get("signupEnabled") === "on";
+  const signupPrompt = String(formData.get("signupPrompt") ?? "").trim().slice(0, 80);
+  await db.update(users).set({ signupEnabled, signupPrompt }).where(eq(users.id, user.id));
+  refresh(user.handle);
+  return { ok: true };
 }
