@@ -6,10 +6,10 @@ import { DashboardHeader } from "../DashboardHeader";
 export const metadata = { title: "Marketplace" };
 
 const PERKS = [
-  { icon: "🛍️", title: "Pick an offer", body: "Browse brands that actually fit your audience. No begging for sponsorships." },
-  { icon: "➕", title: "One click to add it", body: "It drops straight onto your page as a link. Done." },
-  { icon: "💸", title: "Get paid", body: "Your fans click and buy, you earn. Way better than the 3% Amazon tosses you." },
-  { icon: "🙅", title: "We take nothing from you", body: "The brands pay us. You keep every cent you earn. Every. Single. Cent." },
+  { icon: "🎯", title: "Matched to your niche", body: "Offers from advertisers in the same world as the content you make. No random junk." },
+  { icon: "💸", title: "The best payouts", body: "We negotiate with advertisers directly, so you earn way more than the 3% Amazon tosses you." },
+  { icon: "🤝", title: "Not an ad, a referral", body: "It's a product that fits what you already talk about. You earn a commission for everyone who signs up." },
+  { icon: "🙌", title: "Completely optional", body: "Don't want it? Don't use it. Your page works exactly the same either way." },
 ];
 
 export default async function Marketplace() {
@@ -22,21 +22,24 @@ export default async function Marketplace() {
       <DashboardHeader active="marketplace" />
       <main className="mx-auto max-w-4xl space-y-8 px-6 py-12">
         <div className="rounded-3xl border-2 border-stone-900 bg-lime-300 p-8 text-center md:p-12">
-          <span className="inline-block rounded-full bg-stone-900 px-3 py-1 text-xs font-black uppercase tracking-wide text-lime-300">Coming soon</span>
-          <h1 className="mt-4 text-4xl font-black tracking-tight md:text-5xl">The linksh.it Marketplace</h1>
+          <span className="inline-block rounded-full bg-stone-900 px-3 py-1 text-xs font-black uppercase tracking-wide text-lime-300">Beta</span>
+          <h1 className="mt-4 text-4xl font-black tracking-tight md:text-5xl">Marketplace</h1>
           <p className="mx-auto mt-4 max-w-xl text-lg font-semibold">
-            We&apos;re going to help you make money, and you&apos;re going to give us none of it. 💩💰
+            A way to monetize your link in bio, with the best payouts from advertisers in your niche.
           </p>
-          <p className="mx-auto mt-4 max-w-xl text-stone-800">
-            Tired of getting a 3% commission on an Amazon product you promoted? Let&apos;s make you more money with direct deals from advertisers, matched to your audience, right on your page.
+          <p className="mx-auto mt-3 max-w-xl text-stone-800">
+            It&apos;s not an ad. It&apos;s a referral to a product that fits the stuff you talk about, and you get paid a commission for everyone who signs up.
+          </p>
+          <p className="mx-auto mt-3 max-w-xl text-sm text-stone-700">
+            This is in beta testing. We&apos;re building it out with advertisers right now. BTW, it&apos;s completely optional.
           </p>
           <div className="mt-8">
             {joined ? (
-              <p className="inline-block rounded-full bg-white px-6 py-3 font-bold">✅ You&apos;re on the list. We&apos;ll email you the second it&apos;s live.</p>
+              <p className="inline-block rounded-full bg-white px-6 py-3 font-bold">✅ You&apos;re on the beta list. We&apos;ll email you when offers are ready.</p>
             ) : (
               <form action={joinMarketplaceWaitlist}>
                 <button className="rounded-full bg-stone-900 px-8 py-4 font-bold text-white hover:bg-white hover:text-stone-900">
-                  I&apos;m in. Show me the money.
+                  I&apos;m in. Let me know when it&apos;s ready.
                 </button>
               </form>
             )}
@@ -52,9 +55,6 @@ export default async function Marketplace() {
             </div>
           ))}
         </div>
-        <p className="text-center text-sm text-stone-500">
-          BTW, this is totally optional. Just want a page for your links? Cool. No big deal.
-        </p>
       </main>
     </div>
   );

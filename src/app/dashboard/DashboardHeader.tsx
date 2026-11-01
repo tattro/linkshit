@@ -20,7 +20,7 @@ export async function DashboardHeader({ active }: { active: "editor" | "analytic
             <Link href="/dashboard" className={tab("editor")}>Editor</Link>
             <Link href="/dashboard/analytics" className={tab("analytics")}>Analytics</Link>
             <Link href="/dashboard/marketplace" className={`${tab("marketplace")} whitespace-nowrap`}>
-              Marketplace <span className="ml-0.5 rounded-full bg-lime-300 px-1.5 py-0.5 text-[10px] font-black uppercase text-stone-900">Soon</span>
+              Marketplace
             </Link>
             {isAdmin(account) && <Link href="/admin" className={tab("admin")}>Admin</Link>}
           </nav>
