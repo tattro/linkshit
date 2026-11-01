@@ -110,8 +110,14 @@ export default async function Home() {
         </div>
       </section>
 
-      <footer className="bg-stone-100 py-8 text-center text-sm text-stone-500">
-        linksh.it &middot; all your shit, one link
+      <footer className="bg-stone-100 px-6 py-10 text-center text-sm text-stone-500">
+        <p>
+          Follow the degenerate who created this platform:{" "}
+          <Link href="/trevor" className="font-bold text-stone-900 underline decoration-lime-400 decoration-4 underline-offset-4 hover:bg-lime-300">
+            linksh.it/trevor
+          </Link>
+        </p>
+        <p className="mt-3 text-xs text-stone-400">linksh.it &middot; all your shit, one link</p>
       </footer>
     </div>
   );
