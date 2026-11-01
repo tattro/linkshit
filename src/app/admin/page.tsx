@@ -31,6 +31,7 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
       total: sql<number>`count(*) filter (where ${users.ownerId} is null)::int`,
       banned: sql<number>`count(${users.bannedAt})::int`,
       week: sql<number>`count(*) filter (where ${users.ownerId} is null and ${users.createdAt} > now() - interval '7 days')::int`,
+      marketplace: sql<number>`count(${users.marketplaceInterestAt})::int`,
     }).from(users),
   ]);
 
@@ -42,7 +43,7 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
           <div>
             <h1 className="text-2xl font-black">Admin</h1>
             <p className="text-sm text-stone-500">
-              {stats.total.toLocaleString()} accounts · {stats.week.toLocaleString()} new this week · {stats.banned.toLocaleString()} banned
+              {stats.total.toLocaleString()} accounts · {stats.week.toLocaleString()} new this week · {stats.banned.toLocaleString()} banned · {stats.marketplace.toLocaleString()} on the marketplace waitlist
             </p>
           </div>
           <form className="flex gap-2">

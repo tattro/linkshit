@@ -64,6 +64,13 @@
       "when": 1793504855044,
       "tag": "0008_stats_frequency",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1793506113712,
+      "tag": "0009_marketplace_waitlist",
+      "breakpoints": true
     }
   ]
 }
