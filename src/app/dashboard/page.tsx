@@ -97,7 +97,7 @@ export default async function Dashboard({ searchParams }: PageProps<"/dashboard"
             <div className="space-y-6">
               <AvatarForm current={avatarUrl(user)} initial={(user.displayName || user.handle).slice(0, 1)} />
               <HandleForm handle={user.handle} />
-              <ProfileForm user={{ displayName: user.displayName, bio: user.bio, weeklyEmail: account.weeklyEmail }} />
+              <ProfileForm user={{ displayName: user.displayName, bio: user.bio, statsEmail: account.weeklyEmail ? account.statsEvery : "off" }} />
             </div>
           </Section>
 

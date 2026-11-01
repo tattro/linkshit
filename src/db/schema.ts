@@ -58,7 +58,9 @@ export const users = pgTable(
     signupPrompt: text("signup_prompt").notNull().default(""),
     // e.g. "links.example.com"; serves this user's page at that domain's root
     customDomain: text("custom_domain"),
+    // Stats email on/off (name is historical) and how often
     weeklyEmail: boolean("weekly_email").notNull().default(true),
+    statsEvery: text("stats_every").$type<"week" | "month">().notNull().default("week"),
     emailVerifiedAt: timestamp("email_verified_at", { withTimezone: true }),
     isAdmin: boolean("is_admin").notNull().default(false),
     bannedAt: timestamp("banned_at", { withTimezone: true }),

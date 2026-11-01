@@ -57,6 +57,13 @@
       "when": 1793504416544,
       "tag": "0007_multi_pages",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1793504855044,
+      "tag": "0008_stats_frequency",
+      "breakpoints": true
     }
   ]
 }

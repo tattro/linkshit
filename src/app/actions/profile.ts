@@ -26,7 +26,11 @@ export async function updateProfile(_prev: ProfileState, formData: FormData): Pr
   await db.update(users).set({ displayName, bio }).where(eq(users.id, user.id));
   // The weekly email setting lives on the account, whichever page is being edited
   const account = await requireAccount();
-  await db.update(users).set({ weeklyEmail: formData.get("weeklyEmail") === "on" }).where(eq(users.id, account.id));
+  const every = formData.get("statsEmail");
+  await db
+    .update(users)
+    .set({ weeklyEmail: every === "week" || every === "month", ...(every === "month" ? { statsEvery: "month" as const } : every === "week" ? { statsEvery: "week" as const } : {}) })
+    .where(eq(users.id, account.id));
   refresh(user.handle);
   return { ok: true };
 }

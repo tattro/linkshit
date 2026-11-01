@@ -10,17 +10,17 @@ export default async function Unsubscribe({ searchParams }: PageProps<"/unsubscr
       <p aria-hidden className="text-7xl">{done ? "🫡" : "📭"}</p>
       {done ? (
         <>
-          <h1 className="mt-4 text-3xl font-black">You&apos;re out. No more weekly stats.</h1>
+          <h1 className="mt-4 text-3xl font-black">You&apos;re out. No more stats emails.</h1>
           <p className="mt-2 text-stone-600">Changed your mind? Flip it back on in your dashboard.</p>
         </>
       ) : bad || !u || !t ? (
         <>
           <h1 className="mt-4 text-3xl font-black">That link looks broken.</h1>
-          <p className="mt-2 text-stone-600">Log in and turn off &quot;Email me my weekly stats&quot; in your dashboard instead.</p>
+          <p className="mt-2 text-stone-600">Log in and set &quot;Email me my stats&quot; to Never in your dashboard instead.</p>
         </>
       ) : (
         <form action={unsubscribeWeekly} className="mt-4">
-          <h1 className="text-3xl font-black">Stop the weekly stats email?</h1>
+          <h1 className="text-3xl font-black">Stop the stats emails?</h1>
           <input type="hidden" name="u" value={String(u)} />
           <input type="hidden" name="t" value={String(t)} />
           <button className="mt-6 rounded-full bg-stone-900 px-8 py-4 font-bold text-white hover:bg-lime-500 hover:text-stone-900">
