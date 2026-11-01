@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 const VIEW = 280; // size of the crop box on screen, px
 const OUT = 400; // size of the saved photo, px
 const MAX_ZOOM = 4;
+const SMALLEST = 0.3; // zoomed all the way out, the photo's long side is 30% of the box
 
 type Pt = { x: number; y: number };
 
@@ -35,14 +36,15 @@ export function AvatarCropper({ file, onCancel, onDone }: { file: File; onCancel
   const base = bitmap ? VIEW / Math.min(bitmap.width, bitmap.height) : 1;
   const scale = base * zoom;
 
-  // Keep the photo covering the whole box
-  const clamp = (p: Pt, s: number): Pt => bitmap ? {
-    x: Math.min(0, Math.max(VIEW - bitmap.width * s, p.x)),
-    y: Math.min(0, Math.max(VIEW - bitmap.height * s, p.y)),
-  } : p;
+  // Zoomed out past "fills the circle" is fine: the gaps stay see-through and show the page background
+  const minZoom = bitmap ? Math.ceil(((SMALLEST * VIEW) / Math.max(bitmap.width, bitmap.height) / base) * 100) / 100 : 1;
+
+  // Bigger than the box on an axis: no gaps on that axis. Smaller: stay inside the box.
+  const clampAxis = (v: number, size: number) => (size >= VIEW ? Math.min(0, Math.max(VIEW - size, v)) : Math.min(VIEW - size, Math.max(0, v)));
+  const clamp = (p: Pt, s: number): Pt => bitmap ? { x: clampAxis(p.x, bitmap.width * s), y: clampAxis(p.y, bitmap.height * s) } : p;
 
   function zoomTo(next: number, around: Pt = { x: VIEW / 2, y: VIEW / 2 }) {
-    const z = Math.min(MAX_ZOOM, Math.max(1, next));
+    const z = Math.min(MAX_ZOOM, Math.max(minZoom, next));
     const s2 = base * z;
     setPos((p) => clamp({ x: around.x - (around.x - p.x) * (s2 / scale), y: around.y - (around.y - p.y) * (s2 / scale) }, s2));
     setZoom(z);
@@ -83,10 +85,11 @@ export function AvatarCropper({ file, onCancel, onDone }: { file: File; onCancel
 
   async function save() {
     if (!bitmap) return;
+    // Map the box onto the output square; anything outside the photo stays transparent
     const canvas = document.createElement("canvas");
-    canvas.width = canvas.height = Math.min(OUT, Math.round(VIEW / scale));
-    const size = VIEW / scale;
-    canvas.getContext("2d")!.drawImage(bitmap, -pos.x / scale, -pos.y / scale, size, size, 0, 0, canvas.width, canvas.height);
+    canvas.width = canvas.height = Math.max(64, Math.min(OUT, Math.round(VIEW / scale)));
+    const k = canvas.width / VIEW;
+    canvas.getContext("2d")!.drawImage(bitmap, pos.x * k, pos.y * k, bitmap.width * scale * k, bitmap.height * scale * k);
     const blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, "image/webp", 0.85));
     if (blob) onDone(blob);
   }
@@ -95,7 +98,7 @@ export function AvatarCropper({ file, onCancel, onDone }: { file: File; onCancel
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/70 p-4" role="dialog" aria-modal="true" aria-label="Crop your photo">
       <div className="w-full max-w-sm rounded-2xl border-2 border-stone-900 bg-white p-5 text-center shadow-xl">
         <h2 className="text-lg font-black">Line it up</h2>
-        <p className="text-sm text-stone-500">Drag to move. Pinch or use the slider to zoom.</p>
+        <p className="text-sm text-stone-500">Drag to move. Pinch or use the slider to zoom. Zoom out as far as you like: empty space shows your page&apos;s background.</p>
         {error ? (
           <p className="my-8 text-sm text-red-600">Couldn&apos;t read that image. Try a JPG or PNG.</p>
         ) : (
@@ -106,8 +109,8 @@ export function AvatarCropper({ file, onCancel, onDone }: { file: File; onCancel
             onPointerUp={onPointerUp}
             onPointerCancel={onPointerUp}
             onWheel={(e) => zoomTo(zoom * (e.deltaY < 0 ? 1.08 : 1 / 1.08), local(e))}
-            className="relative mx-auto mt-4 cursor-grab touch-none select-none overflow-hidden rounded-xl bg-stone-200 active:cursor-grabbing"
-            style={{ width: VIEW, height: VIEW }}
+            className="relative mx-auto mt-4 cursor-grab touch-none select-none overflow-hidden rounded-xl active:cursor-grabbing"
+            style={{ width: VIEW, height: VIEW, background: "repeating-conic-gradient(#e7e5e4 0 25%, #fafaf9 0 50%) 0 0 / 20px 20px" }}
           >
             {src && bitmap && (
               // eslint-disable-next-line @next/next/no-img-element
@@ -128,7 +131,7 @@ export function AvatarCropper({ file, onCancel, onDone }: { file: File; onCancel
           <span aria-hidden>➖</span>
           <input
             type="range"
-            min={1}
+            min={minZoom}
             max={MAX_ZOOM}
             step={0.01}
             value={zoom}
