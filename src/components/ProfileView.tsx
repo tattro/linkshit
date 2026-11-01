@@ -4,6 +4,7 @@ import { embedFor } from "@/lib/embeds";
 import { iconForUrl, platform, PLATFORMS } from "@/lib/socials";
 import { TIP_PROVIDERS } from "@/lib/tips";
 import { SensitiveGate } from "./SensitiveGate";
+import { DiscountLink } from "./DiscountLink";
 import { SignupBox } from "./SignupBox";
 import { ChaosMode } from "./ChaosMode";
 import { backgroundImageStyle, buttonStyle, pageStyle } from "@/lib/style";
@@ -15,7 +16,7 @@ export type ProfileData = Pick<User, "id" | "handle" | "displayName" | "bio" | "
   tips: Tips;
 };
 
-export type ProfileLink = Pick<LinkRow, "id" | "title" | "url" | "embed" | "sensitive" | "spotlight" | "icon" | "offerId" | "thumbVersion"> & {
+export type ProfileLink = Pick<LinkRow, "id" | "title" | "url" | "embed" | "sensitive" | "spotlight" | "icon" | "offerId" | "thumbVersion" | "discountCode"> & {
   locked?: boolean;
 };
 
@@ -149,7 +150,12 @@ export function ProfileView({ user, links, preview = false, avatarOverride }: {
             );
             return (
               <li key={l.id}>
-                {l.sensitive ? <SensitiveGate title={l.title} className={btnClass} style={btnStyle}>{anchor}</SensitiveGate> : anchor}
+                {(() => {
+                  const gated = l.sensitive ? <SensitiveGate title={l.title} className={btnClass} style={btnStyle}>{anchor}</SensitiveGate> : anchor;
+                  // A locked link keeps its code behind the lock too
+                  const code = l.locked ? null : l.discountCode;
+                  return code ? <DiscountLink code={code} href={preview ? l.url : `/go/${l.id}`} newTab={preview} mutedClass={theme.muted} mutedStyle={mutedStyle}>{gated}</DiscountLink> : gated;
+                })()}
                 {l.offerId && (
                   <p className={`mt-1 text-center text-[11px] ${theme.muted}`} style={mutedStyle}>
                     Affiliate link · I may earn a commission if you buy or sign up

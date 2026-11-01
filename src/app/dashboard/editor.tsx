@@ -72,6 +72,17 @@ function LinkExtras({ link, url }: { link?: Link; url: string }) {
           <span className="text-xs text-stone-400">emoji, optional</span>
         </label>
       </div>
+      <label className="block text-sm">
+        <span className="font-medium">🏷️ Discount code</span> <span className="text-xs text-stone-400">optional · tapping the link copies it, then opens the link</span>
+        <input
+          name="discountCode"
+          defaultValue={link?.discountCode ?? ""}
+          maxLength={40}
+          autoComplete="off"
+          placeholder="e.g. TREVOR20"
+          className="mt-1 w-full rounded-lg border-2 border-stone-300 bg-white px-3 py-2 font-mono outline-none focus:border-stone-900"
+        />
+      </label>
       {!open ? (
         <button type="button" onClick={() => setOpen(true)} className="text-sm text-stone-500 underline">
           More options: schedule, thumbnail, lock, Android link
@@ -194,6 +205,7 @@ export function LinkItem({ link, handle }: { link: Link; handle?: React.ReactNod
             {link.embed && <span className="ml-2 rounded bg-violet-100 px-1.5 py-0.5 text-xs font-medium text-violet-800">embed</span>}
             {link.spotlight && <span className="ml-2 rounded bg-yellow-100 px-1.5 py-0.5 text-xs font-medium text-yellow-800">✨ spotlight</span>}
             {link.sensitive && <span className="ml-2 rounded bg-red-100 px-1.5 py-0.5 text-xs font-medium text-red-800">🔞 18+</span>}
+            {link.discountCode && <span className="ml-2 rounded bg-sky-100 px-1.5 py-0.5 text-xs font-medium text-sky-800">🏷️ {link.discountCode}</span>}
             {link.lockCode && <span className="ml-2 rounded bg-stone-200 px-1.5 py-0.5 text-xs font-medium text-stone-700">🔒 locked</span>}
             {link.offerId && <span className="ml-2 rounded bg-lime-100 px-1.5 py-0.5 text-xs font-medium text-lime-800" title="Pinned to the bottom of your page with an affiliate disclaimer">💸 marketplace</span>}
           </p>
