@@ -45,7 +45,7 @@ export async function PublicPage({ profile }: { profile: PublicProfile }) {
     <div className="min-h-screen [&>div]:min-h-screen">
       <ViewBeacon userId={user.id} />
       <TrackingPixels meta={user.metaPixel} ga={user.googleAnalytics} tiktok={user.tiktokPixel} />
-      <ProfileView user={user} links={profile.links} />
+      <ProfileView user={user} links={profile.links} qa={profile.qa} />
     </div>
   );
 }

@@ -1,5 +1,6 @@
-import { and, asc, desc, eq } from "drizzle-orm";
-import { db, events, links, messages, subscribers } from "@/db";
+import { and, asc, desc, eq, isNull } from "drizzle-orm";
+import { db, events, links, messages, questions, subscribers } from "@/db";
+import { answeredQuestions } from "@/lib/profile";
 import { sql } from "drizzle-orm";
 import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
@@ -14,7 +15,7 @@ import { DashboardHeader } from "./DashboardHeader";
 import { LinkList } from "./LinkList";
 import { PageLockForm, RedirectForm, SeoForm, TrackingForm } from "./extras";
 import { QR_REFERRER, qrTarget } from "@/lib/qr";
-import { AccountSettings, AddHeadingForm, BackupForm, ContactSettings, AddLinkForm, AdvertiserOptIn, AvatarForm, BackgroundForm, DeleteAccountForm, DeletePageForm, Graveyard, HandleForm, LinktreeImport, SignupSettings, StealLook, TipsForm, LookForm, ProfileForm, ShareCard, SocialsForm, VerifyBanner } from "./editor";
+import { AccountSettings, AddHeadingForm, BackupForm, ContactSettings, QASettings, AddLinkForm, AdvertiserOptIn, AvatarForm, BackgroundForm, DeleteAccountForm, DeletePageForm, Graveyard, HandleForm, LinktreeImport, SignupSettings, StealLook, TipsForm, LookForm, ProfileForm, ShareCard, SocialsForm, VerifyBanner } from "./editor";
 
 export const metadata = { title: "Dashboard" };
 
@@ -47,6 +48,9 @@ export default async function Dashboard({ searchParams }: PageProps<"/dashboard"
   const [{ subs }] = await db.select({ subs: sql<number>`count(*)::int` }).from(subscribers).where(eq(subscribers.userId, user.id));
   const inbox = await db.select({ id: messages.id, name: messages.name, email: messages.email, body: messages.body, createdAt: messages.createdAt })
     .from(messages).where(eq(messages.userId, user.id)).orderBy(desc(messages.createdAt)).limit(20);
+  const waiting = await db.select({ id: questions.id, body: questions.body, createdAt: questions.createdAt })
+    .from(questions).where(and(eq(questions.userId, user.id), isNull(questions.answeredAt))).orderBy(desc(questions.createdAt)).limit(50);
+  const answered = await answeredQuestions(user.id);
   const recentSubs = await db.select({ email: subscribers.email, createdAt: subscribers.createdAt }).from(subscribers)
     .where(eq(subscribers.userId, user.id)).orderBy(desc(subscribers.createdAt)).limit(5);
   const pageUrl = `${await siteUrl()}/${user.handle}`;
@@ -123,6 +127,10 @@ export default async function Dashboard({ searchParams }: PageProps<"/dashboard"
             <SignupSettings enabled={user.signupEnabled} prompt={user.signupPrompt} count={subs} recent={recentSubs} />
           </Section>
 
+          <Section title="Talk to me (anonymous Q&A)">
+            <QASettings enabled={user.qaEnabled} prompt={user.qaPrompt} waiting={waiting} answered={answered} />
+          </Section>
+
           <Section title="Contact form">
             <ContactSettings enabled={user.contactEnabled} messages={inbox} />
           </Section>
@@ -180,9 +188,10 @@ export default async function Dashboard({ searchParams }: PageProps<"/dashboard"
               user={{
                 id: user.id, handle: user.handle, displayName: user.displayName, bio: user.bio, theme: user.theme,
                 avatarVersion: user.avatarVersion, bgVersion: user.bgVersion, style: user.style, socials: user.socials,
-                tips: user.tips, signupEnabled: user.signupEnabled, signupPrompt: user.signupPrompt, contactEnabled: user.contactEnabled,
+                tips: user.tips, signupEnabled: user.signupEnabled, signupPrompt: user.signupPrompt, contactEnabled: user.contactEnabled, qaEnabled: user.qaEnabled, qaPrompt: user.qaPrompt,
               }}
               links={offersLast(liveLinks(rows)).map((l) => ({ ...l, locked: Boolean(l.lockCode) }))}
+              qa={answered}
             />
           </div>
         </PreviewDock>

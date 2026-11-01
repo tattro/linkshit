@@ -58,6 +58,9 @@ export const users = pgTable(
     signupPrompt: text("signup_prompt").notNull().default(""),
     // "Message me" form on the page; messages land in the dashboard and the owner's inbox
     contactEnabled: boolean("contact_enabled").notNull().default(false),
+    // Anonymous "Ask me anything" box; answered questions show as a public feed
+    qaEnabled: boolean("qa_enabled").notNull().default(false),
+    qaPrompt: text("qa_prompt").notNull().default(""),
     // e.g. "links.example.com"; serves this user's page at that domain's root
     customDomain: text("custom_domain"),
     // Stats email on/off (name is historical) and how often
@@ -282,6 +285,22 @@ export const messages = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index("messages_user_idx").on(t.userId, t.createdAt)],
+);
+
+/** Anonymous questions for a page's Q&A. Only answered ones are ever shown publicly. */
+export const questions = pgTable(
+  "questions",
+  {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    body: text("body").notNull(),
+    answer: text("answer"),
+    answeredAt: timestamp("answered_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("questions_user_idx").on(t.userId, t.answeredAt)],
 );
 
 /** Old handles keep redirecting to the new one for a while after a rename. */

@@ -1,7 +1,7 @@
 import "server-only";
-import { and, asc, eq, gt, isNull, or } from "drizzle-orm";
+import { and, asc, desc, eq, gt, isNotNull, isNull, or } from "drizzle-orm";
 import { cache } from "react";
-import { db, handleRedirects, links, offers, users } from "@/db";
+import { db, handleRedirects, links, offers, questions, users } from "@/db";
 import { redirectCutoff } from "@/lib/handleTaken";
 import { liveLinks, offersLast } from "@/components/ProfileView";
 
@@ -11,7 +11,7 @@ export const getPublicProfile = cache(async (by: "handle" | "domain", key: strin
     .select({
       id: users.id, handle: users.handle, displayName: users.displayName, bio: users.bio, theme: users.theme,
       style: users.style, socials: users.socials, avatarVersion: users.avatarVersion, bgVersion: users.bgVersion, bannedAt: users.bannedAt,
-      tips: users.tips, signupEnabled: users.signupEnabled, signupPrompt: users.signupPrompt, contactEnabled: users.contactEnabled,
+      tips: users.tips, signupEnabled: users.signupEnabled, signupPrompt: users.signupPrompt, contactEnabled: users.contactEnabled, qaEnabled: users.qaEnabled, qaPrompt: users.qaPrompt,
       redirectLinkId: users.redirectLinkId, lockCode: users.lockCode, seoTitle: users.seoTitle, seoDescription: users.seoDescription,
       metaPixel: users.metaPixel, googleAnalytics: users.googleAnalytics, tiktokPixel: users.tiktokPixel,
     })
@@ -32,7 +32,8 @@ export const getPublicProfile = cache(async (by: "handle" | "domain", key: strin
   const live = offersLast(liveLinks(rows)).map(({ lockCode, ...l }) => ({ ...l, locked: Boolean(lockCode) }));
   // Redirect mode only kicks in while the chosen link is live
   const redirectTo = live.find((l) => l.id === user.redirectLinkId)?.id ?? null;
-  return { user, links: live, redirectTo };
+  const qa = user.qaEnabled ? await answeredQuestions(user.id) : [];
+  return { user, links: live, redirectTo, qa };
 });
 
 export type PublicProfile = NonNullable<Awaited<ReturnType<typeof getPublicProfile>>>;
@@ -46,3 +47,15 @@ export async function renamedTo(oldHandle: string): Promise<string | null> {
     .where(and(eq(handleRedirects.handle, oldHandle), gt(handleRedirects.createdAt, redirectCutoff())));
   return row?.handle ?? null;
 }
+
+/** The public Q&A feed: answered questions only, newest first. */
+export async function answeredQuestions(userId: number) {
+  return db
+    .select({ id: questions.id, body: questions.body, answer: questions.answer, answeredAt: questions.answeredAt })
+    .from(questions)
+    .where(and(eq(questions.userId, userId), isNotNull(questions.answeredAt)))
+    .orderBy(desc(questions.answeredAt))
+    .limit(30) as Promise<QA[]>;
+}
+
+export type QA = { id: number; body: string; answer: string; answeredAt: Date };
