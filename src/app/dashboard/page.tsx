@@ -83,7 +83,7 @@ export default async function Dashboard({ searchParams }: PageProps<"/dashboard"
           </Section>
 
           <Section title="Look & feel">
-            <LookForm user={{ theme: user.theme, style: user.style }} />
+            <LookForm user={{ theme: user.theme, style: user.style, openInApp: user.openInApp }} avatar={avatarUrl(user)} />
           </Section>
 
           <Section title="Share">

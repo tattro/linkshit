@@ -30,7 +30,8 @@ export async function updateLook(_prev: ProfileState, formData: FormData): Promi
   const themeRaw = String(formData.get("theme") ?? "");
   const theme = THEMES.some((t) => t.id === themeRaw) ? themeRaw : user.theme;
   const style = parseStyle(Object.fromEntries(formData));
-  await db.update(users).set({ theme, style }).where(eq(users.id, user.id));
+  const openInApp = formData.get("openInApp") === "on";
+  await db.update(users).set({ theme, style, openInApp }).where(eq(users.id, user.id));
   refresh(user.handle);
   return { ok: true };
 }

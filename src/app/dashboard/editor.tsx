@@ -295,10 +295,30 @@ export function SocialsForm({ socials, platforms }: {
   );
 }
 
-export function LookForm({ user }: { user: { theme: string; style: Style } }) {
+export function LookForm({ user, avatar }: { user: { theme: string; style: Style; openInApp: boolean }; avatar: string | null }) {
   const [state, action, pending] = useActionState(updateLook, undefined);
   const [custom, setCustom] = useState(hasCustomColors(user.style));
   const s = user.style;
+  const [colors, setColors] = useState({
+    bg: s.bg ?? "#f5f5f4", text: s.text ?? "#1c1917", button: s.button ?? "#ffffff", buttonText: s.buttonText ?? "#1c1917",
+  });
+  const [stealing, setStealing] = useState(false);
+  const [stealError, setStealError] = useState<string | null>(null);
+
+  async function steal() {
+    if (!avatar) return;
+    setStealing(true);
+    setStealError(null);
+    try {
+      const { paletteFromImage } = await import("@/lib/palette");
+      setColors(await paletteFromImage(avatar));
+      setCustom(true);
+    } catch {
+      setStealError("Couldn't read your photo. Try uploading it again.");
+    } finally {
+      setStealing(false);
+    }
+  }
   return (
     <form action={action} className="space-y-5">
       <fieldset>
@@ -344,25 +364,49 @@ export function LookForm({ user }: { user: { theme: string; style: Style } }) {
       </fieldset>
 
       <fieldset>
-        <label className="flex items-center gap-2 text-sm font-semibold">
-          <input type="checkbox" name="customColors" checked={custom} onChange={(e) => setCustom(e.target.checked)} className="h-4 w-4 accent-lime-500" />
-          Use my own colours (overrides the theme)
-        </label>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <label className="flex items-center gap-2 text-sm font-semibold">
+            <input type="checkbox" name="customColors" checked={custom} onChange={(e) => setCustom(e.target.checked)} className="h-4 w-4 accent-lime-500" />
+            Use my own colours (overrides the theme)
+          </label>
+          {avatar && (
+            <button type="button" onClick={steal} disabled={stealing} className={`${ghost} px-3 py-1.5 font-semibold`}>
+              {stealing ? "Sniffing your photo…" : "🎨 Steal colours from my photo"}
+            </button>
+          )}
+        </div>
+        {stealError && <p className="mt-2 text-sm text-red-600">{stealError}</p>}
         {custom && (
           <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
             {([
-              ["bg", "Background", s.bg ?? "#f5f5f4"],
-              ["text", "Text", s.text ?? "#1c1917"],
-              ["button", "Buttons", s.button ?? "#ffffff"],
-              ["buttonText", "Button text", s.buttonText ?? "#1c1917"],
-            ] as const).map(([name, label, value]) => (
+              ["bg", "Background"],
+              ["text", "Text"],
+              ["button", "Buttons"],
+              ["buttonText", "Button text"],
+            ] as const).map(([name, label]) => (
               <label key={name} className="flex items-center gap-2 text-sm">
-                <input type="color" name={name} defaultValue={value} className="h-9 w-12 cursor-pointer rounded border-2 border-stone-300" />
+                <input
+                  type="color"
+                  name={name}
+                  value={colors[name]}
+                  onChange={(e) => setColors((c) => ({ ...c, [name]: e.target.value }))}
+                  className="h-9 w-12 cursor-pointer rounded border-2 border-stone-300"
+                />
                 {label}
               </label>
             ))}
           </div>
         )}
+      </fieldset>
+
+      <fieldset>
+        <label className="flex items-start gap-2 text-sm">
+          <input type="checkbox" name="openInApp" defaultChecked={user.openInApp} className="mt-0.5 h-4 w-4 accent-lime-500" />
+          <span>
+            <span className="font-semibold">Open links in apps on phones.</span>{" "}
+            <span className="text-stone-500">YouTube, Spotify, Instagram and X links open in the app instead of a browser tab, when the visitor has it.</span>
+          </span>
+        </label>
       </fieldset>
 
       <div className="flex items-center gap-3">

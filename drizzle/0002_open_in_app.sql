@@ -1,0 +1,1 @@
+ALTER TABLE "users" ADD COLUMN "open_in_app" boolean DEFAULT true NOT NULL;

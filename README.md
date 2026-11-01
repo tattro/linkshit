@@ -16,6 +16,8 @@ All your shit. One link. Users claim a handle and get a public page at `linksh.i
 - Profile photo (cropped and shrunk in the browser, stored in Postgres), display name and bio
 - Social icons row for 16 platforms
 - Five themes plus custom colours, button shapes and fonts, with a live phone preview
+- "Steal colours from my photo": builds a readable colour scheme from the profile picture
+- On phones, YouTube, Spotify, Instagram and X links open in their apps (Android intents, iOS app schemes with a web fallback)
 - Analytics: page views and clicks per day, top links, referrers and countries
 - Share card with QR code, plus generated link-preview images for every page
 - Forgot-password and email verification via Resend

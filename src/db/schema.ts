@@ -39,6 +39,8 @@ export const users = pgTable(
     style: jsonb("style").$type<Style>().notNull().default({}),
     socials: jsonb("socials").$type<Socials>().notNull().default({}),
     avatarVersion: integer("avatar_version").notNull().default(0),
+    // On phones, open YouTube/Spotify/Instagram/X links in their apps
+    openInApp: boolean("open_in_app").notNull().default(true),
     emailVerifiedAt: timestamp("email_verified_at", { withTimezone: true }),
     isAdmin: boolean("is_admin").notNull().default(false),
     bannedAt: timestamp("banned_at", { withTimezone: true }),
