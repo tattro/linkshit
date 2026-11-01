@@ -49,7 +49,7 @@ function LinkExtras({ link, url }: { link?: Link; url: string }) {
       {canEmbed && (
         <label className="mb-2 flex items-center gap-2 text-sm">
           <input type="checkbox" name="embed" defaultChecked={link?.embed} className="h-4 w-4 accent-lime-500" />
-          Show as an embedded player instead of a button
+          Show it right on my page (player or booking calendar) instead of a button
         </label>
       )}
       <div className="mb-2 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">

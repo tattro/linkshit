@@ -51,5 +51,14 @@ export function embedFor(raw: string): Embed | null {
     const m = u.pathname.match(/^\/(p|reel|tv)\/([\w-]+)/);
     if (m) return { src: `https://www.instagram.com/${m[1] === "tv" ? "p" : m[1]}/${m[2]}/embed`, height: 620, maxWidth: 400 };
   }
+  // Booking pages: visitors pick a time right on the page
+  if (host === "calendly.com") {
+    const path = u.pathname.match(/^\/[\w.\-]+(?:\/[\w.\-]+)?\/?$/)?.[0];
+    if (path) return { src: `https://calendly.com${path.replace(/\/$/, "")}?embed_domain=${SITE_HOST}&embed_type=Inline&hide_gdpr_banner=1`, height: 700 };
+  }
+  if (host === "cal.com") {
+    const path = u.pathname.match(/^\/[\w.\-]+(?:\/[\w.\-]+)?\/?$/)?.[0];
+    if (path) return { src: `https://cal.com${path.replace(/\/$/, "")}/embed`, height: 700 };
+  }
   return null;
 }
