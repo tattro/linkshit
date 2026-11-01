@@ -50,6 +50,10 @@ export function PageSwitcher({ pages, activeId, to }: { pages: P[]; activeId: nu
                 <span className="pl-2 font-mono text-xs text-stone-500">linksh.it/</span>
                 <input id="new-page-handle" name="handle" required maxLength={30} autoFocus autoComplete="off" className="min-w-0 flex-1 bg-transparent py-2 pr-2 font-mono text-sm outline-none" />
               </div>
+              <label className="flex items-start gap-2 text-left text-xs text-stone-600">
+                <input type="checkbox" name="copy" className="mt-0.5 h-4 w-4 accent-lime-500" />
+                <span>Copy this page: links, look, photo and settings. Stats and subscribers start fresh.</span>
+              </label>
               {state?.error && <p className="text-xs text-red-600">{state.error}</p>}
               <button disabled={pending} className={`${btn} w-full text-sm`}>{pending ? "Creating…" : "Create page"}</button>
             </form>
