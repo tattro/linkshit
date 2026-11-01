@@ -1,0 +1,1 @@
+ALTER TABLE "links" ADD COLUMN "countdown" boolean DEFAULT false NOT NULL;

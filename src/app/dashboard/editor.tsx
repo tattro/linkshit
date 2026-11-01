@@ -92,10 +92,16 @@ function LinkExtras({ link, url }: { link?: Link; url: string }) {
       ) : (
         <div className="space-y-3 rounded-xl bg-stone-50 p-3">
           <div className="grid gap-2 sm:grid-cols-2">
-            <label className="text-sm">
-              <span className="text-stone-500">Show from (optional)</span>
-              <input type="datetime-local" name="startsAt" defaultValue={toLocalInput(link?.startsAt ?? null)} className={input} />
-            </label>
+            <div className="text-sm">
+              <label className="block">
+                <span className="text-stone-500">Show from (optional)</span>
+                <input type="datetime-local" name="startsAt" defaultValue={toLocalInput(link?.startsAt ?? null)} className={input} />
+              </label>
+              <label className="mt-1 flex items-center gap-2">
+                <input type="checkbox" name="countdown" defaultChecked={link?.countdown} className="h-4 w-4 accent-lime-500" />
+                <span>⏳ Show a countdown until then</span>
+              </label>
+            </div>
             <label className="text-sm">
               <span className="text-stone-500">Hide after (optional)</span>
               <input type="datetime-local" name="endsAt" defaultValue={toLocalInput(link?.endsAt ?? null)} className={input} />

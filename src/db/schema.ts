@@ -217,6 +217,8 @@ export const links = pgTable(
     androidUrl: text("android_url"),
     // Set when "flushed": the link moves to the graveyard and can be revived
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    // Before startsAt, show a "drops in…" countdown instead of hiding the link
+    countdown: boolean("countdown").notNull().default(false),
     // Only visible between these times when set
     startsAt: timestamp("starts_at", { withTimezone: true }),
     endsAt: timestamp("ends_at", { withTimezone: true }),

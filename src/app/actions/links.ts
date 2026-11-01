@@ -84,6 +84,7 @@ async function readLinkForm(formData: FormData) {
   const icon = cleanIcon(String(formData.get("icon") ?? ""));
   const lockCode = cleanCode(formData.get("lockCode"));
   const discountCode = String(formData.get("discountCode") ?? "").trim().slice(0, 40) || null;
+  const countdown = formData.get("countdown") === "on" && startsAt !== null;
   const rawAndroid = String(formData.get("androidUrl") ?? "").trim();
   const androidUrl = rawAndroid ? normalizeUrl(rawAndroid) : null;
   if (rawAndroid && !androidUrl) return { error: "The Android link doesn't look like a valid web address." } as const;
@@ -94,7 +95,7 @@ async function readLinkForm(formData: FormData) {
   const thumb = await readThumb(formData);
   if (thumb && "error" in thumb) return { error: thumb.error } as const;
   // A locked link can't play inline, or the lock would be pointless
-  return { value: { title, url, startsAt, endsAt, embed: embed && !lockCode, sensitive, spotlight, icon, lockCode, discountCode, androidUrl }, thumb, removeThumb: formData.get("removeThumb") === "on" } as const;
+  return { value: { title, url, startsAt, endsAt, embed: embed && !lockCode, sensitive, spotlight, icon, lockCode, discountCode, androidUrl, countdown }, thumb, removeThumb: formData.get("removeThumb") === "on" } as const;
 }
 
 export async function addLink(_prev: ActionState, formData: FormData): Promise<ActionState> {
@@ -283,6 +284,7 @@ export async function restorePage(_prev: ActionState, formData: FormData): Promi
     fd.set("title", str(l.title, 100));
     fd.set("url", str(l.url, 2000));
     if (l.embed) fd.set("embed", "on");
+    if (l.countdown) fd.set("countdown", "on");
     if (l.sensitive) fd.set("sensitive", "on");
     if (l.spotlight) fd.set("spotlight", "on");
     fd.set("icon", str(l.icon, 16));

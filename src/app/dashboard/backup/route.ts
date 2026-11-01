@@ -39,7 +39,7 @@ export async function GET() {
     links: rows.map((l) => ({
       title: l.title, url: l.url, heading: l.heading, embed: l.embed, sensitive: l.sensitive, spotlight: l.spotlight,
       icon: l.icon, lockCode: l.lockCode, discountCode: l.discountCode, androidUrl: l.androidUrl,
-      startsAt: l.startsAt?.toISOString() ?? null, endsAt: l.endsAt?.toISOString() ?? null,
+      startsAt: l.startsAt?.toISOString() ?? null, countdown: l.countdown, endsAt: l.endsAt?.toISOString() ?? null,
       thumb: thumbs.get(l.id) ?? null,
     })),
   };
