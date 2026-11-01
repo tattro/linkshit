@@ -52,6 +52,8 @@ export const users = pgTable(
     // Email signup box on the public page
     signupEnabled: boolean("signup_enabled").notNull().default(false),
     signupPrompt: text("signup_prompt").notNull().default(""),
+    // e.g. "links.example.com"; serves this user's page at that domain's root
+    customDomain: text("custom_domain"),
     emailVerifiedAt: timestamp("email_verified_at", { withTimezone: true }),
     isAdmin: boolean("is_admin").notNull().default(false),
     bannedAt: timestamp("banned_at", { withTimezone: true }),
@@ -61,6 +63,7 @@ export const users = pgTable(
   (t) => [
     uniqueIndex("users_email_idx").on(t.email),
     uniqueIndex("users_handle_idx").on(t.handle),
+    uniqueIndex("users_custom_domain_idx").on(t.customDomain),
   ],
 );
 

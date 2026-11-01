@@ -7,6 +7,8 @@ import { siteUrl } from "@/lib/request";
 import { PLATFORMS } from "@/lib/socials";
 import { avatarUrl, backgroundUrl, liveLinks } from "@/components/ProfileView";
 import { LivePreview } from "./LivePreview";
+import { DomainForm } from "./DomainForm";
+import { domainsEnabled, isApex } from "@/lib/domains";
 import { DashboardHeader } from "./DashboardHeader";
 import { AddLinkForm, AvatarForm, BackgroundForm, SignupSettings, TipsForm, LinkItem, LookForm, ProfileForm, ShareCard, SocialsForm, VerifyBanner } from "./editor";
 
@@ -100,6 +102,11 @@ export default async function Dashboard({ searchParams }: PageProps<"/dashboard"
               <BackgroundForm current={backgroundUrl(user)} />
               <LookForm user={{ theme: user.theme, style: user.style, openInApp: user.openInApp }} avatar={avatarUrl(user)} background={backgroundUrl(user)} />
             </div>
+          </Section>
+
+          <Section title="Custom domain">
+            <p className="-mt-2 mb-4 text-sm text-stone-500">Use your own domain instead of linksh.it/{user.handle}.</p>
+            <DomainForm current={user.customDomain} enabled={domainsEnabled()} apex={user.customDomain ? isApex(user.customDomain) : false} />
           </Section>
 
           <Section title="Share">
