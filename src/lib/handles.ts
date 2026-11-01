@@ -8,6 +8,7 @@ export const RESERVED_HANDLES = new Set([
   "sitemap.xml", "www", "mail", "root", "staff", "official", "linksh",
   "linkshit", "null", "undefined", "me", "you", "edit", "new", "explore",
   "search", "status", "security", "billing", "contact", "jobs", "careers",
+  "forgot", "reset", "verify", "avatar", "analytics", "banned", "qr", "og",
 ]);
 
 export const HANDLE_RE = /^[a-z0-9_]{3,30}$/;
