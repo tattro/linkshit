@@ -1,0 +1,1 @@
+ALTER TABLE "links" ADD COLUMN "heading" boolean DEFAULT false NOT NULL;

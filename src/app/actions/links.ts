@@ -115,8 +115,35 @@ export async function updateLink(_prev: ActionState, formData: FormData): Promis
   const id = Number(formData.get("id"));
   const form = await readLinkForm(formData);
   if ("error" in form) return { error: form.error };
-  const [row] = await db.update(links).set(form.value).where(and(eq(links.id, id), eq(links.userId, user.id))).returning({ id: links.id });
+  const [row] = await db.update(links).set(form.value).where(and(eq(links.id, id), eq(links.userId, user.id), eq(links.heading, false))).returning({ id: links.id });
   if (row) await saveThumb(row.id, form.thumb, form.removeThumb);
+  refresh(user.handle);
+  return { ok: true };
+}
+
+/** Adds a section heading ("Music", "Merch") at the bottom of the list. */
+export async function addHeading(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const user = await requireUser();
+  if (!(await rateLimit(`links:user:${user.id}`, 120, 60 * 60))) return { error: TOO_MANY };
+  const title = String(formData.get("title") ?? "").trim().slice(0, 60);
+  if (!title) return { error: "Give the heading some words." };
+  const [{ count, max }] = await db
+    .select({ count: sql<number>`count(*)::int`, max: sql<number>`coalesce(max(${links.position}), -1)::int` })
+    .from(links)
+    .where(and(eq(links.userId, user.id), isNull(links.deletedAt)));
+  if (count >= MAX_LINKS) return { error: `You've hit the ${MAX_LINKS} link limit. Impressive.` };
+  await db.insert(links).values({ userId: user.id, position: max + 1, title, url: "", heading: true });
+  refresh(user.handle);
+  return { ok: true };
+}
+
+/** Renames a section heading. */
+export async function updateHeading(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const user = await requireUser();
+  const id = Number(formData.get("id"));
+  const title = String(formData.get("title") ?? "").trim().slice(0, 60);
+  if (!title) return { error: "Give the heading some words." };
+  await db.update(links).set({ title }).where(and(eq(links.id, id), eq(links.userId, user.id), eq(links.heading, true)));
   refresh(user.handle);
   return { ok: true };
 }

@@ -21,7 +21,7 @@ export async function setRedirect(_prev: ExtrasState, formData: FormData): Promi
   let linkId: number | null = null;
   if (raw) {
     const [link] = await db.select({ id: links.id }).from(links)
-      .where(and(eq(links.id, Number(raw)), eq(links.userId, user.id), isNull(links.deletedAt)));
+      .where(and(eq(links.id, Number(raw)), eq(links.userId, user.id), isNull(links.deletedAt), eq(links.heading, false)));
     if (!link) return { error: "Pick one of your links." };
     linkId = link.id;
   }

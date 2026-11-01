@@ -16,7 +16,7 @@ export type ProfileData = Pick<User, "id" | "handle" | "displayName" | "bio" | "
   tips: Tips;
 };
 
-export type ProfileLink = Pick<LinkRow, "id" | "title" | "url" | "embed" | "sensitive" | "spotlight" | "icon" | "offerId" | "thumbVersion" | "discountCode"> & {
+export type ProfileLink = Pick<LinkRow, "id" | "title" | "url" | "embed" | "sensitive" | "spotlight" | "icon" | "offerId" | "thumbVersion" | "discountCode" | "heading"> & {
   locked?: boolean;
 };
 
@@ -124,6 +124,13 @@ export function ProfileView({ user, links, preview = false, avatarOverride }: {
               return (
                 <li key={l.id}>
                   {l.sensitive ? <SensitiveGate title={l.title} className={btnClass} style={btnStyle}>{frame}</SensitiveGate> : frame}
+                </li>
+              );
+            }
+            if (l.heading) {
+              return (
+                <li key={l.id} className="pt-3">
+                  <h2 className={`text-center text-sm font-bold uppercase tracking-widest ${theme.muted}`} style={mutedStyle}>{l.title}</h2>
                 </li>
               );
             }
