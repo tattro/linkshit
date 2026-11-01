@@ -59,6 +59,7 @@ export function parseStyle(input: Record<string, unknown>): Style {
   }
   if (font && font !== "sans") style.font = font;
   if (shape && shape !== "rounded") style.shape = shape;
+  if (input.chaos === "on") style.chaos = true;
   if (input.bgTint === "dark" || input.bgTint === "light") style.bgTint = input.bgTint;
   return style;
 }

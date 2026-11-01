@@ -116,7 +116,7 @@ export default async function Dashboard({ searchParams }: PageProps<"/dashboard"
 
         <aside className="lg:sticky lg:top-8 lg:self-start">
           <p className="mb-2 text-center text-sm font-semibold text-stone-500">Live preview</p>
-          <div className="mx-auto h-[640px] w-full max-w-[340px] overflow-y-auto rounded-[2.5rem] border-8 border-stone-900 shadow-xl [&>div]:min-h-full">
+          <div data-chaos-bounds className="mx-auto h-[640px] w-full max-w-[340px] overflow-y-auto rounded-[2.5rem] border-8 border-stone-900 shadow-xl [&>div]:min-h-full">
             <LivePreview
               user={{
                 id: user.id, handle: user.handle, displayName: user.displayName, bio: user.bio, theme: user.theme,

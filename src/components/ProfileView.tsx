@@ -5,6 +5,7 @@ import { iconForUrl, platform, PLATFORMS } from "@/lib/socials";
 import { TIP_PROVIDERS } from "@/lib/tips";
 import { SensitiveGate } from "./SensitiveGate";
 import { SignupBox } from "./SignupBox";
+import { ChaosMode } from "./ChaosMode";
 import { backgroundImageStyle, buttonStyle, pageStyle } from "@/lib/style";
 import { getTheme } from "@/lib/themes";
 
@@ -45,6 +46,7 @@ export function ProfileView({ user, links, preview = false, avatarOverride }: {
 
   return (
     <div className={`flex min-h-full flex-col items-center px-5 py-12 ${theme.page}`} style={{ ...pageStyle(style), ...backgroundImageStyle(bgUrl, style) }}>
+      <ChaosMode active={Boolean(style.chaos)} />
       <div className="flex w-full max-w-md flex-1 flex-col items-center">
         {avatar ? (
           // eslint-disable-next-line @next/next/no-img-element
