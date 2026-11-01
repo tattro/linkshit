@@ -897,7 +897,7 @@ export function HandleForm({ handle }: { handle: string }) {
     <form action={action} className="space-y-2">
       <label className="block text-sm font-semibold" htmlFor="handle-input">Your link</label>
       <div className="flex gap-2">
-        <div className="flex flex-1 items-center rounded-lg border-2 border-stone-300 bg-white focus-within:border-stone-900">
+        <div className="flex min-w-0 flex-1 items-center rounded-lg border-2 border-stone-300 bg-white focus-within:border-stone-900">
           <span className="pl-3 font-mono text-sm text-stone-500">linksh.it/</span>
           <input
             id="handle-input"
