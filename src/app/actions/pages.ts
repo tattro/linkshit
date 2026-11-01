@@ -1,8 +1,8 @@
 "use server";
 
-import { and, eq, sql } from "drizzle-orm";
+import { and, asc, eq, isNull, sql } from "drizzle-orm";
 import { redirect } from "next/navigation";
-import { db, sessions, users } from "@/db";
+import { avatars, backgrounds, db, linkThumbs, links, sessions, users } from "@/db";
 import { getSession, MAX_PAGES } from "@/lib/auth";
 import { domainsEnabled, removeProjectDomain } from "@/lib/domains";
 import { handleTaken } from "@/lib/handleTaken";
@@ -23,15 +23,28 @@ export async function createPage(_prev: PageState, formData: FormData): Promise<
   if (n + 1 >= MAX_PAGES) return { error: `${MAX_PAGES} pages max. Delete one first.` };
   if (!(await rateLimit(`newpage:user:${account.id}`, 10, 24 * 60 * 60))) return { error: TOO_MANY };
   if (await handleTaken(handle)) return { error: `Someone already claimed linksh.it/${handle}.` };
+  const from = formData.get("copy") === "on" ? s.page : null;
   let page: { id: number };
   try {
     [page] = await db
       .insert(users)
-      .values({ ownerId: account.id, handle, displayName: handle, emailVerifiedAt: account.emailVerifiedAt })
+      .values({
+        ownerId: account.id, handle, displayName: handle, emailVerifiedAt: account.emailVerifiedAt,
+        // "Copy this page": everything that makes the page look and behave the same.
+        // Never the custom domain, stats, subscribers or redirect mode.
+        ...(from && {
+          displayName: from.displayName, bio: from.bio, theme: from.theme, style: from.style, socials: from.socials,
+          tips: from.tips, openInApp: from.openInApp, signupEnabled: from.signupEnabled, signupPrompt: from.signupPrompt,
+          lockCode: from.lockCode, seoTitle: from.seoTitle, seoDescription: from.seoDescription,
+          metaPixel: from.metaPixel, googleAnalytics: from.googleAnalytics, tiktokPixel: from.tiktokPixel, utm: from.utm,
+          avatarVersion: from.avatarVersion, bgVersion: from.bgVersion,
+        }),
+      })
       .returning({ id: users.id });
   } catch {
     return { error: "That handle was just taken. Try another." };
   }
+  if (from) await copyPageContent(from.id, page.id);
   await db.update(sessions).set({ activePageId: page.id }).where(eq(sessions.id, s.sessionId));
   redirect("/dashboard?newpage=1");
 }
@@ -68,3 +81,21 @@ export async function deletePage(_prev: PageState, formData: FormData): Promise<
   redirect("/dashboard?pagegone=1");
 }
 
+
+/** Copies photos and live links (with thumbnails) from one page to a fresh one. Marketplace offers stay behind. */
+async function copyPageContent(fromId: number, toId: number) {
+  const [avatar] = await db.select().from(avatars).where(eq(avatars.userId, fromId));
+  if (avatar) await db.insert(avatars).values({ ...avatar, userId: toId });
+  const [bg] = await db.select().from(backgrounds).where(eq(backgrounds.userId, fromId));
+  if (bg) await db.insert(backgrounds).values({ ...bg, userId: toId });
+  const rows = await db.select().from(links)
+    .where(and(eq(links.userId, fromId), isNull(links.deletedAt), isNull(links.offerId)))
+    .orderBy(asc(links.position), asc(links.id));
+  for (const { id, ...rest } of rows) {
+    const [copy] = await db.insert(links).values({ ...rest, userId: toId, clicks: 0, createdAt: new Date() }).returning({ id: links.id });
+    if (rest.thumbVersion > 0) {
+      const [thumb] = await db.select().from(linkThumbs).where(eq(linkThumbs.linkId, id));
+      if (thumb) await db.insert(linkThumbs).values({ ...thumb, linkId: copy.id });
+    }
+  }
+}
