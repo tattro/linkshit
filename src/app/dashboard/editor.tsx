@@ -140,6 +140,9 @@ function LinkExtras({ link, url }: { link?: Link; url: string }) {
 
 export type SectionOption = { id: number; title: string };
 
+/** Offered in the Category box alongside the categories you already have. */
+const CATEGORY_IDEAS = ["Music", "Projects", "Business", "Art", "Videos", "Shop", "Podcast", "Socials", "Writing", "Events"];
+
 /**
  * "Category": type a name like Music. An existing one is reused (suggested as
  * you type), a new one is created as a title on the page, blank means none.
@@ -159,11 +162,14 @@ function CategoryBox({ sections, defaultValue = "", className = "" }: { sections
         onChange={(e) => setValue(e.target.value)}
         maxLength={60}
         autoComplete="off"
-        placeholder="e.g. Music, Art, Business"
+        placeholder="Pick one or type your own (or leave blank)"
         className={`${input} mt-1`}
       />
       <datalist id={listId}>
         {sections.map((s) => <option key={s.id} value={s.title} />)}
+        {CATEGORY_IDEAS.filter((idea) => !sections.some((s) => s.title.trim().toLowerCase() === idea.toLowerCase())).map((idea) => (
+          <option key={idea} value={idea} />
+        ))}
       </datalist>
       {isNew && <span className="mt-1 block text-xs text-stone-500">New category: &quot;{value.trim()}&quot; will show as a title on your page, with this link under it.</span>}
       {!isNew && sections.length > 0 && typed === "" && (
