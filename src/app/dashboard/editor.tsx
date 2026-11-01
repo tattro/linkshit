@@ -2,7 +2,7 @@
 
 import NextLink from "next/link";
 import { startTransition, useActionState, useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { addLink, deleteLink, deleteLinkForever, importLinktree, reviveLink, updateLink, type ActionState } from "@/app/actions/links";
+import { addHeading, addLink, deleteLink, deleteLinkForever, importLinktree, reviveLink, updateHeading, updateLink, type ActionState } from "@/app/actions/links";
 import {
   changeHandle, removeAvatar, removeBackground, updateLook, updateProfile, updateSignup, updateSocials, updateTips, uploadAvatar, uploadBackground,
 } from "@/app/actions/profile";
@@ -151,6 +151,78 @@ export function AddLinkForm() {
   );
 }
 
+/** "+ Add a section heading": a small toggle under the add-link form. */
+export function AddHeadingForm() {
+  const [open, setOpen] = useState(false);
+  const [state, action, pending] = useActionState(async (prev: ActionState, fd: FormData) => {
+    const result = await addHeading(prev, fd);
+    if (result?.ok) setOpen(false);
+    return result;
+  }, undefined);
+  if (!open) {
+    return (
+      <button type="button" onClick={() => setOpen(true)} className="mt-3 text-sm text-stone-500 underline">
+        ➕ Add a section heading (like &quot;Music&quot; or &quot;Merch&quot;)
+      </button>
+    );
+  }
+  return (
+    <form action={action} className="mt-3 flex flex-wrap gap-2">
+      <input name="title" required maxLength={60} autoFocus placeholder="Heading (e.g. Merch)" className={`${input} min-w-0 flex-1`} />
+      <button disabled={pending} className={btn}>{pending ? "Adding…" : "Add heading"}</button>
+      <button type="button" onClick={() => setOpen(false)} className={ghost}>Cancel</button>
+      {state?.error && <p className="w-full text-sm text-red-600">{state.error}</p>}
+    </form>
+  );
+}
+
+function HeadingItem({ link, handle }: { link: Link; handle?: React.ReactNode }) {
+  const [editing, setEditing] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+  const [state, action, pending] = useActionState(async (prev: ActionState, fd: FormData) => {
+    const result = await updateHeading(prev, fd);
+    if (result?.ok) setEditing(false);
+    return result;
+  }, undefined);
+  return (
+    <div className="rounded-xl border-2 border-dashed border-stone-300 bg-stone-50 p-3">
+      <div className="flex items-center gap-3">
+        {handle}
+        {editing ? (
+          <form action={action} className="flex min-w-0 flex-1 flex-wrap gap-2">
+            <input type="hidden" name="id" value={link.id} />
+            <input name="title" defaultValue={link.title} required maxLength={60} autoFocus className={`${input} min-w-0 flex-1`} />
+            <button disabled={pending} className={btn}>Save</button>
+            <button type="button" onClick={() => setEditing(false)} className={ghost}>Cancel</button>
+            {state?.error && <p className="w-full text-sm text-red-600">{state.error}</p>}
+          </form>
+        ) : (
+          <>
+            <p className="min-w-0 flex-1 truncate text-sm font-bold uppercase tracking-widest text-stone-600">
+              <span className="mr-2 rounded bg-stone-200 px-1.5 py-0.5 text-[10px] font-medium normal-case tracking-normal text-stone-600">heading</span>
+              {link.title}
+            </p>
+            {confirming ? (
+              <>
+                <form action={deleteLink}>
+                  <input type="hidden" name="id" value={link.id} />
+                  <button className="rounded-lg bg-red-600 px-2 py-1 text-sm font-semibold text-white">Flush it</button>
+                </form>
+                <button onClick={() => setConfirming(false)} className={ghost}>Keep</button>
+              </>
+            ) : (
+              <>
+                <button onClick={() => setEditing(true)} className={ghost}>Edit</button>
+                <button onClick={() => setConfirming(true)} className={`${ghost} hover:border-red-600 hover:text-red-600`}>Delete</button>
+              </>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 const noopSubscribe = () => () => {};
 
 function scheduleLabel(l: Link) {
@@ -164,6 +236,11 @@ function scheduleLabel(l: Link) {
 }
 
 export function LinkItem({ link, handle }: { link: Link; handle?: React.ReactNode }) {
+  if (link.heading) return <HeadingItem link={link} handle={handle} />;
+  return <LinkRowItem link={link} handle={handle} />;
+}
+
+function LinkRowItem({ link, handle }: { link: Link; handle?: React.ReactNode }) {
   const [editing, setEditing] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [url, setUrl] = useState(link.url);

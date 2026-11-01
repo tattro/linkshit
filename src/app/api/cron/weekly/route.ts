@@ -81,7 +81,7 @@ async function sendReports(every: "week" | "month", base: string, cap: number) {
       })
       .from(links)
       .leftJoin(events, eq(events.linkId, links.id))
-      .where(and(eq(links.userId, u.id), isNull(links.deletedAt)))
+      .where(and(eq(links.userId, u.id), isNull(links.deletedAt), eq(links.heading, false)))
       .groupBy(links.id)
       .orderBy(sql`2 desc`, asc(links.position));
     const [{ subs }] = await db

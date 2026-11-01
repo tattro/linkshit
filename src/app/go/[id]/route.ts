@@ -35,7 +35,7 @@ export async function GET(req: Request, ctx: RouteContext<"/go/[id]">) {
     .select({
       url: links.url, userId: links.userId, bannedAt: users.bannedAt, startsAt: links.startsAt, endsAt: links.endsAt,
       openInApp: users.openInApp, deletedAt: links.deletedAt, offerId: links.offerId, offerActive: offers.active,
-      lockCode: links.lockCode, androidUrl: links.androidUrl, utm: users.utm, handle: users.handle,
+      lockCode: links.lockCode, androidUrl: links.androidUrl, heading: links.heading, utm: users.utm, handle: users.handle,
       pageLock: users.lockCode,
     })
     .from(links)
@@ -43,7 +43,7 @@ export async function GET(req: Request, ctx: RouteContext<"/go/[id]">) {
     .leftJoin(offers, eq(offers.id, links.offerId))
     .where(eq(links.id, linkId));
   const now = new Date();
-  if (!link || link.bannedAt || link.deletedAt || (link.offerId && !link.offerActive) || (link.startsAt && link.startsAt > now) || (link.endsAt && link.endsAt <= now)) return home;
+  if (!link || link.heading || link.bannedAt || link.deletedAt || (link.offerId && !link.offerActive) || (link.startsAt && link.startsAt > now) || (link.endsAt && link.endsAt <= now)) return home;
 
   // Locked link (or a link on a locked page): visitors type the code first
   const jar = req.headers.get("cookie") ?? "";

@@ -14,7 +14,7 @@ import { DashboardHeader } from "./DashboardHeader";
 import { LinkList } from "./LinkList";
 import { PageLockForm, RedirectForm, SeoForm, TrackingForm } from "./extras";
 import { QR_REFERRER, qrTarget } from "@/lib/qr";
-import { AccountSettings, AddLinkForm, AdvertiserOptIn, AvatarForm, BackgroundForm, DeleteAccountForm, DeletePageForm, Graveyard, HandleForm, LinktreeImport, SignupSettings, StealLook, TipsForm, LookForm, ProfileForm, ShareCard, SocialsForm, VerifyBanner } from "./editor";
+import { AccountSettings, AddHeadingForm, AddLinkForm, AdvertiserOptIn, AvatarForm, BackgroundForm, DeleteAccountForm, DeletePageForm, Graveyard, HandleForm, LinktreeImport, SignupSettings, StealLook, TipsForm, LookForm, ProfileForm, ShareCard, SocialsForm, VerifyBanner } from "./editor";
 
 export const metadata = { title: "Dashboard" };
 
@@ -82,6 +82,7 @@ export default async function Dashboard({ searchParams }: PageProps<"/dashboard"
 
           <Section title="Add a link">
             <AddLinkForm />
+            <AddHeadingForm />
             <LinktreeImport />
           </Section>
 
@@ -146,7 +147,7 @@ export default async function Dashboard({ searchParams }: PageProps<"/dashboard"
           <Section title="Power tools">
             <p className="-mt-2 mb-4 text-sm text-stone-500">The stuff Linktree charges up to $35 a month for. Free here, obviously.</p>
             <div className="space-y-6 [&>*+*]:border-t [&>*+*]:border-stone-200 [&>*+*]:pt-6">
-              <RedirectForm links={rows.filter((l) => !l.offerId).map((l) => ({ id: l.id, title: l.title }))} current={user.redirectLinkId} />
+              <RedirectForm links={rows.filter((l) => !l.offerId && !l.heading).map((l) => ({ id: l.id, title: l.title }))} current={user.redirectLinkId} />
               <PageLockForm code={user.lockCode} />
               <SeoForm title={user.seoTitle} description={user.seoDescription} />
               <TrackingForm metaPixel={user.metaPixel} googleAnalytics={user.googleAnalytics} tiktokPixel={user.tiktokPixel} utm={user.utm} />

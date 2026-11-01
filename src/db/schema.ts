@@ -204,6 +204,8 @@ export const links = pgTable(
     thumbVersion: integer("thumb_version").notNull().default(0),
     // Visitors type this code before the link opens
     lockCode: text("lock_code"),
+    // A section heading ("Music", "Merch") instead of a link; url is empty
+    heading: boolean("heading").notNull().default(false),
     // Shown under the button with a copy button; tapping the link copies it too
     discountCode: text("discount_code"),
     // Android visitors go here instead (e.g. Google Play when url is the App Store)
