@@ -87,7 +87,7 @@ export default async function Dashboard({ searchParams }: PageProps<"/dashboard"
           {!account.emailVerifiedAt && !verified && <VerifyBanner email={account.email ?? ""} />}
 
           <Section title="Add a link">
-            <AddLinkForm />
+            <AddLinkForm sections={rows.filter((l) => l.heading).map((l) => ({ id: l.id, title: l.title }))} />
             <AddHeadingForm />
             <LinktreeImport />
           </Section>

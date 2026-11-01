@@ -1,6 +1,6 @@
 "use server";
 
-import { and, eq, isNotNull, isNull, sql } from "drizzle-orm";
+import { and, asc, eq, isNotNull, isNull, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { avatars, backgrounds, db, linkThumbs, links, users, type Socials, type Style, type Tips } from "@/db";
 import { MAX_BACKUP_BYTES, type Backup, type BackupImage } from "@/lib/backup";
@@ -102,6 +102,47 @@ async function readLinkForm(formData: FormData) {
   return { value: { title, url, startsAt, endsAt, embed: embed && !lockCode, sensitive, spotlight, icon, lockCode, discountCode, androidUrl, countdown }, thumb, removeThumb: formData.get("removeThumb") === "on" } as const;
 }
 
+/** Which section a link sits in: the nearest heading above it, or "none". */
+function sectionOf(rows: { id: number; heading: boolean }[], id: number): string {
+  let current = "none";
+  for (const r of rows) {
+    if (r.id === id) return current;
+    if (r.heading) current = String(r.id);
+  }
+  return current;
+}
+
+/**
+ * Puts a link at the end of a section ("none" = the top group, above the first
+ * section). Does nothing if the link is already in that section.
+ */
+async function placeInSection(userId: number, linkId: number, raw: FormDataEntryValue | null) {
+  const target = String(raw ?? "");
+  if (!target) return;
+  const rows = await db
+    .select({ id: links.id, heading: links.heading })
+    .from(links)
+    .where(and(eq(links.userId, userId), isNull(links.deletedAt)))
+    .orderBy(asc(links.position), asc(links.id));
+  if (target !== "none" && !rows.some((r) => r.heading && String(r.id) === target)) return;
+  if (sectionOf(rows, linkId) === target) return;
+  const rest = rows.filter((r) => r.id !== linkId);
+  let at: number;
+  if (target === "none") {
+    at = rest.findIndex((r) => r.heading);
+  } else {
+    const h = rest.findIndex((r) => String(r.id) === target);
+    at = rest.findIndex((r, i) => i > h && r.heading);
+  }
+  if (at === -1) at = rest.length;
+  const ordered = [...rest.slice(0, at).map((r) => r.id), linkId, ...rest.slice(at).map((r) => r.id)];
+  await db.transaction(async (tx) => {
+    for (let k = 0; k < ordered.length; k++) {
+      await tx.update(links).set({ position: k }).where(and(eq(links.id, ordered[k]), eq(links.userId, userId)));
+    }
+  });
+}
+
 export async function addLink(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const user = await requireUser();
   if (!(await rateLimit(`links:user:${user.id}`, 120, 60 * 60))) return { error: TOO_MANY };
@@ -116,6 +157,7 @@ export async function addLink(_prev: ActionState, formData: FormData): Promise<A
 
   const [row] = await db.insert(links).values({ userId: user.id, position: max + 1, ...form.value }).returning({ id: links.id });
   await saveThumb(row.id, form.thumb, false);
+  await placeInSection(user.id, row.id, formData.get("section"));
   refresh(user.handle);
   return { ok: true };
 }
@@ -127,7 +169,10 @@ export async function updateLink(_prev: ActionState, formData: FormData): Promis
   const form = await readLinkForm(formData);
   if ("error" in form) return { error: form.error };
   const [row] = await db.update(links).set(form.value).where(and(eq(links.id, id), eq(links.userId, user.id), eq(links.heading, false))).returning({ id: links.id });
-  if (row) await saveThumb(row.id, form.thumb, form.removeThumb);
+  if (row) {
+    await saveThumb(row.id, form.thumb, form.removeThumb);
+    await placeInSection(user.id, row.id, formData.get("section"));
+  }
   refresh(user.handle);
   return { ok: true };
 }

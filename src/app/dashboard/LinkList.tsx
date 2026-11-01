@@ -6,9 +6,9 @@ import { CSS } from "@dnd-kit/utilities";
 import { startTransition, useOptimistic } from "react";
 import { reorderLinks } from "@/app/actions/links";
 import type { Link } from "@/db/schema";
-import { LinkItem } from "./editor";
+import { LinkItem, type SectionOption } from "./editor";
 
-function SortableLink({ link, nested }: { link: Link; nested: boolean }) {
+function SortableLink({ link, nested, sections, section }: { link: Link; nested: boolean; sections: SectionOption[]; section: string }) {
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({ id: link.id });
   return (
     <li
@@ -19,6 +19,8 @@ function SortableLink({ link, nested }: { link: Link; nested: boolean }) {
     >
       <LinkItem
         link={link}
+        sections={sections}
+        section={section}
         handle={
           <button
             ref={setActivatorNodeRef}
@@ -45,6 +47,8 @@ export function LinkList({ links }: { links: Link[] }) {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
+  const sections = ordered.filter((l) => l.heading).map((l) => ({ id: l.id, title: l.title }));
+
   function onDragEnd({ active, over }: DragEndEvent) {
     if (!over || active.id === over.id) return;
     const from = ordered.findIndex((l) => l.id === active.id);
@@ -60,9 +64,18 @@ export function LinkList({ links }: { links: Link[] }) {
     <DndContext id="links" sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
       <SortableContext items={ordered.map((l) => l.id)} strategy={verticalListSortingStrategy}>
         <ul className="space-y-3">
-          {ordered.map((l, i) => (
-            <SortableLink key={l.id} link={l} nested={!l.heading && !l.offerId && ordered.slice(0, i).some((x) => x.heading)} />
-          ))}
+          {ordered.map((l, i) => {
+            const above = ordered.slice(0, i).findLast((x) => x.heading);
+            return (
+              <SortableLink
+                key={l.id}
+                link={l}
+                nested={!l.heading && !l.offerId && Boolean(above)}
+                sections={sections}
+                section={above ? String(above.id) : "none"}
+              />
+            );
+          })}
         </ul>
       </SortableContext>
     </DndContext>

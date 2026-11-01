@@ -44,7 +44,7 @@ function LinkExtras({ link, url }: { link?: Link; url: string }) {
   const [open, setOpen] = useState(Boolean(link?.startsAt || link?.endsAt || link?.lockCode || link?.androidUrl || link?.thumbVersion));
   const canEmbed = url.trim() !== "" && embedFor(/^https?:\/\//i.test(url.trim()) ? url.trim() : `https://${url.trim()}`) !== null;
   return (
-    <div className="sm:col-span-3">
+    <div className="sm:col-span-full">
       <TzInput />
       {canEmbed && (
         <label className="mb-2 flex items-center gap-2 text-sm">
@@ -138,7 +138,25 @@ function LinkExtras({ link, url }: { link?: Link; url: string }) {
   );
 }
 
-export function AddLinkForm() {
+export type SectionOption = { id: number; title: string };
+
+/** "Which section does this link go in?" Only shown once the page has sections. */
+function SectionPicker({ sections, current, className = "" }: { sections: SectionOption[]; current: string; className?: string }) {
+  if (sections.length === 0) return null;
+  return (
+    <label className={`block min-w-0 ${className}`}>
+      <span className="text-sm font-semibold">Section</span>
+      <select name="section" defaultValue={current} className={`${input} mt-1`}>
+        <option value="none">No section (top of my page)</option>
+        {sections.map((s) => (
+          <option key={s.id} value={s.id}>{s.title}</option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
+export function AddLinkForm({ sections = [] }: { sections?: SectionOption[] }) {
   const [state, action, pending] = useActionState(addLink, undefined);
   const [url, setUrl] = useState("");
   const [key, setKey] = useState(0);
@@ -149,7 +167,7 @@ export function AddLinkForm() {
     if (state?.ok) { setUrl(""); setKey((k) => k + 1); }
   }
   return (
-    <form key={key} ref={formRef} action={action} className="grid gap-3 sm:grid-cols-[1fr_1.5fr_auto] sm:items-end">
+    <form key={key} ref={formRef} action={action} className="grid gap-3 sm:grid-cols-[1fr_1.5fr] sm:items-end">
       <label className="block min-w-0">
         <span className="text-sm font-semibold">Title</span>
         <input name="title" required maxLength={100} placeholder="e.g. My website" className={`${input} mt-1`} />
@@ -158,9 +176,10 @@ export function AddLinkForm() {
         <span className="text-sm font-semibold">Link</span>
         <input name="url" inputMode="url" autoCapitalize="off" autoCorrect="off" placeholder="e.g. morthvargr.com" value={url} onChange={(e) => setUrl(e.target.value)} className={`${input} mt-1`} />
       </label>
-      <button disabled={pending} className={btn}>{pending ? "Adding…" : "Add link"}</button>
+      <SectionPicker sections={sections} current={String(sections.at(-1)?.id ?? "none")} className="sm:col-span-2" />
+      <button disabled={pending} className={`${btn} sm:col-span-2 sm:justify-self-start`}>{pending ? "Adding…" : "Add link"}</button>
+      {state?.error && <p className="text-sm font-semibold text-red-600 sm:col-span-2">{state.error}</p>}
       <LinkExtras url={url} />
-      {state?.error && <p className="text-sm text-red-600 sm:col-span-3">{state.error}</p>}
     </form>
   );
 }
@@ -182,7 +201,7 @@ export function AddHeadingForm() {
   }
   return (
     <form action={action} className="mt-4 flex flex-wrap gap-2 rounded-xl border-2 border-dashed border-stone-300 p-3">
-      <p className="w-full text-sm text-stone-500">A section is a title on your page. It goes to the bottom of your list. Drag links under it to group them.</p>
+      <p className="w-full text-sm text-stone-500">A section is a title on your page, like &quot;Music&quot;. Once it exists, pick it in the Section menu when you add a link, or drag links under it.</p>
       <input name="title" required maxLength={60} autoFocus placeholder="e.g. Music projects" aria-label="Section title" className={`${input} min-w-0 flex-1`} />
       <button disabled={pending} className={btn}>{pending ? "Adding…" : "Add section"}</button>
       <button type="button" onClick={() => setOpen(false)} className={ghost}>Cancel</button>
@@ -277,12 +296,12 @@ function scheduleLabel(l: Link) {
   return null;
 }
 
-export function LinkItem({ link, handle }: { link: Link; handle?: React.ReactNode }) {
+export function LinkItem({ link, handle, sections = [], section = "none" }: { link: Link; handle?: React.ReactNode; sections?: SectionOption[]; section?: string }) {
   if (link.heading) return <HeadingItem link={link} handle={handle} />;
-  return <LinkRowItem link={link} handle={handle} />;
+  return <LinkRowItem link={link} handle={handle} sections={sections} section={section} />;
 }
 
-function LinkRowItem({ link, handle }: { link: Link; handle?: React.ReactNode }) {
+function LinkRowItem({ link, handle, sections, section }: { link: Link; handle?: React.ReactNode; sections: SectionOption[]; section: string }) {
   const [editing, setEditing] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [url, setUrl] = useState(link.url);
@@ -302,6 +321,7 @@ function LinkRowItem({ link, handle }: { link: Link; handle?: React.ReactNode })
           <input type="hidden" name="id" value={link.id} />
           <input name="title" defaultValue={link.title} required maxLength={100} className={input} />
           <input name="url" value={url} onChange={(e) => setUrl(e.target.value)} required className={input} />
+          {!link.offerId && <SectionPicker sections={sections} current={section} />}
           <LinkExtras link={link} url={url} />
           {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
           <div className="flex gap-2">

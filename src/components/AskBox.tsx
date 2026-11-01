@@ -31,7 +31,7 @@ export function AskBox({ userId, prompt, buttonClass, buttonStyle, preview }: {
     );
   }
   return (
-    <form action={action} className="space-y-2 rounded-xl bg-current/10 p-4">
+    <form action={action} className="space-y-2 rounded-xl tint p-4">
       <p className="text-center font-semibold">{title}</p>
       <p className="text-center text-xs opacity-70">Totally anonymous. It only shows up here if I answer it.</p>
       <input type="hidden" name="userId" value={userId} />

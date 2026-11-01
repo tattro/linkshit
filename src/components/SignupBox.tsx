@@ -13,10 +13,10 @@ export function SignupBox({ userId, prompt, buttonClass, buttonStyle, preview }:
 }) {
   const [state, action, pending] = useActionState(subscribe, undefined);
   if (state?.ok) {
-    return <p className="rounded-xl bg-current/10 px-5 py-4 text-center font-semibold">You&apos;re on the list. 🎉</p>;
+    return <p className="rounded-xl tint px-5 py-4 text-center font-semibold">You&apos;re on the list. 🎉</p>;
   }
   return (
-    <form action={action} className="rounded-xl bg-current/10 p-4">
+    <form action={action} className="rounded-xl tint p-4">
       <p className="mb-3 text-center font-semibold">{prompt || "Join my email list"}</p>
       <input type="hidden" name="userId" value={userId} />
       <input type="text" name="company" tabIndex={-1} autoComplete="off" className="hidden" aria-hidden />
