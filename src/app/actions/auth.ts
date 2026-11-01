@@ -87,7 +87,7 @@ export async function requestPasswordReset(_prev: FormState, formData: FormData)
   const [user] = await db.select().from(users).where(eq(users.email, email));
   if (user && !user.bannedAt) await sendResetEmail(user);
   // Same answer either way, so this can't be used to find out who has an account
-  return { ok: "If that email has an account, a reset link is on its way. Check your spam folder too." };
+  return { ok: "If that email has an account, a reset link is on its way. Check spam too. Sh.it happens." };
 }
 
 export async function resetPassword(_prev: FormState, formData: FormData): Promise<FormState> {
@@ -96,7 +96,7 @@ export async function resetPassword(_prev: FormState, formData: FormData): Promi
   if (!parsed.success) return { error: parsed.error.issues[0].message };
   if (parsed.data !== formData.get("confirm")) return { error: "Those passwords don't match." };
   const userId = await consumeEmailToken(token, "reset");
-  if (!userId) return { error: "This reset link has expired or was already used. Request a new one." };
+  if (!userId) return { error: "That link already got flushed (expired or used). Request a new one." };
   const passwordHash = await bcrypt.hash(parsed.data, 12);
   // Resetting proves they own the inbox, so count it as verified too
   await db.update(users).set({ passwordHash, emailVerifiedAt: new Date() }).where(eq(users.id, userId));

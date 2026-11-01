@@ -105,20 +105,20 @@ export async function sendVerificationEmail(user: Pick<User, "id" | "email" | "h
   const token = await createEmailToken(user.id, "verify");
   const url = `${await siteUrl()}/verify?token=${token}`;
   const { text, html } = buttonEmail(
-    `Confirm your email, @${user.handle}`,
-    "Click below so we know this inbox is really yours. It also lets you reset your password if you ever forget it.",
-    "Confirm my email", url,
+    `Is this really you, @${user.handle}?`,
+    "Prove this inbox is yours and not some sh.itty bot's. One click and you're legit. (It also means you can reset your password when you inevitably forget it.)",
+    "Yep, it's me", url,
   );
-  return sendEmail(user.email, "Confirm your linksh.it email", text, html);
+  return sendEmail(user.email, "Confirm your linksh.it email (it's not spam, promise)", text, html);
 }
 
 export async function sendResetEmail(user: Pick<User, "id" | "email" | "handle">) {
   const token = await createEmailToken(user.id, "reset");
   const url = `${await siteUrl()}/reset?token=${token}`;
   const { text, html } = buttonEmail(
-    "Reset your password",
-    `Someone (hopefully you) asked to reset the password for linksh.it/${user.handle}. This link works for one hour.`,
-    "Choose a new password", url,
+    "Ahh, sh.it. You forgot your password again, didn't you?",
+    `No judgement. Well, a little judgement. Hit the button to pick a new password for linksh.it/${user.handle}. This link self-destructs in one hour.`,
+    "Fix my mess", url,
   );
-  return sendEmail(user.email, "Reset your linksh.it password", text, html);
+  return sendEmail(user.email, "Ahh, sh.it. Password reset inside", text, html);
 }

@@ -10,9 +10,9 @@ export function ResetForm({ token }: { token: string }) {
     <form action={action} className="space-y-3">
       <input type="hidden" name="token" value={token} />
       <input name="password" type="password" required minLength={8} placeholder="New password (8+ characters)" className={inputCls} autoFocus />
-      <input name="confirm" type="password" required minLength={8} placeholder="Same again" className={inputCls} />
+      <input name="confirm" type="password" required minLength={8} placeholder="Same again (no typos this time)" className={inputCls} />
       {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
-      <button disabled={pending} className={buttonCls}>{pending ? "Saving…" : "Set new password"}</button>
+      <button disabled={pending} className={buttonCls}>{pending ? "Saving…" : "Save it (and maybe write it down)"}</button>
     </form>
   );
 }

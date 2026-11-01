@@ -48,7 +48,7 @@ export default async function Dashboard({ searchParams }: PageProps<"/dashboard"
             </div>
           )}
           {verified && <div className="rounded-2xl border-2 border-stone-900 bg-lime-300 p-4 font-bold">Email confirmed. You&apos;re legit. ✅</div>}
-          {reset && <div className="rounded-2xl border-2 border-stone-900 bg-lime-300 p-4 font-bold">Password changed, and you&apos;re logged in.</div>}
+          {reset && <div className="rounded-2xl border-2 border-stone-900 bg-lime-300 p-4 font-bold">New password saved and you&apos;re back in. Try not to forget this one. 🧻</div>}
           {!user.emailVerifiedAt && !verified && <VerifyBanner email={user.email} />}
 
           <Section title="Add a link">

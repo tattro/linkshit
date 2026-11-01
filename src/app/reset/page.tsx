@@ -9,12 +9,12 @@ export default async function ResetPage({ searchParams }: PageProps<"/reset">) {
   const { token } = await searchParams;
   const valid = typeof token === "string" && (await peekEmailToken(token, "reset"));
   return (
-    <AuthShell title="Choose a new password">
+    <AuthShell title="Pick a new password">
       {valid ? (
         <ResetForm token={token} />
       ) : (
         <p className="text-sm text-stone-600">
-          This reset link has expired or was already used.{" "}
+          That link already got flushed (expired or used).{" "}
           <Link href="/forgot" className="font-semibold text-stone-900 underline">Get a new one</Link>.
         </p>
       )}
