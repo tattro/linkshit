@@ -2,9 +2,11 @@
 
 import { and, asc, eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
-import { db, links, users } from "@/db";
+import { db, links } from "@/db";
 import { requireUser } from "@/lib/auth";
-import { THEMES } from "@/lib/themes";
+import { embedFor } from "@/lib/embeds";
+import { rateLimit, TOO_MANY } from "@/lib/ratelimit";
+import { unsafeReason } from "@/lib/safety";
 import { normalizeUrl } from "@/lib/urls";
 
 export type ActionState = { error?: string; ok?: boolean } | undefined;
@@ -16,12 +18,34 @@ function refresh(handle: string) {
   revalidatePath(`/${handle}`);
 }
 
-export async function addLink(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  const user = await requireUser();
+/** datetime-local input → Date (interpreted using the browser's offset we send along). */
+function parseWhen(value: FormDataEntryValue | null, tzOffset: number): Date | null {
+  const v = String(value ?? "").trim();
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(v)) return null;
+  const asUtc = Date.parse(`${v}:00Z`);
+  return Number.isNaN(asUtc) ? null : new Date(asUtc + tzOffset * 60_000);
+}
+
+async function readLinkForm(formData: FormData) {
   const title = String(formData.get("title") ?? "").trim().slice(0, 100);
   const url = normalizeUrl(String(formData.get("url") ?? ""));
-  if (!title) return { error: "Give the link a title." };
-  if (!url) return { error: "That doesn't look like a valid web address." };
+  if (!title) return { error: "Give the link a title." } as const;
+  if (!url) return { error: "That doesn't look like a valid web address." } as const;
+  const unsafe = await unsafeReason(url);
+  if (unsafe) return { error: unsafe } as const;
+  const tz = Number(formData.get("tz") ?? 0) || 0;
+  const startsAt = parseWhen(formData.get("startsAt"), tz);
+  const endsAt = parseWhen(formData.get("endsAt"), tz);
+  if (startsAt && endsAt && endsAt <= startsAt) return { error: "The end time needs to be after the start time." } as const;
+  const embed = formData.get("embed") === "on" && embedFor(url) !== null;
+  return { value: { title, url, startsAt, endsAt, embed } } as const;
+}
+
+export async function addLink(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const user = await requireUser();
+  if (!(await rateLimit(`links:user:${user.id}`, 120, 60 * 60))) return { error: TOO_MANY };
+  const form = await readLinkForm(formData);
+  if ("error" in form) return { error: form.error };
 
   const [{ count, max }] = await db
     .select({ count: sql<number>`count(*)::int`, max: sql<number>`coalesce(max(${links.position}), -1)::int` })
@@ -29,19 +53,18 @@ export async function addLink(_prev: ActionState, formData: FormData): Promise<A
     .where(eq(links.userId, user.id));
   if (count >= MAX_LINKS) return { error: `You've hit the ${MAX_LINKS} link limit. Impressive.` };
 
-  await db.insert(links).values({ userId: user.id, title, url, position: max + 1 });
+  await db.insert(links).values({ userId: user.id, position: max + 1, ...form.value });
   refresh(user.handle);
   return { ok: true };
 }
 
 export async function updateLink(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const user = await requireUser();
+  if (!(await rateLimit(`links:user:${user.id}`, 120, 60 * 60))) return { error: TOO_MANY };
   const id = Number(formData.get("id"));
-  const title = String(formData.get("title") ?? "").trim().slice(0, 100);
-  const url = normalizeUrl(String(formData.get("url") ?? ""));
-  if (!title) return { error: "Title can't be empty." };
-  if (!url) return { error: "That doesn't look like a valid web address." };
-  await db.update(links).set({ title, url }).where(and(eq(links.id, id), eq(links.userId, user.id)));
+  const form = await readLinkForm(formData);
+  if ("error" in form) return { error: form.error };
+  await db.update(links).set(form.value).where(and(eq(links.id, id), eq(links.userId, user.id)));
   refresh(user.handle);
   return { ok: true };
 }
@@ -72,15 +95,4 @@ export async function moveLink(formData: FormData) {
     }
   });
   refresh(user.handle);
-}
-
-export async function updateProfile(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  const user = await requireUser();
-  const displayName = String(formData.get("displayName") ?? "").trim().slice(0, 60);
-  const bio = String(formData.get("bio") ?? "").trim().slice(0, 160);
-  const themeRaw = String(formData.get("theme") ?? "");
-  const theme = THEMES.some((t) => t.id === themeRaw) ? themeRaw : user.theme;
-  await db.update(users).set({ displayName, bio, theme }).where(eq(users.id, user.id));
-  refresh(user.handle);
-  return { ok: true };
 }

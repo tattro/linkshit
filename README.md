@@ -12,8 +12,21 @@ All your shit. One link. Users claim a handle and get a public page at `linksh.i
 
 - Claim a handle with a live availability check; reserved route names are blocked
 - Add, edit, delete and reorder links; only http(s) and mailto URLs are accepted
-- Display name, bio and five themes, with a live phone preview in the dashboard
-- Per-link click counting via `/go/<id>` redirects
+- Schedule links (show from / hide after) and show YouTube, Spotify or SoundCloud links as embedded players
+- Profile photo (cropped and shrunk in the browser, stored in Postgres), display name and bio
+- Social icons row for 16 platforms
+- Five themes plus custom colours, button shapes and fonts, with a live phone preview
+- "Steal colours from my photo": builds a readable colour scheme from the profile picture
+- On phones, YouTube, Spotify, Instagram and X links open in their apps (Android intents, iOS app schemes with a web fallback)
+- Analytics: page views and clicks per day, top links, referrers and countries
+- Share card with QR code, plus generated link-preview images for every page
+- Forgot-password and email verification via Resend
+- Rate limiting on login, signup, resets and edits; a signup honeypot; unsafe-link blocking (with optional Google Safe Browsing)
+- Admin panel at `/admin` to search accounts and ban or unban them
+
+## Environment variables
+
+See `.env.example`. Only `DATABASE_URL` is required. Set `ADMIN_EMAILS` to get the admin panel and `RESEND_API_KEY` to actually send emails.
 
 ## Running locally
 

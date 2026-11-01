@@ -8,6 +8,20 @@
       "when": 1793486243782,
       "tag": "0000_cynical_darkstar",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1793491456967,
+      "tag": "0001_features_v2",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793492397946,
+      "tag": "0002_open_in_app",
+      "breakpoints": true
     }
   ]
 }
