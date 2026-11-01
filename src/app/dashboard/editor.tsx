@@ -13,6 +13,7 @@ import { stealLook, undoSteal } from "@/app/actions/steal";
 import { setAdvertiserOptIn } from "@/app/actions/marketplace";
 import type { Link, Socials, Style, Tips } from "@/db/schema";
 import { setLookDraft } from "./lookDraft";
+import { AvatarCropper } from "./AvatarCropper";
 import { embedFor } from "@/lib/embeds";
 import { TIP_PROVIDERS } from "@/lib/tips";
 import { FONTS, parseStyle, GRADIENT_DIRS, GRADIENT_PRESETS, SHAPES, gradientCss, hasCustomColors } from "@/lib/style";
@@ -254,42 +255,31 @@ export function ProfileForm({ user }: { user: { displayName: string; bio: string
   );
 }
 
-/** Crops to a centred square and shrinks to 400px WebP in the browser before upload. */
-async function shrinkImage(file: File): Promise<Blob> {
-  const bitmap = await createImageBitmap(file);
-  const size = Math.min(bitmap.width, bitmap.height);
-  const canvas = document.createElement("canvas");
-  canvas.width = canvas.height = Math.min(400, size);
-  const ctx = canvas.getContext("2d")!;
-  ctx.drawImage(bitmap, (bitmap.width - size) / 2, (bitmap.height - size) / 2, size, size, 0, 0, canvas.width, canvas.height);
-  return new Promise((resolve, reject) =>
-    canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("encode failed"))), "image/webp", 0.85),
-  );
-}
-
+/** Profile photo: pick an image, crop it in the browser, upload a 400px WebP. */
 export function AvatarForm({ current, initial }: { current: string | null; initial: string }) {
   const [state, action, pending] = useActionState(uploadAvatar, undefined);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  async function onPick(e: React.ChangeEvent<HTMLInputElement>) {
+  const [cropping, setCropping] = useState<File | null>(null);
+
+  function onPick(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
     setError(null);
     if (!file.type.startsWith("image/")) return setError("That's not an image.");
+    setCropping(file);
+  }
+
+  function upload(blob: Blob) {
+    setCropping(null);
     setBusy(true);
-    try {
-      const blob = await shrinkImage(file);
-      const fd = new FormData();
-      fd.set("avatar", new File([blob], "avatar.webp", { type: "image/webp" }));
-      startTransition(() => action(fd));
-    } catch {
-      setError("Couldn't read that image. Try a JPG or PNG.");
-    } finally {
-      setBusy(false);
-    }
+    const fd = new FormData();
+    fd.set("avatar", new File([blob], "avatar.webp", { type: "image/webp" }));
+    startTransition(() => action(fd));
+    setBusy(false);
   }
 
   return (
@@ -314,6 +304,7 @@ export function AvatarForm({ current, initial }: { current: string | null; initi
         </div>
         {(error || state?.error) && <p className="text-sm text-red-600">{error ?? state?.error}</p>}
       </div>
+      {cropping && <AvatarCropper file={cropping} onCancel={() => setCropping(null)} onDone={upload} />}
     </div>
   );
 }
