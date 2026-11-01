@@ -9,6 +9,7 @@ import {
   consumeEmailToken, createSession, destroySession, requireUser, sendResetEmail, sendVerificationEmail,
 } from "@/lib/auth";
 import { handleProblem, normalizeHandle } from "@/lib/handles";
+import { handleTaken } from "@/lib/handleTaken";
 import { rateLimit, TOO_MANY } from "@/lib/ratelimit";
 import { clientIp } from "@/lib/request";
 
@@ -37,8 +38,7 @@ export async function signup(_prev: FormState, formData: FormData): Promise<Form
 
   const [emailTaken] = await db.select({ id: users.id }).from(users).where(eq(users.email, parsed.data.email));
   if (emailTaken) return { error: "There's already an account with that email. Log in instead?", fields };
-  const [handleTaken] = await db.select({ id: users.id }).from(users).where(eq(users.handle, handle));
-  if (handleTaken) return { error: `Someone already claimed linksh.it/${handle}.`, fields };
+  if (await handleTaken(handle)) return { error: `Someone already claimed linksh.it/${handle}.`, fields };
 
   const passwordHash = await bcrypt.hash(parsed.data.password, 12);
   let user: { id: number; email: string; handle: string };

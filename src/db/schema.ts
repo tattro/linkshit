@@ -55,6 +55,7 @@ export const users = pgTable(
     signupPrompt: text("signup_prompt").notNull().default(""),
     // e.g. "links.example.com"; serves this user's page at that domain's root
     customDomain: text("custom_domain"),
+    weeklyEmail: boolean("weekly_email").notNull().default(true),
     emailVerifiedAt: timestamp("email_verified_at", { withTimezone: true }),
     isAdmin: boolean("is_admin").notNull().default(false),
     bannedAt: timestamp("banned_at", { withTimezone: true }),
@@ -134,6 +135,8 @@ export const links = pgTable(
     spotlight: boolean("spotlight").notNull().default(false),
     // Optional emoji shown on the button; brand icons are picked automatically
     icon: text("icon").notNull().default(""),
+    // Set when "flushed": the link moves to the graveyard and can be revived
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
     // Only visible between these times when set
     startsAt: timestamp("starts_at", { withTimezone: true }),
     endsAt: timestamp("ends_at", { withTimezone: true }),
@@ -185,4 +188,17 @@ export const subscribers = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [uniqueIndex("subscribers_user_email_idx").on(t.userId, t.email)],
+);
+
+/** Old handles keep redirecting to the new one for a while after a rename. */
+export const handleRedirects = pgTable(
+  "handle_redirects",
+  {
+    handle: text("handle").primaryKey(),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("handle_redirects_user_idx").on(t.userId)],
 );

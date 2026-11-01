@@ -11,7 +11,8 @@ import { PreviewDock } from "./PreviewDock";
 import { DomainForm } from "./DomainForm";
 import { domainsEnabled, isApex } from "@/lib/domains";
 import { DashboardHeader } from "./DashboardHeader";
-import { AddLinkForm, AvatarForm, BackgroundForm, SignupSettings, TipsForm, LinkItem, LookForm, ProfileForm, ShareCard, SocialsForm, VerifyBanner } from "./editor";
+import { LinkList } from "./LinkList";
+import { AddLinkForm, AvatarForm, BackgroundForm, DeleteAccountForm, Graveyard, HandleForm, LinktreeImport, SignupSettings, TipsForm, LookForm, ProfileForm, ShareCard, SocialsForm, VerifyBanner } from "./editor";
 
 export const metadata = { title: "Dashboard" };
 
@@ -30,11 +31,13 @@ function Section({ title, children, aside }: { title: string; children: React.Re
 export default async function Dashboard({ searchParams }: PageProps<"/dashboard">) {
   const user = await requireUser();
   const { welcome, verified, reset } = await searchParams;
-  const rows = await db
+  const allRows = await db
     .select()
     .from(links)
     .where(eq(links.userId, user.id))
     .orderBy(asc(links.position), asc(links.id));
+  const rows = allRows.filter((l) => !l.deletedAt);
+  const graves = allRows.filter((l) => l.deletedAt).sort((a, b) => +b.deletedAt! - +a.deletedAt!);
   const totalClicks = rows.reduce((n, l) => n + l.clicks, 0);
   const [{ subs }] = await db.select({ subs: sql<number>`count(*)::int` }).from(subscribers).where(eq(subscribers.userId, user.id));
   const pageUrl = `${await siteUrl()}/${user.handle}`;
@@ -59,6 +62,7 @@ export default async function Dashboard({ searchParams }: PageProps<"/dashboard"
 
           <Section title="Add a link">
             <AddLinkForm />
+            <LinktreeImport />
           </Section>
 
           <Section
@@ -68,18 +72,16 @@ export default async function Dashboard({ searchParams }: PageProps<"/dashboard"
             {rows.length === 0 ? (
               <p className="text-stone-500">No links yet. Your page is looking pretty empty.</p>
             ) : (
-              <ul className="space-y-3">
-                {rows.map((l, i) => (
-                  <LinkItem key={l.id} link={l} first={i === 0} last={i === rows.length - 1} />
-                ))}
-              </ul>
+              <LinkList links={rows} />
             )}
+            <Graveyard links={graves} />
           </Section>
 
           <Section title="Profile">
             <div className="space-y-6">
               <AvatarForm current={avatarUrl(user)} initial={(user.displayName || user.handle).slice(0, 1)} />
-              <ProfileForm user={{ displayName: user.displayName, bio: user.bio }} />
+              <HandleForm handle={user.handle} />
+              <ProfileForm user={{ displayName: user.displayName, bio: user.bio, weeklyEmail: user.weeklyEmail }} />
             </div>
           </Section>
 
@@ -114,6 +116,10 @@ export default async function Dashboard({ searchParams }: PageProps<"/dashboard"
 
           <Section title="Share">
             <ShareCard url={pageUrl} qrSvg={qrSvg} />
+          </Section>
+
+          <Section title="Danger zone">
+            <DeleteAccountForm handle={user.handle} />
           </Section>
         </div>
 
