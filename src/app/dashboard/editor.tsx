@@ -21,7 +21,7 @@ import { TIP_PROVIDERS } from "@/lib/tips";
 import { FONTS, parseStyle, GRADIENT_DIRS, GRADIENT_PRESETS, SHAPES, gradientCss, hasCustomColors } from "@/lib/style";
 import { THEMES } from "@/lib/themes";
 
-export const input = "w-full rounded-lg border-2 border-stone-300 bg-white px-3 py-2 outline-none focus:border-stone-900";
+export const input = "w-full rounded-lg border-2 border-stone-300 bg-white px-3 py-2 outline-none placeholder:italic placeholder:text-stone-400 focus:border-stone-900";
 export const btn = "rounded-lg bg-stone-900 px-4 py-2 font-semibold text-white hover:bg-lime-500 hover:text-stone-900 disabled:opacity-50";
 export const ghost = "rounded-lg border-2 border-stone-300 px-2 py-1 text-sm hover:border-stone-900 disabled:opacity-30";
 
@@ -149,10 +149,16 @@ export function AddLinkForm() {
     if (state?.ok) { setUrl(""); setKey((k) => k + 1); }
   }
   return (
-    <form key={key} ref={formRef} action={action} className="grid gap-3 sm:grid-cols-[1fr_1.5fr_auto]">
-      <input name="title" required maxLength={100} placeholder="Title (e.g. My Instagram)" className={input} />
-      <input name="url" required placeholder="instagram.com/you" value={url} onChange={(e) => setUrl(e.target.value)} className={input} />
-      <button disabled={pending} className={btn}>{pending ? "Adding…" : "Add"}</button>
+    <form key={key} ref={formRef} action={action} className="grid gap-3 sm:grid-cols-[1fr_1.5fr_auto] sm:items-end">
+      <label className="block min-w-0">
+        <span className="text-sm font-semibold">Title</span>
+        <input name="title" required maxLength={100} placeholder="e.g. My website" className={`${input} mt-1`} />
+      </label>
+      <label className="block min-w-0">
+        <span className="text-sm font-semibold">Link</span>
+        <input name="url" inputMode="url" autoCapitalize="off" autoCorrect="off" placeholder="e.g. morthvargr.com" value={url} onChange={(e) => setUrl(e.target.value)} className={`${input} mt-1`} />
+      </label>
+      <button disabled={pending} className={btn}>{pending ? "Adding…" : "Add link"}</button>
       <LinkExtras url={url} />
       {state?.error && <p className="text-sm text-red-600 sm:col-span-3">{state.error}</p>}
     </form>
@@ -169,15 +175,16 @@ export function AddHeadingForm() {
   }, undefined);
   if (!open) {
     return (
-      <button type="button" onClick={() => setOpen(true)} className="mt-3 text-sm text-stone-500 underline">
-        ➕ Add a section heading (like &quot;Music&quot; or &quot;Merch&quot;)
+      <button type="button" onClick={() => setOpen(true)} className={`${ghost} mt-4 w-full border-dashed py-2.5 font-semibold`}>
+        ➕ Add a section (like &quot;Music&quot; or &quot;Projects&quot;)
       </button>
     );
   }
   return (
-    <form action={action} className="mt-3 flex flex-wrap gap-2">
-      <input name="title" required maxLength={60} autoFocus placeholder="Heading (e.g. Merch)" className={`${input} min-w-0 flex-1`} />
-      <button disabled={pending} className={btn}>{pending ? "Adding…" : "Add heading"}</button>
+    <form action={action} className="mt-4 flex flex-wrap gap-2 rounded-xl border-2 border-dashed border-stone-300 p-3">
+      <p className="w-full text-sm text-stone-500">A section is a title on your page. It goes to the bottom of your list. Drag links under it to group them.</p>
+      <input name="title" required maxLength={60} autoFocus placeholder="e.g. Music projects" aria-label="Section title" className={`${input} min-w-0 flex-1`} />
+      <button disabled={pending} className={btn}>{pending ? "Adding…" : "Add section"}</button>
       <button type="button" onClick={() => setOpen(false)} className={ghost}>Cancel</button>
       {state?.error && <p className="w-full text-sm text-red-600">{state.error}</p>}
     </form>
@@ -207,7 +214,7 @@ function HeadingItem({ link, handle }: { link: Link; handle?: React.ReactNode })
         ) : (
           <>
             <p className="min-w-0 flex-1 truncate text-sm font-bold uppercase tracking-widest text-stone-600">
-              <span className="mr-2 rounded bg-stone-200 px-1.5 py-0.5 text-[10px] font-medium normal-case tracking-normal text-stone-600">heading</span>
+              <span className="mr-2 rounded bg-stone-200 px-1.5 py-0.5 text-[10px] font-medium normal-case tracking-normal text-stone-600">section</span>
               {link.title}
             </p>
             {confirming ? (

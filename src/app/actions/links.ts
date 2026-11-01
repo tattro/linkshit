@@ -69,8 +69,12 @@ async function saveThumb(linkId: number, thumb: { data: Buffer; contentType: str
 
 async function readLinkForm(formData: FormData) {
   const title = String(formData.get("title") ?? "").trim().slice(0, 100);
-  const url = normalizeUrl(String(formData.get("url") ?? ""));
+  let rawUrl = String(formData.get("url") ?? "").trim();
   if (!title) return { error: "Give the link a title." } as const;
+  // Typed the web address into the title box and left the link empty: use it as the link
+  if (!rawUrl && /^\S+\.[a-z]{2,}(\/\S*)?$/i.test(title)) rawUrl = title;
+  if (!rawUrl) return { error: "Put the web address in the Link box (e.g. morthvargr.com)." } as const;
+  const url = normalizeUrl(rawUrl);
   if (!url) return { error: "That doesn't look like a valid web address." } as const;
   const unsafe = await unsafeReason(url);
   if (unsafe) return { error: unsafe } as const;

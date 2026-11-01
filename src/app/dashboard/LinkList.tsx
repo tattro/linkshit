@@ -8,13 +8,14 @@ import { reorderLinks } from "@/app/actions/links";
 import type { Link } from "@/db/schema";
 import { LinkItem } from "./editor";
 
-function SortableLink({ link }: { link: Link }) {
+function SortableLink({ link, nested }: { link: Link; nested: boolean }) {
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({ id: link.id });
   return (
     <li
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
-      className={isDragging ? "relative z-10 rotate-1 opacity-90 shadow-xl" : undefined}
+      // Links under a section sit indented, so the grouping is visible
+      className={`${nested ? "ml-5 border-l-2 border-stone-200 pl-3" : ""} ${isDragging ? "relative z-10 rotate-1 opacity-90 shadow-xl" : ""}`}
     >
       <LinkItem
         link={link}
@@ -59,7 +60,9 @@ export function LinkList({ links }: { links: Link[] }) {
     <DndContext id="links" sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
       <SortableContext items={ordered.map((l) => l.id)} strategy={verticalListSortingStrategy}>
         <ul className="space-y-3">
-          {ordered.map((l) => <SortableLink key={l.id} link={l} />)}
+          {ordered.map((l, i) => (
+            <SortableLink key={l.id} link={l} nested={!l.heading && !l.offerId && ordered.slice(0, i).some((x) => x.heading)} />
+          ))}
         </ul>
       </SortableContext>
     </DndContext>
