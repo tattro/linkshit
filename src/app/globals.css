@@ -21,3 +21,23 @@ body {
 }
 .spotlight { animation: linksh-wiggle 3.5s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) { .spotlight { animation: none; } }
+
+/*
+ * A see-through wash of the text colour. Tailwind's bg-current/10 uses
+ * color-mix(currentcolor), which some iPhone browsers paint as a solid block
+ * (hiding the text on it), so this uses a faded pseudo-element instead.
+ */
+@utility tint {
+  position: relative;
+  isolation: isolate;
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    background-color: currentColor;
+    opacity: var(--tint, 0.1);
+    pointer-events: none;
+  }
+}

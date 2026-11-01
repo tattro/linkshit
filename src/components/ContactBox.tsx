@@ -15,7 +15,7 @@ export function ContactBox({ userId, buttonClass, buttonStyle, preview }: {
   const [open, setOpen] = useState(false);
   const [state, action, pending] = useActionState(sendMessage, undefined);
   if (state?.ok) {
-    return <p className="rounded-xl bg-current/10 px-5 py-4 text-center font-semibold">Sent. They&apos;ll get back to you by email. ✉️</p>;
+    return <p className="rounded-xl tint px-5 py-4 text-center font-semibold">Sent. They&apos;ll get back to you by email. ✉️</p>;
   }
   if (!open) {
     return (
@@ -25,7 +25,7 @@ export function ContactBox({ userId, buttonClass, buttonStyle, preview }: {
     );
   }
   return (
-    <form action={action} className="space-y-2 rounded-xl bg-current/10 p-4">
+    <form action={action} className="space-y-2 rounded-xl tint p-4">
       <p className="text-center font-semibold">Send me a message</p>
       <input type="hidden" name="userId" value={userId} />
       <input type="text" name="company" tabIndex={-1} autoComplete="off" className="hidden" aria-hidden />

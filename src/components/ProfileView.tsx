@@ -59,7 +59,7 @@ export function ProfileView({ user, links, preview = false, avatarOverride, qa =
           // eslint-disable-next-line @next/next/no-img-element
           <img src={avatar} alt="" className="h-24 w-24 rounded-full object-cover shadow-lg" />
         ) : (
-          <div className="flex h-24 w-24 items-center justify-center rounded-full bg-current/15 text-4xl font-black uppercase">
+          <div className="flex h-24 w-24 items-center justify-center rounded-full tint [--tint:0.15] text-4xl font-black uppercase">
             {name.slice(0, 1)}
           </div>
         )}
@@ -100,7 +100,7 @@ export function ProfileView({ user, links, preview = false, avatarOverride, qa =
                     href={user.tips[p.id]}
                     target="_blank"
                     rel="noopener noreferrer nofollow"
-                    className="block rounded-lg bg-current/10 px-3 py-2.5 text-center text-sm font-semibold transition hover:bg-current/20"
+                    className="block rounded-lg tint px-3 py-2.5 text-center text-sm font-semibold hover:[--tint:0.2]"
                   >
                     <span aria-hidden>{p.emoji}</span> {p.label}
                   </a>
@@ -189,10 +189,11 @@ export function ProfileView({ user, links, preview = false, avatarOverride, qa =
           <div className="mt-6 w-full">
             <AskBox userId={user.id} prompt={user.qaPrompt} buttonClass={btnClass} buttonStyle={btnStyle} preview={preview} />
             {qa.length > 0 && (
-              <ul className="mt-3 max-h-[28rem] space-y-3 overflow-y-auto rounded-xl bg-current/5 p-3" aria-label="Questions and answers">
+              <div className="tint mt-3 rounded-xl [--tint:0.05]">
+              <ul className="max-h-[28rem] space-y-3 overflow-y-auto p-3" aria-label="Questions and answers">
                 {qa.map((x) => (
                   <li key={x.id} className="space-y-1.5">
-                    <p className="w-fit max-w-[85%] whitespace-pre-wrap break-words rounded-2xl rounded-bl-sm bg-current/10 px-3 py-2 text-sm">
+                    <p className="w-fit max-w-[85%] whitespace-pre-wrap break-words rounded-2xl rounded-bl-sm tint px-3 py-2 text-sm">
                       <span className={`block text-[11px] font-semibold ${theme.muted}`} style={mutedStyle}>🕵️ Anonymous</span>
                       {x.body}
                     </p>
@@ -202,6 +203,7 @@ export function ProfileView({ user, links, preview = false, avatarOverride, qa =
                   </li>
                 ))}
               </ul>
+              </div>
             )}
           </div>
         )}
