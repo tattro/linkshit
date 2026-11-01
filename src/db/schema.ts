@@ -56,6 +56,8 @@ export const users = pgTable(
     // Email signup box on the public page
     signupEnabled: boolean("signup_enabled").notNull().default(false),
     signupPrompt: text("signup_prompt").notNull().default(""),
+    // "Message me" form on the page; messages land in the dashboard and the owner's inbox
+    contactEnabled: boolean("contact_enabled").notNull().default(false),
     // e.g. "links.example.com"; serves this user's page at that domain's root
     customDomain: text("custom_domain"),
     // Stats email on/off (name is historical) and how often
@@ -264,6 +266,22 @@ export const subscribers = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [uniqueIndex("subscribers_user_email_idx").on(t.userId, t.email)],
+);
+
+/** Messages visitors send through a page's contact form. */
+export const messages = pgTable(
+  "messages",
+  {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    name: text("name").notNull().default(""),
+    email: text("email").notNull(),
+    body: text("body").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("messages_user_idx").on(t.userId, t.createdAt)],
 );
 
 /** Old handles keep redirecting to the new one for a while after a rename. */

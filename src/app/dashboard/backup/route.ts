@@ -30,7 +30,7 @@ export async function GET() {
     page: {
       handle: user.handle, displayName: user.displayName, bio: user.bio, theme: user.theme,
       style: user.style, socials: user.socials as Record<string, string>, tips: user.tips as Record<string, string>,
-      openInApp: user.openInApp, signupEnabled: user.signupEnabled, signupPrompt: user.signupPrompt,
+      openInApp: user.openInApp, signupEnabled: user.signupEnabled, signupPrompt: user.signupPrompt, contactEnabled: user.contactEnabled,
       lockCode: user.lockCode, seoTitle: user.seoTitle, seoDescription: user.seoDescription,
       metaPixel: user.metaPixel, googleAnalytics: user.googleAnalytics, tiktokPixel: user.tiktokPixel, utm: user.utm,
     },

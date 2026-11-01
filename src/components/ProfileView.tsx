@@ -6,11 +6,12 @@ import { TIP_PROVIDERS } from "@/lib/tips";
 import { SensitiveGate } from "./SensitiveGate";
 import { DiscountLink } from "./DiscountLink";
 import { SignupBox } from "./SignupBox";
+import { ContactBox } from "./ContactBox";
 import { ChaosMode } from "./ChaosMode";
 import { backgroundImageStyle, buttonStyle, pageStyle } from "@/lib/style";
 import { getTheme } from "@/lib/themes";
 
-export type ProfileData = Pick<User, "id" | "handle" | "displayName" | "bio" | "theme" | "avatarVersion" | "bgVersion" | "signupEnabled" | "signupPrompt"> & {
+export type ProfileData = Pick<User, "id" | "handle" | "displayName" | "bio" | "theme" | "avatarVersion" | "bgVersion" | "signupEnabled" | "signupPrompt" | "contactEnabled"> & {
   style: Style;
   socials: Socials;
   tips: Tips;
@@ -174,6 +175,11 @@ export function ProfileView({ user, links, preview = false, avatarOverride }: {
           {links.length === 0 && <li className={`text-center text-sm ${theme.muted}`} style={mutedStyle}>Nothing here yet. Check back soon.</li>}
         </ul>
 
+        {user.contactEnabled && (
+          <div className="mt-6 w-full">
+            <ContactBox userId={user.id} buttonClass={btnClass} buttonStyle={btnStyle} preview={preview} />
+          </div>
+        )}
         {user.signupEnabled && (
           <div className="mt-6 w-full">
             <SignupBox userId={user.id} prompt={user.signupPrompt} buttonClass={theme.button} buttonStyle={btnStyle} preview={preview} />

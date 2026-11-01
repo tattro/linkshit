@@ -2,6 +2,7 @@
 
 import NextLink from "next/link";
 import { startTransition, useActionState, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { deleteMessage, updateContact } from "@/app/actions/contact";
 import { addHeading, addLink, deleteLink, deleteLinkForever, importLinktree, restorePage, reviveLink, updateHeading, updateLink, type ActionState } from "@/app/actions/links";
 import {
   changeHandle, removeAvatar, removeBackground, updateLook, updateProfile, updateSignup, updateSocials, updateTips, uploadAvatar, uploadBackground,
@@ -924,6 +925,46 @@ export function TipsForm({ tips }: { tips: Tips }) {
         {state?.error && <span className="text-sm text-red-600">{state.error}</span>}
       </div>
     </form>
+  );
+}
+
+export function ContactSettings({ enabled, messages }: {
+  enabled: boolean; messages: { id: number; name: string; email: string; body: string; createdAt: Date }[];
+}) {
+  const [state, action, pending] = useActionState(updateContact, undefined);
+  return (
+    <div className="space-y-4">
+      <form action={action} className="space-y-3">
+        <p className="-mt-2 text-sm text-stone-500">Adds a &quot;✉️ Message me&quot; button to your page. Messages show up here and in your email, and your address stays private.</p>
+        <label className="flex items-center gap-2 text-sm font-semibold">
+          <input type="checkbox" name="contactEnabled" defaultChecked={enabled} className="h-4 w-4 accent-lime-500" />
+          Let visitors message me
+        </label>
+        <div className="flex items-center gap-3">
+          <button disabled={pending} className={btn}>{pending ? "Saving…" : "Save"}</button>
+          <Saved show={!!state?.ok && !pending} />
+        </div>
+      </form>
+      {messages.length > 0 && (
+        <ul className="space-y-2">
+          {messages.map((m) => (
+            <li key={m.id} className="rounded-xl border-2 border-stone-200 p-3 text-sm">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <a href={`mailto:${m.email}`} className="min-w-0 truncate font-semibold underline decoration-lime-500 decoration-2 underline-offset-2">
+                  {m.name ? `${m.name} · ` : ""}{m.email}
+                </a>
+                <span className="shrink-0 text-xs text-stone-400">{new Date(m.createdAt).toLocaleDateString()}</span>
+              </div>
+              <p className="mt-1 whitespace-pre-wrap break-words text-stone-700">{m.body}</p>
+              <form action={deleteMessage} className="mt-1 text-right">
+                <input type="hidden" name="id" value={m.id} />
+                <button className="text-xs text-stone-400 hover:text-red-600">Delete</button>
+              </form>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }
 
