@@ -2,7 +2,9 @@
 
 import { and, eq, isNotNull, isNull, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
-import { db, links, users } from "@/db";
+import { db, linkThumbs, links, users } from "@/db";
+import { sniffImage } from "@/lib/images";
+import { cleanCode } from "@/lib/locks";
 import { fetchLinktree, linktreeUsername } from "@/lib/linktree";
 import { requireUser } from "@/lib/auth";
 import { embedFor } from "@/lib/embeds";
@@ -35,6 +37,30 @@ function cleanIcon(raw: string): string {
   return /\p{Extended_Pictographic}/u.test(first) && first.length <= 16 ? first : "";
 }
 
+const MAX_THUMB_BYTES = 300 * 1024;
+
+async function readThumb(formData: FormData) {
+  const file = formData.get("thumb");
+  if (!(file instanceof File) || file.size === 0) return null;
+  if (file.size > MAX_THUMB_BYTES) return { error: "That thumbnail is too big. Try one under 300 KB." } as const;
+  const data = Buffer.from(await file.arrayBuffer());
+  const contentType = sniffImage(data);
+  if (!contentType) return { error: "Thumbnails need to be JPG, PNG or WebP." } as const;
+  return { data, contentType } as const;
+}
+
+/** Stores or clears a link's thumbnail and bumps its version so caches refresh. */
+async function saveThumb(linkId: number, thumb: { data: Buffer; contentType: string } | null, remove: boolean) {
+  if (thumb) {
+    await db.insert(linkThumbs).values({ linkId, ...thumb })
+      .onConflictDoUpdate({ target: linkThumbs.linkId, set: thumb });
+    await db.update(links).set({ thumbVersion: sql`${links.thumbVersion} + 1` }).where(eq(links.id, linkId));
+  } else if (remove) {
+    await db.delete(linkThumbs).where(eq(linkThumbs.linkId, linkId));
+    await db.update(links).set({ thumbVersion: 0 }).where(eq(links.id, linkId));
+  }
+}
+
 async function readLinkForm(formData: FormData) {
   const title = String(formData.get("title") ?? "").trim().slice(0, 100);
   const url = normalizeUrl(String(formData.get("url") ?? ""));
@@ -50,7 +76,18 @@ async function readLinkForm(formData: FormData) {
   const sensitive = formData.get("sensitive") === "on";
   const spotlight = formData.get("spotlight") === "on";
   const icon = cleanIcon(String(formData.get("icon") ?? ""));
-  return { value: { title, url, startsAt, endsAt, embed, sensitive, spotlight, icon } } as const;
+  const lockCode = cleanCode(formData.get("lockCode"));
+  const rawAndroid = String(formData.get("androidUrl") ?? "").trim();
+  const androidUrl = rawAndroid ? normalizeUrl(rawAndroid) : null;
+  if (rawAndroid && !androidUrl) return { error: "The Android link doesn't look like a valid web address." } as const;
+  if (androidUrl) {
+    const bad = await unsafeReason(androidUrl);
+    if (bad) return { error: bad } as const;
+  }
+  const thumb = await readThumb(formData);
+  if (thumb && "error" in thumb) return { error: thumb.error } as const;
+  // A locked link can't play inline, or the lock would be pointless
+  return { value: { title, url, startsAt, endsAt, embed: embed && !lockCode, sensitive, spotlight, icon, lockCode, androidUrl }, thumb, removeThumb: formData.get("removeThumb") === "on" } as const;
 }
 
 export async function addLink(_prev: ActionState, formData: FormData): Promise<ActionState> {
@@ -65,7 +102,8 @@ export async function addLink(_prev: ActionState, formData: FormData): Promise<A
     .where(and(eq(links.userId, user.id), isNull(links.deletedAt)));
   if (count >= MAX_LINKS) return { error: `You've hit the ${MAX_LINKS} link limit. Impressive.` };
 
-  await db.insert(links).values({ userId: user.id, position: max + 1, ...form.value });
+  const [row] = await db.insert(links).values({ userId: user.id, position: max + 1, ...form.value }).returning({ id: links.id });
+  await saveThumb(row.id, form.thumb, false);
   refresh(user.handle);
   return { ok: true };
 }
@@ -76,7 +114,8 @@ export async function updateLink(_prev: ActionState, formData: FormData): Promis
   const id = Number(formData.get("id"));
   const form = await readLinkForm(formData);
   if ("error" in form) return { error: form.error };
-  await db.update(links).set(form.value).where(and(eq(links.id, id), eq(links.userId, user.id)));
+  const [row] = await db.update(links).set(form.value).where(and(eq(links.id, id), eq(links.userId, user.id))).returning({ id: links.id });
+  if (row) await saveThumb(row.id, form.thumb, form.removeThumb);
   refresh(user.handle);
   return { ok: true };
 }

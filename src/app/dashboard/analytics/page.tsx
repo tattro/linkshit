@@ -9,7 +9,9 @@ import { DailyChart } from "./DailyChart";
 
 export const metadata = { title: "Analytics" };
 
-const RANGES = [7, 30, 90] as const;
+const RANGES = [7, 30, 90, 365] as const;
+
+const DEVICE_LABELS: Record<string, string> = { mobile: "📱 Phone", tablet: "Tablet", desktop: "💻 Computer" };
 
 /** Midnight UTC at the start of a range that ends today. */
 function rangeStart(days: number) {
@@ -123,7 +125,7 @@ export default async function Analytics({ searchParams }: PageProps<"/dashboard/
   const inRange = and(eq(events.userId, user.id), gte(events.createdAt, since));
 
   const day = sql<string>`to_char(date_trunc('day', ${events.createdAt} at time zone 'UTC'), 'YYYY-MM-DD')`;
-  const [daily, topLinks, referrers, countries, perPage] = await Promise.all([
+  const [daily, topLinks, referrers, countries, devices, perPage] = await Promise.all([
     db.select({ day, kind: events.kind, n: sql<number>`count(*)::int` }).from(events).where(inRange).groupBy(day, events.kind),
     db.select({ label: links.title, value: sql<number>`count(*)::int` }).from(events)
       .innerJoin(links, eq(links.id, events.linkId))
@@ -132,6 +134,8 @@ export default async function Analytics({ searchParams }: PageProps<"/dashboard/
       .where(and(inRange, eq(events.kind, "view"), isNotNull(events.referrer))).groupBy(events.referrer).orderBy(desc(sql`count(*)`)).limit(8),
     db.select({ label: events.country, value: sql<number>`count(*)::int` }).from(events)
       .where(and(inRange, eq(events.kind, "view"), isNotNull(events.country))).groupBy(events.country).orderBy(desc(sql`count(*)`)).limit(8),
+    db.select({ label: events.device, value: sql<number>`count(*)::int` }).from(events)
+      .where(and(inRange, eq(events.kind, "view"), isNotNull(events.device))).groupBy(events.device).orderBy(desc(sql`count(*)`)),
     pages.length > 1
       ? db.select({
           userId: events.userId,
@@ -182,12 +186,18 @@ export default async function Analytics({ searchParams }: PageProps<"/dashboard/
           <section className="rounded-2xl border-2 border-stone-900 bg-white p-6"><DailyChart title="Link clicks per day" unit="clicks" data={clicks} /></section>
         </div>
 
-        <div className="grid gap-6 *:min-w-0 lg:grid-cols-3">
+        <div className="grid gap-6 *:min-w-0 lg:grid-cols-2">
           <Ranked title="Top links" rows={topLinks} empty="No clicks yet." />
           <Ranked title="Where visitors came from" rows={referrers.map((r) => ({ label: r.label!, value: r.value }))} empty="No referrers yet. Direct visits and apps that hide the referrer aren't listed." />
           <Ranked title="Top countries" rows={countries.map((r) => ({ label: countryName(r.label!), value: r.value }))} empty="No country data yet. It appears once the site is live on Vercel." />
+          <Ranked title="Devices" rows={devices.map((r) => ({ label: DEVICE_LABELS[r.label!] ?? r.label!, value: r.value }))} empty="No device data yet." />
         </div>
-        <p className="text-sm text-stone-500">Times are in UTC. Bots and link-preview crawlers aren&apos;t counted.</p>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-sm text-stone-500">Times are in UTC. Bots and link-preview crawlers aren&apos;t counted.</p>
+          <a href={`/dashboard/analytics/export?days=${days}`} className="rounded-lg border-2 border-stone-900 bg-white px-4 py-2 text-sm font-semibold hover:bg-lime-300">
+            Download CSV
+          </a>
+        </div>
       </main>
     </div>
   );

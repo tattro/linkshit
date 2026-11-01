@@ -38,7 +38,7 @@ function toLocalInput(d: Date | string | null) {
 }
 
 function LinkExtras({ link, url }: { link?: Link; url: string }) {
-  const [open, setOpen] = useState(Boolean(link?.startsAt || link?.endsAt || link?.embed));
+  const [open, setOpen] = useState(Boolean(link?.startsAt || link?.endsAt || link?.lockCode || link?.androidUrl || link?.thumbVersion));
   const canEmbed = url.trim() !== "" && embedFor(/^https?:\/\//i.test(url.trim()) ? url.trim() : `https://${url.trim()}`) !== null;
   return (
     <div className="sm:col-span-3">
@@ -73,18 +73,45 @@ function LinkExtras({ link, url }: { link?: Link; url: string }) {
       </div>
       {!open ? (
         <button type="button" onClick={() => setOpen(true)} className="text-sm text-stone-500 underline">
-          Schedule this link
+          More options: schedule, thumbnail, lock, Android link
         </button>
       ) : (
-        <div className="grid gap-2 sm:grid-cols-2">
-          <label className="text-sm">
-            <span className="text-stone-500">Show from (optional)</span>
-            <input type="datetime-local" name="startsAt" defaultValue={toLocalInput(link?.startsAt ?? null)} className={input} />
-          </label>
-          <label className="text-sm">
-            <span className="text-stone-500">Hide after (optional)</span>
-            <input type="datetime-local" name="endsAt" defaultValue={toLocalInput(link?.endsAt ?? null)} className={input} />
-          </label>
+        <div className="space-y-3 rounded-xl bg-stone-50 p-3">
+          <div className="grid gap-2 sm:grid-cols-2">
+            <label className="text-sm">
+              <span className="text-stone-500">Show from (optional)</span>
+              <input type="datetime-local" name="startsAt" defaultValue={toLocalInput(link?.startsAt ?? null)} className={input} />
+            </label>
+            <label className="text-sm">
+              <span className="text-stone-500">Hide after (optional)</span>
+              <input type="datetime-local" name="endsAt" defaultValue={toLocalInput(link?.endsAt ?? null)} className={input} />
+            </label>
+          </div>
+          <div className="text-sm">
+            <span className="text-stone-500">Thumbnail image (optional, replaces the icon)</span>
+            <div className="mt-1 flex flex-wrap items-center gap-3">
+              {link && link.thumbVersion > 0 && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={`/thumb/${link.id}?v=${link.thumbVersion}`} alt="" className="h-10 w-10 rounded-lg object-cover" />
+              )}
+              <input type="file" name="thumb" accept="image/jpeg,image/png,image/webp" className="min-w-0 max-w-full text-sm file:mr-2 file:rounded-lg file:border-2 file:border-stone-300 file:bg-white file:px-2 file:py-1" />
+              {link && link.thumbVersion > 0 && (
+                <label className="flex items-center gap-1.5">
+                  <input type="checkbox" name="removeThumb" className="h-4 w-4 accent-lime-500" /> Remove
+                </label>
+              )}
+            </div>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <label className="text-sm">
+              <span className="text-stone-500">🔒 Lock with a code (optional)</span>
+              <input name="lockCode" defaultValue={link?.lockCode ?? ""} maxLength={40} autoComplete="off" placeholder="e.g. secret123" className={input} />
+            </label>
+            <label className="text-sm">
+              <span className="text-stone-500">Different link for Android (optional)</span>
+              <input name="androidUrl" defaultValue={link?.androidUrl ?? ""} placeholder="play.google.com/store/apps/…" className={input} />
+            </label>
+          </div>
         </div>
       )}
     </div>
@@ -166,6 +193,7 @@ export function LinkItem({ link, handle }: { link: Link; handle?: React.ReactNod
             {link.embed && <span className="ml-2 rounded bg-violet-100 px-1.5 py-0.5 text-xs font-medium text-violet-800">embed</span>}
             {link.spotlight && <span className="ml-2 rounded bg-yellow-100 px-1.5 py-0.5 text-xs font-medium text-yellow-800">✨ spotlight</span>}
             {link.sensitive && <span className="ml-2 rounded bg-red-100 px-1.5 py-0.5 text-xs font-medium text-red-800">🔞 18+</span>}
+            {link.lockCode && <span className="ml-2 rounded bg-stone-200 px-1.5 py-0.5 text-xs font-medium text-stone-700">🔒 locked</span>}
             {link.offerId && <span className="ml-2 rounded bg-lime-100 px-1.5 py-0.5 text-xs font-medium text-lime-800" title="Pinned to the bottom of your page with an affiliate disclaimer">💸 marketplace</span>}
           </p>
           <p className="truncate text-sm text-stone-500">{link.url}</p>
@@ -651,14 +679,63 @@ export function VerifyBanner({ email }: { email: string }) {
   );
 }
 
-export function ShareCard({ url, qrSvg }: { url: string; qrSvg: string }) {
+/** Puts a photo in the middle of a QR SVG (on a white tile so it still scans). */
+function withLogo(svg: string, dataUrl: string) {
+  const n = Number(/viewBox="0 0 (\d+) /.exec(svg)?.[1] ?? 0);
+  if (!n) return svg;
+  const size = n * 0.24, pad = n * 0.03, at = (n - size) / 2;
+  const tile = `<rect x="${at - pad}" y="${at - pad}" width="${size + pad * 2}" height="${size + pad * 2}" rx="${pad * 1.5}" fill="#ffffff"/>`;
+  const img = `<image href="${dataUrl}" x="${at}" y="${at}" width="${size}" height="${size}" preserveAspectRatio="xMidYMid slice" clip-path="url(#qrlogo)"/>`;
+  const clip = `<defs><clipPath id="qrlogo"><rect x="${at}" y="${at}" width="${size}" height="${size}" rx="${pad}"/></clipPath></defs>`;
+  return svg.replace("</svg>", `${clip}${tile}${img}</svg>`);
+}
+
+async function toDataUrl(src: string) {
+  const blob = await (await fetch(src)).blob();
+  return await new Promise<string>((resolve) => {
+    const r = new FileReader();
+    r.onload = () => resolve(String(r.result));
+    r.readAsDataURL(blob);
+  });
+}
+
+async function svgToPng(svg: string, px = 1024) {
+  const img = new Image();
+  img.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+  await img.decode();
+  const canvas = document.createElement("canvas");
+  canvas.width = canvas.height = px;
+  const ctx = canvas.getContext("2d")!;
+  ctx.drawImage(img, 0, 0, px, px);
+  return canvas.toDataURL("image/png");
+}
+
+export function ShareCard({ url, qrUrl, avatar, scans }: { url: string; qrUrl: string; avatar: string | null; scans: number }) {
   const [copied, setCopied] = useState(false);
+  const [color, setColor] = useState("#1c1917");
+  const [logo, setLogo] = useState(Boolean(avatar));
+  const [svg, setSvg] = useState("");
   const display = url.replace(/^https?:\/\//, "");
+  const name = display.split("/").pop();
+
+  useEffect(() => {
+    let live = true;
+    (async () => {
+      const QRCode = (await import("qrcode")).default;
+      let out = await QRCode.toString(qrUrl, { type: "svg", margin: 1, errorCorrectionLevel: logo && avatar ? "H" : "M", color: { dark: color, light: "#ffffff" } });
+      if (logo && avatar) {
+        try { out = withLogo(out, await toDataUrl(avatar)); } catch {}
+      }
+      if (live) setSvg(out);
+    })();
+    return () => { live = false; };
+  }, [qrUrl, color, logo, avatar]);
+
   return (
-    <div className="flex flex-col items-center gap-4 sm:flex-row">
-      <div className="h-36 w-36 shrink-0 rounded-xl border-2 border-stone-200 bg-white p-2" dangerouslySetInnerHTML={{ __html: qrSvg }} />
-      <div className="space-y-3">
-        <p className="font-mono text-lg font-bold">{display}</p>
+    <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
+      <div className="h-40 w-40 shrink-0 rounded-xl border-2 border-stone-200 bg-white p-2" dangerouslySetInnerHTML={{ __html: svg }} />
+      <div className="min-w-0 space-y-3">
+        <p className="break-all font-mono text-lg font-bold">{display}</p>
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
@@ -669,11 +746,38 @@ export function ShareCard({ url, qrSvg }: { url: string; qrSvg: string }) {
           >
             {copied ? "Copied!" : "Copy link"}
           </button>
-          <a href={`data:image/svg+xml;charset=utf-8,${encodeURIComponent(qrSvg)}`} download={`${display.split("/").pop()}-qr.svg`} className={`${ghost} px-4 py-2`}>
-            Download QR
+          <button
+            type="button"
+            disabled={!svg}
+            onClick={async () => {
+              const a = document.createElement("a");
+              a.href = await svgToPng(svg);
+              a.download = `${name}-qr.png`;
+              a.click();
+            }}
+            className={`${ghost} px-4 py-2`}
+          >
+            Download PNG
+          </button>
+          <a href={`data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`} download={`${name}-qr.svg`} className={`${ghost} px-4 py-2`}>
+            SVG
           </a>
         </div>
-        <p className="text-sm text-stone-500">Stick the QR code on a flyer, a sticker, or your forehead.</p>
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
+          <label className="flex items-center gap-2">
+            QR color
+            <input type="color" value={color} onChange={(e) => setColor(e.target.value)} className="h-7 w-10 cursor-pointer rounded border-2 border-stone-300" />
+          </label>
+          {avatar && (
+            <label className="flex items-center gap-2">
+              <input type="checkbox" checked={logo} onChange={(e) => setLogo(e.target.checked)} className="h-4 w-4 accent-lime-500" />
+              My photo in the middle
+            </label>
+          )}
+        </div>
+        <p className="text-sm text-stone-500">
+          Scanned {scans.toLocaleString()} time{scans === 1 ? "" : "s"} so far. Stick it on a flyer, a sticker, or your forehead.
+        </p>
       </div>
     </div>
   );

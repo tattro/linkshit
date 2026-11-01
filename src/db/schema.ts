@@ -63,6 +63,19 @@ export const users = pgTable(
     statsEvery: text("stats_every").$type<"week" | "month">().notNull().default("week"),
     // Opted in to "let advertisers reach out to me" (null = no)
     marketplaceInterestAt: timestamp("marketplace_interest_at", { withTimezone: true }),
+    // Redirect mode: every visitor goes straight to this link
+    redirectLinkId: integer("redirect_link_id"),
+    // Visitors type this code before they see the page (null = open)
+    lockCode: text("lock_code"),
+    // Custom title/description for Google and link previews
+    seoTitle: text("seo_title").notNull().default(""),
+    seoDescription: text("seo_description").notNull().default(""),
+    // Tracking pixels on the public page
+    metaPixel: text("meta_pixel").notNull().default(""),
+    googleAnalytics: text("google_analytics").notNull().default(""),
+    tiktokPixel: text("tiktok_pixel").notNull().default(""),
+    // Add utm_source=linksh.it etc. to outgoing links
+    utm: boolean("utm").notNull().default(false),
     emailVerifiedAt: timestamp("email_verified_at", { withTimezone: true }),
     isAdmin: boolean("is_admin").notNull().default(false),
     bannedAt: timestamp("banned_at", { withTimezone: true }),
@@ -84,6 +97,15 @@ export const avatars = pgTable("avatars", {
   data: bytea("data").notNull(),
   contentType: text("content_type").notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** Thumbnail images on link buttons. */
+export const linkThumbs = pgTable("link_thumbs", {
+  linkId: integer("link_id")
+    .primaryKey()
+    .references((): AnyPgColumn => links.id, { onDelete: "cascade" }),
+  data: bytea("data").notNull(),
+  contentType: text("content_type").notNull(),
 });
 
 /** Background photos for public pages. Same shape as avatars. */
@@ -178,6 +200,12 @@ export const links = pgTable(
     icon: text("icon").notNull().default(""),
     // Added from the Marketplace: pinned to the bottom with an affiliate disclaimer
     offerId: integer("offer_id").references(() => offers.id, { onDelete: "set null" }),
+    // Small image shown on the button (stored in link_thumbs)
+    thumbVersion: integer("thumb_version").notNull().default(0),
+    // Visitors type this code before the link opens
+    lockCode: text("lock_code"),
+    // Android visitors go here instead (e.g. Google Play when url is the App Store)
+    androidUrl: text("android_url"),
     // Set when "flushed": the link moves to the graveyard and can be revived
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
     // Only visible between these times when set
@@ -200,6 +228,7 @@ export const events = pgTable(
     kind: text("kind").$type<"view" | "click">().notNull(),
     referrer: text("referrer"), // hostname only
     country: text("country"),
+    device: text("device").$type<"mobile" | "tablet" | "desktop">(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index("events_user_time_idx").on(t.userId, t.createdAt)],

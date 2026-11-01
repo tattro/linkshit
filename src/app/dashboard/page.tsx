@@ -1,6 +1,5 @@
-import { asc, desc, eq } from "drizzle-orm";
-import QRCode from "qrcode";
-import { db, links, subscribers } from "@/db";
+import { and, asc, desc, eq } from "drizzle-orm";
+import { db, events, links, subscribers } from "@/db";
 import { sql } from "drizzle-orm";
 import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
@@ -13,6 +12,8 @@ import { DomainForm } from "./DomainForm";
 import { domainsEnabled, isApex } from "@/lib/domains";
 import { DashboardHeader } from "./DashboardHeader";
 import { LinkList } from "./LinkList";
+import { PageLockForm, RedirectForm, SeoForm, TrackingForm } from "./extras";
+import { QR_REFERRER, qrTarget } from "@/lib/qr";
 import { AccountSettings, AddLinkForm, AdvertiserOptIn, AvatarForm, BackgroundForm, DeleteAccountForm, DeletePageForm, Graveyard, HandleForm, LinktreeImport, SignupSettings, StealLook, TipsForm, LookForm, ProfileForm, ShareCard, SocialsForm, VerifyBanner } from "./editor";
 
 export const metadata = { title: "Dashboard" };
@@ -47,7 +48,8 @@ export default async function Dashboard({ searchParams }: PageProps<"/dashboard"
   const recentSubs = await db.select({ email: subscribers.email, createdAt: subscribers.createdAt }).from(subscribers)
     .where(eq(subscribers.userId, user.id)).orderBy(desc(subscribers.createdAt)).limit(5);
   const pageUrl = `${await siteUrl()}/${user.handle}`;
-  const qrSvg = await QRCode.toString(pageUrl, { type: "svg", margin: 1, color: { dark: "#1c1917", light: "#ffffff" } });
+  const [{ scans }] = await db.select({ scans: sql<number>`count(*)::int` }).from(events)
+    .where(and(eq(events.userId, user.id), eq(events.kind, "view"), eq(events.referrer, QR_REFERRER)));
   const platforms = PLATFORMS.map(({ id, label, path, placeholder }) => ({ id, label, path, placeholder }));
 
   return (
@@ -138,7 +140,17 @@ export default async function Dashboard({ searchParams }: PageProps<"/dashboard"
           )}
 
           <Section title="Share">
-            <ShareCard url={pageUrl} qrSvg={qrSvg} />
+            <ShareCard url={pageUrl} qrUrl={qrTarget(pageUrl)} avatar={avatarUrl(user)} scans={scans} />
+          </Section>
+
+          <Section title="Power tools">
+            <p className="-mt-2 mb-4 text-sm text-stone-500">The stuff Linktree charges up to $35 a month for. Free here, obviously.</p>
+            <div className="space-y-6 [&>*+*]:border-t [&>*+*]:border-stone-200 [&>*+*]:pt-6">
+              <RedirectForm links={rows.filter((l) => !l.offerId).map((l) => ({ id: l.id, title: l.title }))} current={user.redirectLinkId} />
+              <PageLockForm code={user.lockCode} />
+              <SeoForm title={user.seoTitle} description={user.seoDescription} />
+              <TrackingForm metaPixel={user.metaPixel} googleAnalytics={user.googleAnalytics} tiktokPixel={user.tiktokPixel} utm={user.utm} />
+            </div>
           </Section>
 
           <Section title="Account">
@@ -159,7 +171,7 @@ export default async function Dashboard({ searchParams }: PageProps<"/dashboard"
                 avatarVersion: user.avatarVersion, bgVersion: user.bgVersion, style: user.style, socials: user.socials,
                 tips: user.tips, signupEnabled: user.signupEnabled, signupPrompt: user.signupPrompt,
               }}
-              links={offersLast(liveLinks(rows))}
+              links={offersLast(liveLinks(rows)).map((l) => ({ ...l, locked: Boolean(l.lockCode) }))}
             />
           </div>
         </PreviewDock>
