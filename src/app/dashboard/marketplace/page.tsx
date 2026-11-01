@@ -1,6 +1,6 @@
 import { and, desc, eq, isNull } from "drizzle-orm";
 import { redirect } from "next/navigation";
-import { addOffer, joinMarketplaceWaitlist, removeOffer } from "@/app/actions/marketplace";
+import { addOffer, removeOffer } from "@/app/actions/marketplace";
 import { db, links, offerRequests, offers } from "@/db";
 import { getSession } from "@/lib/auth";
 import { DashboardHeader } from "../DashboardHeader";
@@ -17,8 +17,7 @@ const PERKS = [
 export default async function Marketplace() {
   const s = await getSession();
   if (!s) redirect("/login");
-  const { account, page } = s;
-  const joined = Boolean(account.marketplaceInterestAt);
+  const { page } = s;
 
   const [list, mine, requests] = await Promise.all([
     db.select().from(offers).where(eq(offers.active, true)).orderBy(desc(offers.createdAt)),
@@ -48,17 +47,9 @@ export default async function Marketplace() {
             This is in beta testing. We&apos;re building it out with advertisers right now. BTW, it&apos;s completely optional.
           </p>
           {list.length === 0 && (
-            <div className="mt-8">
-              {joined ? (
-                <p className="inline-block rounded-full bg-white px-6 py-3 font-bold">✅ You&apos;re on the beta list. We&apos;ll email you when offers are ready.</p>
-              ) : (
-                <form action={joinMarketplaceWaitlist}>
-                  <button className="rounded-full bg-stone-900 px-8 py-4 font-bold text-white hover:bg-white hover:text-stone-900">
-                    I&apos;m in. Let me know when it&apos;s ready.
-                  </button>
-                </form>
-              )}
-            </div>
+            <p className="mx-auto mt-8 inline-block rounded-full bg-white px-6 py-3 font-bold">
+              🗓️ Expected: you should start seeing opportunities here within the next few months.
+            </p>
           )}
         </div>
 
