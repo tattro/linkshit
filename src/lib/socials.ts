@@ -54,3 +54,20 @@ export const PLATFORMS: Platform[] = [
 ];
 
 export const platform = (id: string) => PLATFORMS.find((p) => p.id === id);
+
+const ICON_HOSTS: [RegExp, string][] = [
+  [/(^|\.)instagram\.com$/i, "instagram"], [/(^|\.)tiktok\.com$/i, "tiktok"], [/(^|\.)(x|twitter)\.com$/i, "x"],
+  [/(^|\.)(youtube\.com|youtu\.be)$/i, "youtube"], [/(^|\.)twitch\.tv$/i, "twitch"], [/(^|\.)spotify\.com$/i, "spotify"],
+  [/(^|\.)soundcloud\.com$/i, "soundcloud"], [/(^|\.)threads\.(net|com)$/i, "threads"], [/(^|\.)bsky\.app$/i, "bluesky"],
+  [/(^|\.)facebook\.com$/i, "facebook"], [/(^|\.)snapchat\.com$/i, "snapchat"], [/(^|\.)(discord\.gg|discord\.com)$/i, "discord"],
+  [/(^|\.)github\.com$/i, "github"], [/(^|\.)patreon\.com$/i, "patreon"], [/(^|\.)ko-fi\.com$/i, "kofi"],
+];
+
+/** Brand icon path for a link's destination, if we recognise the site. */
+export function iconForUrl(url: string): string | null {
+  if (url.startsWith("mailto:")) return MAIL_PATH;
+  let host: string;
+  try { host = new URL(url).hostname; } catch { return null; }
+  const hit = ICON_HOSTS.find(([re]) => re.test(host));
+  return hit ? platform(hit[1])?.path ?? null : null;
+}

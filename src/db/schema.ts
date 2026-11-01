@@ -16,6 +16,9 @@ const bytea = customType<{ data: Buffer }>({ dataType: () => "bytea" });
 
 export type Socials = Partial<Record<string, string>>;
 
+/** Tip jar destinations, keyed by provider id (see lib/tips.ts). Values are full URLs. */
+export type Tips = Partial<Record<string, string>>;
+
 /** Optional per-user overrides layered on top of the chosen theme preset. */
 export type Style = {
   bg?: string; // hex
@@ -45,6 +48,10 @@ export const users = pgTable(
     bgVersion: integer("bg_version").notNull().default(0),
     // On phones, open YouTube/Spotify/Instagram/X links in their apps
     openInApp: boolean("open_in_app").notNull().default(true),
+    tips: jsonb("tips").$type<Tips>().notNull().default({}),
+    // Email signup box on the public page
+    signupEnabled: boolean("signup_enabled").notNull().default(false),
+    signupPrompt: text("signup_prompt").notNull().default(""),
     emailVerifiedAt: timestamp("email_verified_at", { withTimezone: true }),
     isAdmin: boolean("is_admin").notNull().default(false),
     bannedAt: timestamp("banned_at", { withTimezone: true }),
@@ -117,6 +124,12 @@ export const links = pgTable(
     clicks: integer("clicks").notNull().default(0),
     // Shown as an embedded player (YouTube/Spotify/SoundCloud) instead of a button
     embed: boolean("embed").notNull().default(false),
+    // Visitors confirm before opening (18+ / sensitive)
+    sensitive: boolean("sensitive").notNull().default(false),
+    // Gently wiggles to draw attention
+    spotlight: boolean("spotlight").notNull().default(false),
+    // Optional emoji shown on the button; brand icons are picked automatically
+    icon: text("icon").notNull().default(""),
     // Only visible between these times when set
     startsAt: timestamp("starts_at", { withTimezone: true }),
     endsAt: timestamp("ends_at", { withTimezone: true }),
@@ -155,3 +168,17 @@ export const rateLimits = pgTable(
 
 export type User = typeof users.$inferSelect;
 export type Link = typeof links.$inferSelect;
+
+/** Emails collected by a user's signup box. */
+export const subscribers = pgTable(
+  "subscribers",
+  {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    email: text("email").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("subscribers_user_email_idx").on(t.userId, t.email)],
+);

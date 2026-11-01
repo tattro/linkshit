@@ -29,6 +29,13 @@
       "when": 1793495477570,
       "tag": "0003_custom_background",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1793497282042,
+      "tag": "0004_premium_pack",
+      "breakpoints": true
     }
   ]
 }

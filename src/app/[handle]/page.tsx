@@ -11,12 +11,16 @@ const getProfile = cache(async (handle: string) => {
     .select({
       id: users.id, handle: users.handle, displayName: users.displayName, bio: users.bio, theme: users.theme,
       style: users.style, socials: users.socials, avatarVersion: users.avatarVersion, bgVersion: users.bgVersion, bannedAt: users.bannedAt,
+      tips: users.tips, signupEnabled: users.signupEnabled, signupPrompt: users.signupPrompt,
     })
     .from(users)
     .where(eq(users.handle, handle));
   if (!user || user.bannedAt) return null;
   const rows = await db
-    .select({ id: links.id, title: links.title, url: links.url, embed: links.embed, startsAt: links.startsAt, endsAt: links.endsAt })
+    .select({
+      id: links.id, title: links.title, url: links.url, embed: links.embed, startsAt: links.startsAt, endsAt: links.endsAt,
+      sensitive: links.sensitive, spotlight: links.spotlight, icon: links.icon,
+    })
     .from(links)
     .where(eq(links.userId, user.id))
     .orderBy(asc(links.position), asc(links.id));

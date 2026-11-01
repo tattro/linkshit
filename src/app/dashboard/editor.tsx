@@ -2,10 +2,14 @@
 
 import { startTransition, useActionState, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { addLink, deleteLink, moveLink, updateLink, type ActionState } from "@/app/actions/links";
-import { removeAvatar, removeBackground, updateLook, updateProfile, updateSocials, uploadAvatar, uploadBackground } from "@/app/actions/profile";
+import {
+  removeAvatar, removeBackground, updateLook, updateProfile, updateSignup, updateSocials, updateTips, uploadAvatar, uploadBackground,
+} from "@/app/actions/profile";
 import { resendVerification } from "@/app/actions/auth";
-import type { Link, Socials, Style } from "@/db/schema";
+import type { Link, Socials, Style, Tips } from "@/db/schema";
 import { setLookDraft } from "./lookDraft";
+import { embedFor } from "@/lib/embeds";
+import { TIP_PROVIDERS } from "@/lib/tips";
 import { FONTS, parseStyle, GRADIENT_DIRS, GRADIENT_PRESETS, SHAPES, gradientCss, hasCustomColors } from "@/lib/style";
 import { THEMES } from "@/lib/themes";
 
@@ -13,7 +17,6 @@ export const input = "w-full rounded-lg border-2 border-stone-300 bg-white px-3 
 export const btn = "rounded-lg bg-stone-900 px-4 py-2 font-semibold text-white hover:bg-lime-500 hover:text-stone-900 disabled:opacity-50";
 export const ghost = "rounded-lg border-2 border-stone-300 px-2 py-1 text-sm hover:border-stone-900 disabled:opacity-30";
 
-const EMBEDDABLE = /(youtube\.com|youtu\.be|open\.spotify\.com|soundcloud\.com)/i;
 
 /** Sends the browser's timezone offset so scheduled times are saved correctly. */
 function TzInput() {
@@ -31,7 +34,7 @@ function toLocalInput(d: Date | string | null) {
 
 function LinkExtras({ link, url }: { link?: Link; url: string }) {
   const [open, setOpen] = useState(Boolean(link?.startsAt || link?.endsAt || link?.embed));
-  const canEmbed = EMBEDDABLE.test(url);
+  const canEmbed = url.trim() !== "" && embedFor(/^https?:\/\//i.test(url.trim()) ? url.trim() : `https://${url.trim()}`) !== null;
   return (
     <div className="sm:col-span-3">
       <TzInput />
@@ -41,6 +44,28 @@ function LinkExtras({ link, url }: { link?: Link; url: string }) {
           Show as an embedded player instead of a button
         </label>
       )}
+      <div className="mb-2 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
+        <label className="flex items-center gap-2">
+          <input type="checkbox" name="spotlight" defaultChecked={link?.spotlight} className="h-4 w-4 accent-lime-500" />
+          ✨ Spotlight (wiggles)
+        </label>
+        <label className="flex items-center gap-2">
+          <input type="checkbox" name="sensitive" defaultChecked={link?.sensitive} className="h-4 w-4 accent-lime-500" />
+          🔞 Sensitive (18+ warning)
+        </label>
+        <label className="flex items-center gap-2">
+          Icon
+          <input
+            name="icon"
+            defaultValue={link?.icon ?? ""}
+            placeholder="🔥"
+            maxLength={16}
+            aria-label="Emoji icon (optional)"
+            className="w-14 rounded-lg border-2 border-stone-300 bg-white px-2 py-1 text-center outline-none focus:border-stone-900"
+          />
+          <span className="text-xs text-stone-400">emoji, optional</span>
+        </label>
+      </div>
       {!open ? (
         <button type="button" onClick={() => setOpen(true)} className="text-sm text-stone-500 underline">
           Schedule this link
@@ -142,8 +167,11 @@ export function LinkItem({ link, first, last }: { link: Link; first: boolean; la
         </div>
         <div className="min-w-0 flex-1">
           <p className="truncate font-semibold">
+            {link.icon && <span className="mr-1">{link.icon}</span>}
             {link.title}
             {link.embed && <span className="ml-2 rounded bg-violet-100 px-1.5 py-0.5 text-xs font-medium text-violet-800">embed</span>}
+            {link.spotlight && <span className="ml-2 rounded bg-yellow-100 px-1.5 py-0.5 text-xs font-medium text-yellow-800">✨ spotlight</span>}
+            {link.sensitive && <span className="ml-2 rounded bg-red-100 px-1.5 py-0.5 text-xs font-medium text-red-800">🔞 18+</span>}
           </p>
           <p className="truncate text-sm text-stone-500">{link.url}</p>
           {label && <span className={`mt-1 inline-block rounded px-1.5 py-0.5 text-xs ${label.cls}`}>{label.text}</span>}
@@ -628,5 +656,50 @@ export function ShareCard({ url, qrSvg }: { url: string; qrSvg: string }) {
         <p className="text-sm text-stone-500">Stick the QR code on a flyer, a sticker, or your forehead.</p>
       </div>
     </div>
+  );
+}
+
+export function TipsForm({ tips }: { tips: Tips }) {
+  const [state, action, pending] = useActionState(updateTips, undefined);
+  return (
+    <form action={action} className="space-y-3">
+      <div className="grid gap-2 sm:grid-cols-2">
+        {TIP_PROVIDERS.map((p) => (
+          <label key={p.id} className="flex items-center gap-2">
+            <span aria-hidden className="w-6 text-center">{p.emoji}</span>
+            <span className="sr-only">{p.label}</span>
+            <input name={p.id} defaultValue={tips[p.id] ?? ""} placeholder={`${p.label}: ${p.placeholder}`} className={input} />
+          </label>
+        ))}
+      </div>
+      <div className="flex items-center gap-3">
+        <button disabled={pending} className={btn}>{pending ? "Saving…" : "Save tip jar"}</button>
+        <Saved show={!!state?.ok && !pending} />
+        {state?.error && <span className="text-sm text-red-600">{state.error}</span>}
+      </div>
+    </form>
+  );
+}
+
+export function SignupSettings({ enabled, prompt, count }: { enabled: boolean; prompt: string; count: number }) {
+  const [state, action, pending] = useActionState(updateSignup, undefined);
+  return (
+    <form action={action} className="space-y-3">
+      <label className="flex items-center gap-2 text-sm font-semibold">
+        <input type="checkbox" name="signupEnabled" defaultChecked={enabled} className="h-4 w-4 accent-lime-500" />
+        Show an email signup box on my page
+      </label>
+      <input name="signupPrompt" defaultValue={prompt} maxLength={80} placeholder="Join my email list" aria-label="Signup box heading" className={input} />
+      <div className="flex flex-wrap items-center gap-3">
+        <button disabled={pending} className={btn}>{pending ? "Saving…" : "Save"}</button>
+        <Saved show={!!state?.ok && !pending} />
+        <span className="text-sm text-stone-500">{count} subscriber{count === 1 ? "" : "s"}</span>
+        {count > 0 && (
+          <a href="/dashboard/subscribers" download className="text-sm font-semibold underline decoration-lime-500 decoration-2 underline-offset-2">
+            Download CSV
+          </a>
+        )}
+      </div>
+    </form>
   );
 }
