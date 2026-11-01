@@ -1,4 +1,4 @@
-import { asc, eq } from "drizzle-orm";
+import { asc, desc, eq } from "drizzle-orm";
 import QRCode from "qrcode";
 import { db, links, subscribers } from "@/db";
 import { sql } from "drizzle-orm";
@@ -44,6 +44,8 @@ export default async function Dashboard({ searchParams }: PageProps<"/dashboard"
   const graves = allRows.filter((l) => l.deletedAt).sort((a, b) => +b.deletedAt! - +a.deletedAt!);
   const totalClicks = rows.reduce((n, l) => n + l.clicks, 0);
   const [{ subs }] = await db.select({ subs: sql<number>`count(*)::int` }).from(subscribers).where(eq(subscribers.userId, user.id));
+  const recentSubs = await db.select({ email: subscribers.email, createdAt: subscribers.createdAt }).from(subscribers)
+    .where(eq(subscribers.userId, user.id)).orderBy(desc(subscribers.createdAt)).limit(5);
   const pageUrl = `${await siteUrl()}/${user.handle}`;
   const qrSvg = await QRCode.toString(pageUrl, { type: "svg", margin: 1, color: { dark: "#1c1917", light: "#ffffff" } });
   const platforms = PLATFORMS.map(({ id, label, path, placeholder }) => ({ id, label, path, placeholder }));
@@ -112,8 +114,8 @@ export default async function Dashboard({ searchParams }: PageProps<"/dashboard"
           </Section>
 
           <Section title="Email list">
-            <p className="-mt-2 mb-4 text-sm text-stone-500">Let visitors leave their email. Download the list any time and import it into Mailchimp, Substack, or whatever.</p>
-            <SignupSettings enabled={user.signupEnabled} prompt={user.signupPrompt} count={subs} />
+            <p className="-mt-2 mb-4 text-sm text-stone-500">Turn this on and visitors can leave their email on your page. They get saved here. Download the list any time and import it into Mailchimp, Substack, or whatever you send from.</p>
+            <SignupSettings enabled={user.signupEnabled} prompt={user.signupPrompt} count={subs} recent={recentSubs} />
           </Section>
 
           <Section title="Look & feel">

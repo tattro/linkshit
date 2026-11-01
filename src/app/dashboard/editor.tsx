@@ -697,7 +697,9 @@ export function TipsForm({ tips }: { tips: Tips }) {
   );
 }
 
-export function SignupSettings({ enabled, prompt, count }: { enabled: boolean; prompt: string; count: number }) {
+export function SignupSettings({ enabled, prompt, count, recent }: {
+  enabled: boolean; prompt: string; count: number; recent: { email: string; createdAt: Date }[];
+}) {
   const [state, action, pending] = useActionState(updateSignup, undefined);
   return (
     <form action={action} className="space-y-3">
@@ -709,11 +711,28 @@ export function SignupSettings({ enabled, prompt, count }: { enabled: boolean; p
       <div className="flex flex-wrap items-center gap-3">
         <button disabled={pending} className={btn}>{pending ? "Saving…" : "Save"}</button>
         <Saved show={!!state?.ok && !pending} />
-        <span className="text-sm text-stone-500">{count} subscriber{count === 1 ? "" : "s"}</span>
-        {count > 0 && (
-          <a href="/dashboard/subscribers" download className="text-sm font-semibold underline decoration-lime-500 decoration-2 underline-offset-2">
-            Download CSV
-          </a>
+      </div>
+      <div className="rounded-xl border-2 border-stone-200 p-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-sm font-semibold">📬 {count} subscriber{count === 1 ? "" : "s"}</p>
+          {count > 0 ? (
+            <a href="/dashboard/subscribers" download className="text-sm font-semibold underline decoration-lime-500 decoration-2 underline-offset-2">
+              Download all (CSV)
+            </a>
+          ) : (
+            <span className="text-xs text-stone-400">The CSV download shows up here once someone signs up.</span>
+          )}
+        </div>
+        {recent.length > 0 && (
+          <ul className="mt-3 space-y-1 text-sm">
+            {recent.map((r) => (
+              <li key={r.email} className="flex justify-between gap-3">
+                <span className="truncate">{r.email}</span>
+                <span className="shrink-0 text-stone-400">{new Date(r.createdAt).toLocaleDateString()}</span>
+              </li>
+            ))}
+            {count > recent.length && <li className="text-xs text-stone-400">+ {count - recent.length} more in the CSV</li>}
+          </ul>
         )}
       </div>
     </form>
