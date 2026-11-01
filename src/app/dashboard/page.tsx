@@ -14,7 +14,7 @@ import { DashboardHeader } from "./DashboardHeader";
 import { LinkList } from "./LinkList";
 import { PageLockForm, RedirectForm, SeoForm, TrackingForm } from "./extras";
 import { QR_REFERRER, qrTarget } from "@/lib/qr";
-import { AccountSettings, AddHeadingForm, AddLinkForm, AdvertiserOptIn, AvatarForm, BackgroundForm, DeleteAccountForm, DeletePageForm, Graveyard, HandleForm, LinktreeImport, SignupSettings, StealLook, TipsForm, LookForm, ProfileForm, ShareCard, SocialsForm, VerifyBanner } from "./editor";
+import { AccountSettings, AddHeadingForm, BackupForm, AddLinkForm, AdvertiserOptIn, AvatarForm, BackgroundForm, DeleteAccountForm, DeletePageForm, Graveyard, HandleForm, LinktreeImport, SignupSettings, StealLook, TipsForm, LookForm, ProfileForm, ShareCard, SocialsForm, VerifyBanner } from "./editor";
 
 export const metadata = { title: "Dashboard" };
 
@@ -152,6 +152,10 @@ export default async function Dashboard({ searchParams }: PageProps<"/dashboard"
               <SeoForm title={user.seoTitle} description={user.seoDescription} />
               <TrackingForm metaPixel={user.metaPixel} googleAnalytics={user.googleAnalytics} tiktokPixel={user.tiktokPixel} utm={user.utm} />
             </div>
+          </Section>
+
+          <Section title="Backup">
+            <BackupForm />
           </Section>
 
           <Section title="Account">

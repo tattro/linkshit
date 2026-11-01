@@ -2,7 +2,7 @@
 
 import NextLink from "next/link";
 import { startTransition, useActionState, useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { addHeading, addLink, deleteLink, deleteLinkForever, importLinktree, reviveLink, updateHeading, updateLink, type ActionState } from "@/app/actions/links";
+import { addHeading, addLink, deleteLink, deleteLinkForever, importLinktree, restorePage, reviveLink, updateHeading, updateLink, type ActionState } from "@/app/actions/links";
 import {
   changeHandle, removeAvatar, removeBackground, updateLook, updateProfile, updateSignup, updateSocials, updateTips, uploadAvatar, uploadBackground,
 } from "@/app/actions/profile";
@@ -219,6 +219,33 @@ function HeadingItem({ link, handle }: { link: Link; handle?: React.ReactNode })
           </>
         )}
       </div>
+    </div>
+  );
+}
+
+/** Download the page as a file, or put it back from one. */
+export function BackupForm() {
+  const [state, action, pending] = useActionState(restorePage, undefined);
+  const [file, setFile] = useState<File | null>(null);
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-stone-500">Your page is yours. Download everything (links, look, photos, settings) as one file, and put it back any time.</p>
+      <a href="/dashboard/backup" download className={`${btn} inline-block`}>⬇️ Download my page</a>
+      <form action={action} className="space-y-2 border-t border-stone-200 pt-4">
+        <label className="block text-sm font-semibold" htmlFor="backup-file">Restore from a backup</label>
+        <input
+          id="backup-file"
+          type="file"
+          name="backup"
+          accept="application/json,.json"
+          onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+          className="block w-full min-w-0 text-sm file:mr-2 file:rounded-lg file:border-2 file:border-stone-300 file:bg-white file:px-2 file:py-1"
+        />
+        {file && <p className="text-xs text-stone-500">Your current links move to the graveyard (you can bring them back), and the look and settings are replaced.</p>}
+        <button disabled={pending || !file} className={`${ghost} disabled:opacity-50`}>{pending ? "Restoring…" : "Restore"}</button>
+        {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
+        {state?.ok && <p className="text-sm text-lime-700">Restored. Welcome back.</p>}
+      </form>
     </div>
   );
 }
