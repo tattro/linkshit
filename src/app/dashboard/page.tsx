@@ -4,9 +4,9 @@ import { db, links } from "@/db";
 import { isAdmin, requireUser } from "@/lib/auth";
 import { siteUrl } from "@/lib/request";
 import { PLATFORMS } from "@/lib/socials";
-import { avatarUrl, liveLinks, ProfileView } from "@/components/ProfileView";
+import { avatarUrl, backgroundUrl, liveLinks, ProfileView } from "@/components/ProfileView";
 import { DashboardHeader } from "./DashboardHeader";
-import { AddLinkForm, AvatarForm, LinkItem, LookForm, ProfileForm, ShareCard, SocialsForm, VerifyBanner } from "./editor";
+import { AddLinkForm, AvatarForm, BackgroundForm, LinkItem, LookForm, ProfileForm, ShareCard, SocialsForm, VerifyBanner } from "./editor";
 
 export const metadata = { title: "Dashboard" };
 
@@ -83,7 +83,10 @@ export default async function Dashboard({ searchParams }: PageProps<"/dashboard"
           </Section>
 
           <Section title="Look & feel">
-            <LookForm user={{ theme: user.theme, style: user.style, openInApp: user.openInApp }} avatar={avatarUrl(user)} />
+            <div className="space-y-6">
+              <BackgroundForm current={backgroundUrl(user)} />
+              <LookForm user={{ theme: user.theme, style: user.style, openInApp: user.openInApp }} avatar={avatarUrl(user)} background={backgroundUrl(user)} />
+            </div>
           </Section>
 
           <Section title="Share">

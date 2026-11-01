@@ -2,7 +2,7 @@
 
 import { eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
-import { avatars, db, users, type Socials } from "@/db";
+import { avatars, backgrounds, db, users, type Socials } from "@/db";
 import { requireUser } from "@/lib/auth";
 import { rateLimit, TOO_MANY } from "@/lib/ratelimit";
 import { PLATFORMS } from "@/lib/socials";
@@ -83,5 +83,32 @@ export async function removeAvatar() {
   const user = await requireUser();
   await db.delete(avatars).where(eq(avatars.userId, user.id));
   await db.update(users).set({ avatarVersion: 0 }).where(eq(users.id, user.id));
+  refresh(user.handle);
+}
+
+const MAX_BG_BYTES = 900 * 1024;
+
+export async function uploadBackground(_prev: ProfileState, formData: FormData): Promise<ProfileState> {
+  const user = await requireUser();
+  if (!(await rateLimit(`bg:user:${user.id}`, 20, 60 * 60))) return { error: TOO_MANY };
+  const file = formData.get("background");
+  if (!(file instanceof File) || file.size === 0) return { error: "Pick an image first." };
+  if (file.size > MAX_BG_BYTES) return { error: "That image is too big. Try a smaller one." };
+  const data = Buffer.from(await file.arrayBuffer());
+  const contentType = sniff(data);
+  if (!contentType || !TYPES.has(contentType)) return { error: "Use a JPG, PNG or WebP image." };
+  await db
+    .insert(backgrounds)
+    .values({ userId: user.id, data, contentType })
+    .onConflictDoUpdate({ target: backgrounds.userId, set: { data, contentType, updatedAt: new Date() } });
+  await db.update(users).set({ bgVersion: sql`${users.bgVersion} + 1` }).where(eq(users.id, user.id));
+  refresh(user.handle);
+  return { ok: true };
+}
+
+export async function removeBackground() {
+  const user = await requireUser();
+  await db.delete(backgrounds).where(eq(backgrounds.userId, user.id));
+  await db.update(users).set({ bgVersion: 0 }).where(eq(users.id, user.id));
   refresh(user.handle);
 }

@@ -24,6 +24,7 @@ export type Style = {
   buttonText?: string;
   shape?: "rounded" | "pill" | "square" | "outline";
   font?: "sans" | "serif" | "mono" | "rounded" | "display";
+  bgTint?: "dark" | "light"; // wash over a background photo so text stays readable
 };
 
 export const users = pgTable(
@@ -39,6 +40,7 @@ export const users = pgTable(
     style: jsonb("style").$type<Style>().notNull().default({}),
     socials: jsonb("socials").$type<Socials>().notNull().default({}),
     avatarVersion: integer("avatar_version").notNull().default(0),
+    bgVersion: integer("bg_version").notNull().default(0),
     // On phones, open YouTube/Spotify/Instagram/X links in their apps
     openInApp: boolean("open_in_app").notNull().default(true),
     emailVerifiedAt: timestamp("email_verified_at", { withTimezone: true }),
@@ -54,6 +56,16 @@ export const users = pgTable(
 );
 
 export const avatars = pgTable("avatars", {
+  userId: integer("user_id")
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  data: bytea("data").notNull(),
+  contentType: text("content_type").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** Background photos for public pages. Same shape as avatars. */
+export const backgrounds = pgTable("backgrounds", {
   userId: integer("user_id")
     .primaryKey()
     .references(() => users.id, { onDelete: "cascade" }),

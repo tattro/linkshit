@@ -32,14 +32,26 @@ export function parseStyle(input: Record<string, unknown>): Style {
   }
   if (font && font !== "sans") style.font = font;
   if (shape && shape !== "rounded") style.shape = shape;
+  if (input.bgTint === "dark" || input.bgTint === "light") style.bgTint = input.bgTint;
   return style;
 }
 
 export function pageStyle(s: Style): CSSProperties {
   return {
-    ...(s.bg ? { background: s.bg } : {}),
+    ...(s.bg ? { backgroundColor: s.bg } : {}),
     ...(s.text ? { color: s.text } : {}),
     ...(s.font ? { fontFamily: FONTS.find((f) => f.id === s.font)?.css } : {}),
+  };
+}
+
+/** Background photo layer, with an optional tint so text stays readable. */
+export function backgroundImageStyle(url: string | null, s: Style): CSSProperties {
+  if (!url) return {};
+  const wash = s.bgTint === "dark" ? "rgba(0,0,0,.45)" : s.bgTint === "light" ? "rgba(255,255,255,.55)" : null;
+  return {
+    backgroundImage: wash ? `linear-gradient(${wash}, ${wash}), url("${url}")` : `url("${url}")`,
+    backgroundSize: "cover",
+    backgroundPosition: "center",
   };
 }
 

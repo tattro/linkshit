@@ -2,7 +2,7 @@
 
 import { startTransition, useActionState, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { addLink, deleteLink, moveLink, updateLink, type ActionState } from "@/app/actions/links";
-import { removeAvatar, updateLook, updateProfile, updateSocials, uploadAvatar } from "@/app/actions/profile";
+import { removeAvatar, removeBackground, updateLook, updateProfile, updateSocials, uploadAvatar, uploadBackground } from "@/app/actions/profile";
 import { resendVerification } from "@/app/actions/auth";
 import type { Link, Socials, Style } from "@/db/schema";
 import { FONTS, SHAPES, hasCustomColors } from "@/lib/style";
@@ -258,6 +258,75 @@ export function AvatarForm({ current, initial }: { current: string | null; initi
   );
 }
 
+/** Shrinks a background photo to WebP (max 1600px long side) so it fits under the upload limit. */
+async function shrinkBackground(file: File): Promise<Blob> {
+  const bitmap = await createImageBitmap(file);
+  for (const [max, quality] of [[1600, 0.8], [1280, 0.7], [960, 0.6]] as const) {
+    const scale = Math.min(1, max / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(bitmap.width * scale);
+    canvas.height = Math.round(bitmap.height * scale);
+    canvas.getContext("2d")!.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    const blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, "image/webp", quality));
+    if (blob && blob.size <= 880 * 1024) return blob;
+  }
+  throw new Error("too big");
+}
+
+export function BackgroundForm({ current }: { current: string | null }) {
+  const [state, action, pending] = useActionState(uploadBackground, undefined);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  async function onPick(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setError(null);
+    if (!file.type.startsWith("image/")) return setError("That's not an image.");
+    setBusy(true);
+    try {
+      const blob = await shrinkBackground(file);
+      const fd = new FormData();
+      fd.set("background", new File([blob], "background.webp", { type: "image/webp" }));
+      startTransition(() => action(fd));
+    } catch {
+      setError("Couldn't use that image. Try a JPG or PNG.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div>
+      <p className="mb-2 text-sm font-semibold">Background photo</p>
+      <div className="flex items-center gap-4">
+        <div
+          className="h-20 w-14 shrink-0 rounded-lg border-2 border-stone-300 bg-stone-100 bg-cover bg-center"
+          style={current ? { backgroundImage: `url("${current}")` } : undefined}
+          aria-hidden
+        />
+        <div className="space-y-2">
+          <input ref={fileRef} type="file" accept="image/*" onChange={onPick} className="hidden" />
+          <div className="flex gap-2">
+            <button type="button" disabled={busy || pending} onClick={() => fileRef.current?.click()} className={btn}>
+              {busy || pending ? "Uploading…" : current ? "Change background" : "Upload background"}
+            </button>
+            {current && (
+              <form action={removeBackground}>
+                <button className={ghost}>Remove</button>
+              </form>
+            )}
+          </div>
+          <p className="text-xs text-stone-500">Covers your whole page, behind everything. Tall photos look best on phones.</p>
+          {(error || state?.error) && <p className="text-sm text-red-600">{error ?? state?.error}</p>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function SocialsForm({ socials, platforms }: {
   socials: Socials;
   platforms: { id: string; label: string; path: string; placeholder: string }[];
@@ -295,7 +364,7 @@ export function SocialsForm({ socials, platforms }: {
   );
 }
 
-export function LookForm({ user, avatar }: { user: { theme: string; style: Style; openInApp: boolean }; avatar: string | null }) {
+export function LookForm({ user, avatar, background }: { user: { theme: string; style: Style; openInApp: boolean }; avatar: string | null; background: string | null }) {
   const [state, action, pending] = useActionState(updateLook, undefined);
   const [custom, setCustom] = useState(hasCustomColors(user.style));
   const s = user.style;
@@ -305,13 +374,12 @@ export function LookForm({ user, avatar }: { user: { theme: string; style: Style
   const [stealing, setStealing] = useState(false);
   const [stealError, setStealError] = useState<string | null>(null);
 
-  async function steal() {
-    if (!avatar) return;
+  async function steal(src: string) {
     setStealing(true);
     setStealError(null);
     try {
       const { paletteFromImage } = await import("@/lib/palette");
-      setColors(await paletteFromImage(avatar));
+      setColors(await paletteFromImage(src));
       setCustom(true);
     } catch {
       setStealError("Couldn't read your photo. Try uploading it again.");
@@ -369,11 +437,18 @@ export function LookForm({ user, avatar }: { user: { theme: string; style: Style
             <input type="checkbox" name="customColors" checked={custom} onChange={(e) => setCustom(e.target.checked)} className="h-4 w-4 accent-lime-500" />
             Use my own colours (overrides the theme)
           </label>
-          {avatar && (
-            <button type="button" onClick={steal} disabled={stealing} className={`${ghost} px-3 py-1.5 font-semibold`}>
-              {stealing ? "Sniffing your photo…" : "🎨 Steal colours from my photo"}
-            </button>
-          )}
+          <div className="flex flex-wrap gap-2">
+            {avatar && (
+              <button type="button" onClick={() => steal(avatar)} disabled={stealing} className={`${ghost} px-3 py-1.5 font-semibold`}>
+                {stealing ? "Sniffing…" : "🎨 Steal colours from my photo"}
+              </button>
+            )}
+            {background && (
+              <button type="button" onClick={() => steal(background)} disabled={stealing} className={`${ghost} px-3 py-1.5 font-semibold`}>
+                {stealing ? "Sniffing…" : "🎨 Steal from my background"}
+              </button>
+            )}
+          </div>
         </div>
         {stealError && <p className="mt-2 text-sm text-red-600">{stealError}</p>}
         {custom && (
@@ -398,6 +473,23 @@ export function LookForm({ user, avatar }: { user: { theme: string; style: Style
           </div>
         )}
       </fieldset>
+
+      {background && (
+        <fieldset>
+          <legend className="mb-2 text-sm font-semibold">Background tint</legend>
+          <p className="-mt-1 mb-2 text-xs text-stone-500">Washes over your photo so your name and bio stay readable.</p>
+          <div className="flex flex-wrap gap-2">
+            {([["", "None"], ["dark", "Darken"], ["light", "Lighten"]] as const).map(([id, name]) => (
+              <label key={name} className="cursor-pointer">
+                <input type="radio" name="bgTint" value={id} defaultChecked={(s.bgTint ?? "") === id} className="peer sr-only" />
+                <span className="inline-block rounded-lg border-2 border-stone-300 px-4 py-2 text-sm font-semibold peer-checked:border-stone-900 peer-checked:bg-lime-200 peer-focus-visible:ring-4 peer-focus-visible:ring-lime-300">
+                  {name}
+                </span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
+      )}
 
       <fieldset>
         <label className="flex items-start gap-2 text-sm">
