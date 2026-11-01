@@ -8,6 +8,7 @@ import { DiscountLink } from "./DiscountLink";
 import { SignupBox } from "./SignupBox";
 import { ContactBox } from "./ContactBox";
 import { AskBox } from "./AskBox";
+import { Countdown } from "./Countdown";
 import { ChaosMode } from "./ChaosMode";
 import { backgroundImageStyle, buttonStyle, pageStyle } from "@/lib/style";
 import { getTheme } from "@/lib/themes";
@@ -18,7 +19,7 @@ export type ProfileData = Pick<User, "id" | "handle" | "displayName" | "bio" | "
   tips: Tips;
 };
 
-export type ProfileLink = Pick<LinkRow, "id" | "title" | "url" | "embed" | "sensitive" | "spotlight" | "icon" | "offerId" | "thumbVersion" | "discountCode" | "heading"> & {
+export type ProfileLink = Pick<LinkRow, "id" | "title" | "url" | "embed" | "sensitive" | "spotlight" | "icon" | "offerId" | "thumbVersion" | "discountCode" | "heading"> & { dropsAt?: Date | null } & {
   locked?: boolean;
 };
 
@@ -130,6 +131,13 @@ export function ProfileView({ user, links, preview = false, avatarOverride, qa =
                 </li>
               );
             }
+            if (l.dropsAt) {
+              return (
+                <li key={l.id}>
+                  <Countdown title={l.title} icon={l.icon} dropsAt={new Date(l.dropsAt).toISOString()} className={`${btnClass} relative cursor-default opacity-90`} style={btnStyle} />
+                </li>
+              );
+            }
             if (l.heading) {
               return (
                 <li key={l.id} className="pt-3">
@@ -219,6 +227,16 @@ export function ProfileView({ user, links, preview = false, avatarOverride, qa =
 /** Marketplace offers always sit at the very bottom of a page. */
 export function offersLast<T extends { offerId: number | null }>(rows: T[]): T[] {
   return [...rows.filter((l) => !l.offerId), ...rows.filter((l) => l.offerId)];
+}
+
+/**
+ * Live links, plus not-yet-live links that asked for a countdown. Those come back with
+ * dropsAt set and no URL, so the destination stays secret until it goes live.
+ */
+export function visibleLinks<T extends Pick<LinkRow, "startsAt" | "endsAt" | "countdown" | "url">>(rows: T[], now = new Date()) {
+  return rows
+    .filter((l) => (!l.endsAt || l.endsAt > now) && (!l.startsAt || l.startsAt <= now || l.countdown))
+    .map((l) => (l.startsAt && l.startsAt > now ? { ...l, url: "", dropsAt: l.startsAt } : { ...l, dropsAt: null }));
 }
 
 export function liveLinks<T extends Pick<LinkRow, "startsAt" | "endsAt">>(rows: T[], now = new Date()): T[] {

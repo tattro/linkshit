@@ -6,7 +6,7 @@ import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { siteUrl } from "@/lib/request";
 import { PLATFORMS } from "@/lib/socials";
-import { avatarUrl, backgroundUrl, liveLinks, offersLast } from "@/components/ProfileView";
+import { avatarUrl, backgroundUrl, offersLast, visibleLinks } from "@/components/ProfileView";
 import { LivePreview } from "./LivePreview";
 import { PreviewDock } from "./PreviewDock";
 import { DomainForm } from "./DomainForm";
@@ -190,7 +190,7 @@ export default async function Dashboard({ searchParams }: PageProps<"/dashboard"
                 avatarVersion: user.avatarVersion, bgVersion: user.bgVersion, style: user.style, socials: user.socials,
                 tips: user.tips, signupEnabled: user.signupEnabled, signupPrompt: user.signupPrompt, contactEnabled: user.contactEnabled, qaEnabled: user.qaEnabled, qaPrompt: user.qaPrompt,
               }}
-              links={offersLast(liveLinks(rows)).map((l) => ({ ...l, locked: Boolean(l.lockCode) }))}
+              links={offersLast(visibleLinks(rows)).map((l) => ({ ...l, locked: Boolean(l.lockCode) }))}
               qa={answered}
             />
           </div>

@@ -3,7 +3,7 @@ import { and, asc, desc, eq, gt, isNotNull, isNull, or } from "drizzle-orm";
 import { cache } from "react";
 import { db, handleRedirects, links, offers, questions, users } from "@/db";
 import { redirectCutoff } from "@/lib/handleTaken";
-import { liveLinks, offersLast } from "@/components/ProfileView";
+import { offersLast, visibleLinks } from "@/components/ProfileView";
 
 /** Everything a public page needs, by handle or by custom domain. Null if missing or banned. */
 export const getPublicProfile = cache(async (by: "handle" | "domain", key: string) => {
@@ -22,16 +22,16 @@ export const getPublicProfile = cache(async (by: "handle" | "domain", key: strin
     .select({
       id: links.id, title: links.title, url: links.url, embed: links.embed, startsAt: links.startsAt, endsAt: links.endsAt,
       sensitive: links.sensitive, spotlight: links.spotlight, icon: links.icon, offerId: links.offerId,
-      thumbVersion: links.thumbVersion, lockCode: links.lockCode, discountCode: links.discountCode, heading: links.heading,
+      thumbVersion: links.thumbVersion, lockCode: links.lockCode, countdown: links.countdown, discountCode: links.discountCode, heading: links.heading,
     })
     .from(links)
     // Offers the advertiser has paused drop off every page
     .leftJoin(offers, eq(offers.id, links.offerId))
     .where(and(eq(links.userId, user.id), isNull(links.deletedAt), or(isNull(links.offerId), eq(offers.active, true))))
     .orderBy(asc(links.position), asc(links.id));
-  const live = offersLast(liveLinks(rows)).map(({ lockCode, ...l }) => ({ ...l, locked: Boolean(lockCode) }));
+  const live = offersLast(visibleLinks(rows)).map(({ lockCode, ...l }) => ({ ...l, locked: Boolean(lockCode) }));
   // Redirect mode only kicks in while the chosen link is live
-  const redirectTo = live.find((l) => l.id === user.redirectLinkId)?.id ?? null;
+  const redirectTo = live.find((l) => l.id === user.redirectLinkId && !l.dropsAt)?.id ?? null;
   const qa = user.qaEnabled ? await answeredQuestions(user.id) : [];
   return { user, links: live, redirectTo, qa };
 });

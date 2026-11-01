@@ -14,6 +14,7 @@ export type BackupLink = {
   androidUrl?: string | null;
   startsAt?: string | null;
   endsAt?: string | null;
+  countdown?: boolean;
   thumb?: BackupImage;
 };
 
