@@ -13,7 +13,7 @@ import { DomainForm } from "./DomainForm";
 import { domainsEnabled, isApex } from "@/lib/domains";
 import { DashboardHeader } from "./DashboardHeader";
 import { LinkList } from "./LinkList";
-import { AddLinkForm, AvatarForm, BackgroundForm, DeleteAccountForm, DeletePageForm, Graveyard, HandleForm, LinktreeImport, SignupSettings, TipsForm, LookForm, ProfileForm, ShareCard, SocialsForm, VerifyBanner } from "./editor";
+import { AccountSettings, AddLinkForm, AvatarForm, BackgroundForm, DeleteAccountForm, DeletePageForm, Graveyard, HandleForm, LinktreeImport, SignupSettings, StealLook, TipsForm, LookForm, ProfileForm, ShareCard, SocialsForm, VerifyBanner } from "./editor";
 
 export const metadata = { title: "Dashboard" };
 
@@ -120,8 +120,9 @@ export default async function Dashboard({ searchParams }: PageProps<"/dashboard"
 
           <Section title="Look & feel">
             <div className="space-y-6">
+              <StealLook />
               <BackgroundForm current={backgroundUrl(user)} />
-              <LookForm user={{ theme: user.theme, style: user.style, openInApp: user.openInApp }} avatar={avatarUrl(user)} background={backgroundUrl(user)} />
+              <LookForm key={JSON.stringify([user.theme, user.style])} user={{ theme: user.theme, style: user.style, openInApp: user.openInApp }} avatar={avatarUrl(user)} background={backgroundUrl(user)} />
             </div>
           </Section>
 
@@ -134,6 +135,11 @@ export default async function Dashboard({ searchParams }: PageProps<"/dashboard"
 
           <Section title="Share">
             <ShareCard url={pageUrl} qrSvg={qrSvg} />
+          </Section>
+
+          <Section title="Account">
+            <p className="-mt-2 mb-4 text-sm text-stone-500">Your login, shared by all your pages.</p>
+            <AccountSettings email={account.email ?? ""} />
           </Section>
 
           <Section title="Danger zone">

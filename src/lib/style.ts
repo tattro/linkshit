@@ -121,3 +121,13 @@ export function buttonStyle(s: Style): CSSProperties {
 }
 
 export const hasCustomColors = (s: Style) => Boolean(s.bg || s.text || s.button || s.buttonText);
+
+/** Re-validate a Style that came from somewhere we don't control (another page, an import). */
+export function sanitizeStyle(s: Style): Style {
+  const custom = Boolean(s.bg || s.text || s.button || s.buttonText);
+  return parseStyle({
+    customColors: custom ? "on" : "", bg: s.bg, text: s.text, button: s.button, buttonText: s.buttonText,
+    bgMode: s.bg2 ? "gradient" : "solid", bg2: s.bg2, bgDir: s.bgDir ?? "down",
+    font: s.font, shape: s.shape, chaos: s.chaos ? "on" : "",
+  });
+}

@@ -1,12 +1,12 @@
 "use server";
 
 import bcrypt from "bcryptjs";
-import { eq } from "drizzle-orm";
+import { and, eq, ne } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db, sessions, users } from "@/db";
 import {
-  consumeEmailToken, createSession, destroySession, requireAccount, sendResetEmail, sendVerificationEmail,
+  consumeEmailToken, createSession, destroySession, getSession, requireAccount, sendResetEmail, sendVerificationEmail,
 } from "@/lib/auth";
 import { handleProblem, normalizeHandle } from "@/lib/handles";
 import { handleTaken } from "@/lib/handleTaken";
@@ -111,4 +111,42 @@ export async function resendVerification(): Promise<FormState> {
   if (!(await rateLimit(`verify:user:${user.id}`, 3, 60 * 60))) return { error: TOO_MANY };
   const sent = await sendVerificationEmail(user);
   return sent ? { ok: `Sent! Check ${user.email}.` } : { error: "Couldn't send the email right now. Try again later." };
+}
+
+export async function changePassword(_prev: FormState, formData: FormData): Promise<FormState> {
+  const s = await getSession();
+  if (!s) redirect("/login");
+  const account = s.account;
+  if (!(await rateLimit(`pwchange:user:${account.id}`, 10, 60 * 60))) return { error: TOO_MANY };
+  const current = String(formData.get("current") ?? "");
+  if (!account.passwordHash || !(await bcrypt.compare(current, account.passwordHash))) return { error: "Current password is wrong." };
+  const parsed = passwordSchema.safeParse(formData.get("password"));
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
+  if (parsed.data !== formData.get("confirm")) return { error: "Those new passwords don't match." };
+  const passwordHash = await bcrypt.hash(parsed.data, 12);
+  await db.update(users).set({ passwordHash }).where(eq(users.id, account.id));
+  // Sign out every other device, keep this one
+  await db.delete(sessions).where(and(eq(sessions.userId, account.id), ne(sessions.id, s.sessionId)));
+  return { ok: "Password changed. Other devices got logged out." };
+}
+
+export async function changeEmail(_prev: FormState, formData: FormData): Promise<FormState> {
+  const account = await requireAccount();
+  if (!(await rateLimit(`emailchange:user:${account.id}`, 5, 60 * 60))) return { error: TOO_MANY };
+  const parsed = emailSchema.safeParse(formData.get("email"));
+  if (!parsed.success) return { error: "That email looks off." };
+  const email = parsed.data;
+  if (email === account.email) return { error: "That's already your email." };
+  if (!account.passwordHash || !(await bcrypt.compare(String(formData.get("password") ?? ""), account.passwordHash))) {
+    return { error: "Wrong password." };
+  }
+  const [taken] = await db.select({ id: users.id }).from(users).where(eq(users.email, email));
+  if (taken) return { error: "Another account already uses that email." };
+  try {
+    await db.update(users).set({ email, emailVerifiedAt: null }).where(eq(users.id, account.id));
+  } catch {
+    return { error: "Another account already uses that email." };
+  }
+  const sent = await sendVerificationEmail({ id: account.id, email, handle: account.handle });
+  return { ok: sent ? `Email changed. We sent a confirmation link to ${email}.` : `Email changed to ${email}. The confirmation email didn't send; use Resend link above.` };
 }

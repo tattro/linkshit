@@ -1,6 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
+
+// Once a visitor confirms they're 18+, stop asking for the rest of their visit.
+const KEY = "linksh:18plus";
+const listeners = new Set<() => void>();
+const subscribe = (l: () => void) => { listeners.add(l); return () => { listeners.delete(l); }; };
+const confirmed = () => { try { return sessionStorage.getItem(KEY) === "1"; } catch { return false; } };
+function confirmAdult() {
+  try { sessionStorage.setItem(KEY, "1"); } catch {}
+  listeners.forEach((l) => l());
+}
 
 /** Hides a link or embed behind an 18+ confirmation. */
 export function SensitiveGate({ title, className, style, children }: {
@@ -9,14 +19,15 @@ export function SensitiveGate({ title, className, style, children }: {
   style?: React.CSSProperties;
   children: React.ReactNode;
 }) {
-  const [state, setState] = useState<"closed" | "asking" | "open">("closed");
-  if (state === "open") return <>{children}</>;
+  const [state, setState] = useState<"closed" | "asking">("closed");
+  const adult = useSyncExternalStore(subscribe, confirmed, () => false);
+  if (adult) return <>{children}</>;
   if (state === "asking") {
     return (
       <div className={`${className} space-y-3`} style={style} role="alertdialog" aria-label="Sensitive content warning">
         <p className="text-sm font-semibold">⚠️ Heads up: this might be sensitive or 18+ content.</p>
         <div className="flex justify-center gap-2">
-          <button type="button" onClick={() => setState("open")} className="rounded-lg bg-black/80 px-4 py-2 text-sm font-bold text-white">
+          <button type="button" onClick={confirmAdult} className="rounded-lg bg-black/80 px-4 py-2 text-sm font-bold text-white">
             I&apos;m 18+, show me
           </button>
           <button type="button" onClick={() => setState("closed")} className="rounded-lg border border-current px-4 py-2 text-sm font-semibold">

@@ -8,9 +8,10 @@ export async function generateMetadata({ params }: PageProps<"/[handle]">): Prom
   const key = decodeURIComponent(handle).replace(/^@/, "").toLowerCase();
   const profile = await getPublicProfile("handle", key);
   if (!profile) {
-    // Resolved before streaming for crawlers and link previews, so they get a real HTTP redirect
+    // Resolved before streaming for crawlers and link previews, so they get a real redirect or 404
     const moved = await renamedTo(key);
     if (moved) redirect(`/${moved}`);
+    notFound();
   }
   return profileMetadata(profile, `/${profile?.user.handle ?? ""}`);
 }

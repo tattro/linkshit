@@ -5,9 +5,10 @@ import { addLink, deleteLink, deleteLinkForever, importLinktree, reviveLink, upd
 import {
   changeHandle, removeAvatar, removeBackground, updateLook, updateProfile, updateSignup, updateSocials, updateTips, uploadAvatar, uploadBackground,
 } from "@/app/actions/profile";
-import { resendVerification } from "@/app/actions/auth";
+import { changeEmail, changePassword, resendVerification } from "@/app/actions/auth";
 import { deleteAccount } from "@/app/actions/account";
 import { deletePage } from "@/app/actions/pages";
+import { stealLook, undoSteal } from "@/app/actions/steal";
 import type { Link, Socials, Style, Tips } from "@/db/schema";
 import { setLookDraft } from "./lookDraft";
 import { embedFor } from "@/lib/embeds";
@@ -914,5 +915,69 @@ export function HandleForm({ handle }: { handle: string }) {
       {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
       {state?.ok && !pending && <p className="text-sm text-lime-700">Done. You&apos;re linksh.it/{handle} now.</p>}
     </form>
+  );
+}
+
+/** Paste someone's page, take their design. Links and photos stay yours. */
+export function StealLook() {
+  const [open, setOpen] = useState(false);
+  const [state, action, pending] = useActionState(stealLook, undefined);
+  return (
+    <div className="rounded-xl border-2 border-dashed border-stone-300 p-4">
+      {!open ? (
+        <button type="button" onClick={() => setOpen(true)} className="text-left">
+          <span className="font-semibold">😈 Steal someone&apos;s look</span>
+          <span className="block text-sm text-stone-500">Like how another page looks? Paste its link and take the design.</span>
+        </button>
+      ) : (
+        <form action={action} className="space-y-2">
+          <label className="block text-sm font-semibold" htmlFor="steal-source">😈 Whose look are we stealing?</label>
+          <div className="flex gap-2">
+            <input id="steal-source" name="source" required autoFocus autoComplete="off" placeholder="linksh.it/someone or linktr.ee/someone" className={input} />
+            <button disabled={pending} className={`${btn} shrink-0`}>{pending ? "Stealing…" : "Steal it"}</button>
+          </div>
+          <p className="text-xs text-stone-500">Copies colors, gradient, font and button style. Never their links, photo or bio. Linktree designs are matched as closely as we can.</p>
+          {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
+        </form>
+      )}
+      {state?.ok && !pending && (
+        <div className="mt-3 flex flex-wrap items-center gap-3 rounded-lg bg-lime-100 p-3 text-sm">
+          <span className="font-semibold">{state.ok}</span>
+          {state.previous && (
+            <form action={undoSteal}>
+              <input type="hidden" name="previous" value={JSON.stringify(state.previous)} />
+              <button className={ghost}>Undo</button>
+            </form>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Login settings: email and password. */
+export function AccountSettings({ email }: { email: string }) {
+  const [pwState, pwAction, pwPending] = useActionState(changePassword, undefined);
+  const [emState, emAction, emPending] = useActionState(changeEmail, undefined);
+  return (
+    <div className="grid gap-6 md:grid-cols-2">
+      <form action={emAction} className="space-y-2">
+        <p className="text-sm font-semibold">Email</p>
+        <input name="email" type="email" required defaultValue={email} autoComplete="email" aria-label="New email" className={input} />
+        <input name="password" type="password" required placeholder="Your password" autoComplete="current-password" aria-label="Password to confirm email change" className={input} />
+        <button disabled={emPending} className={btn}>{emPending ? "Saving…" : "Change email"}</button>
+        {emState?.error && <p className="text-sm text-red-600">{emState.error}</p>}
+        {emState?.ok && !emPending && <p className="text-sm text-lime-700">{emState.ok}</p>}
+      </form>
+      <form action={pwAction} className="space-y-2">
+        <p className="text-sm font-semibold">Password</p>
+        <input name="current" type="password" required placeholder="Current password" autoComplete="current-password" aria-label="Current password" className={input} />
+        <input name="password" type="password" required minLength={8} placeholder="New password (8+ characters)" autoComplete="new-password" aria-label="New password" className={input} />
+        <input name="confirm" type="password" required placeholder="New password again" autoComplete="new-password" aria-label="Confirm new password" className={input} />
+        <button disabled={pwPending} className={btn}>{pwPending ? "Saving…" : "Change password"}</button>
+        {pwState?.error && <p className="text-sm text-red-600">{pwState.error}</p>}
+        {pwState?.ok && !pwPending && <p className="text-sm text-lime-700">{pwState.ok}</p>}
+      </form>
+    </div>
   );
 }
