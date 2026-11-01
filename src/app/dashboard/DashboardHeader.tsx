@@ -1,8 +1,14 @@
 import Link from "next/link";
 import { logout } from "@/app/actions/auth";
 import { Logo } from "@/components/Logo";
+import { accountPages, getSession, isAdmin } from "@/lib/auth";
+import { PageSwitcher } from "./PageSwitcher";
 
-export function DashboardHeader({ handle, active, admin }: { handle: string; active: "editor" | "analytics" | "admin"; admin: boolean }) {
+export async function DashboardHeader({ active }: { active: "editor" | "analytics" | "admin" }) {
+  const s = await getSession();
+  if (!s) return null;
+  const { account, page } = s;
+  const pages = await accountPages(account.id);
   const tab = (key: typeof active) =>
     `rounded-full px-3 py-1.5 font-semibold ${active === key ? "bg-stone-900 text-white" : "text-stone-600 hover:bg-stone-100"}`;
   return (
@@ -13,15 +19,16 @@ export function DashboardHeader({ handle, active, admin }: { handle: string; act
           <nav className="flex gap-1 text-sm">
             <Link href="/dashboard" className={tab("editor")}>Editor</Link>
             <Link href="/dashboard/analytics" className={tab("analytics")}>Analytics</Link>
-            {admin && <Link href="/admin" className={tab("admin")}>Admin</Link>}
+            {isAdmin(account) && <Link href="/admin" className={tab("admin")}>Admin</Link>}
           </nav>
         </div>
-        <div className="flex items-center gap-4 text-sm">
-          <a href={`/${handle}`} target="_blank" className="font-mono font-semibold underline decoration-lime-500 decoration-2 underline-offset-4">
-            linksh.it/{handle} ↗
+        <div className="flex min-w-0 items-center gap-4 text-sm">
+          <PageSwitcher pages={pages} activeId={page.id} to={active === "analytics" ? "analytics" : "editor"} />
+          <a href={`/${page.handle}`} target="_blank" className="min-w-0 truncate font-mono font-semibold underline decoration-lime-500 decoration-2 underline-offset-4">
+            linksh.it/{page.handle} ↗
           </a>
           <form action={logout}>
-            <button className="text-stone-500 hover:text-stone-900">Log out</button>
+            <button className="whitespace-nowrap text-stone-500 hover:text-stone-900">Log out</button>
           </form>
         </div>
       </div>

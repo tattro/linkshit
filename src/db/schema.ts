@@ -10,6 +10,7 @@ import {
   index,
   customType,
   primaryKey,
+  type AnyPgColumn,
 } from "drizzle-orm/pg-core";
 
 const bytea = customType<{ data: Buffer }>({ dataType: () => "bytea" });
@@ -37,8 +38,10 @@ export const users = pgTable(
   "users",
   {
     id: serial("id").primaryKey(),
-    email: text("email").notNull(),
-    passwordHash: text("password_hash").notNull(),
+    // Null for extra pages, which belong to the account in ownerId and have no login of their own
+    email: text("email"),
+    passwordHash: text("password_hash"),
+    ownerId: integer("owner_id").references((): AnyPgColumn => users.id, { onDelete: "cascade" }),
     handle: text("handle").notNull(),
     displayName: text("display_name").notNull().default(""),
     bio: text("bio").notNull().default(""),
@@ -66,6 +69,7 @@ export const users = pgTable(
     uniqueIndex("users_email_idx").on(t.email),
     uniqueIndex("users_handle_idx").on(t.handle),
     uniqueIndex("users_custom_domain_idx").on(t.customDomain),
+    index("users_owner_idx").on(t.ownerId),
   ],
 );
 
@@ -96,6 +100,8 @@ export const sessions = pgTable(
     userId: integer("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
+    // Which of the account's pages the dashboard is editing (null = the main page)
+    activePageId: integer("active_page_id").references(() => users.id, { onDelete: "set null" }),
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
   },
   (t) => [index("sessions_user_idx").on(t.userId)],

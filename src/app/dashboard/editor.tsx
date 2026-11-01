@@ -7,6 +7,7 @@ import {
 } from "@/app/actions/profile";
 import { resendVerification } from "@/app/actions/auth";
 import { deleteAccount } from "@/app/actions/account";
+import { deletePage } from "@/app/actions/pages";
 import type { Link, Socials, Style, Tips } from "@/db/schema";
 import { setLookDraft } from "./lookDraft";
 import { embedFor } from "@/lib/embeds";
@@ -770,6 +771,36 @@ function ForeverButton({ id }: { id: number }) {
   );
 }
 
+export function DeletePageForm({ handle }: { handle: string }) {
+  const [open, setOpen] = useState(false);
+  const [state, action, pending] = useActionState(deletePage, undefined);
+  if (!open) {
+    return (
+      <button type="button" onClick={() => setOpen(true)} className="rounded-lg border-2 border-red-300 px-4 py-2 text-sm font-semibold text-red-700 hover:border-red-600 hover:bg-red-50">
+        Delete this page
+      </button>
+    );
+  }
+  return (
+    <form action={action} className="space-y-3 rounded-xl border-2 border-red-300 bg-red-50 p-4">
+      <p className="text-sm text-red-900">
+        Deletes linksh.it/{handle} with its links, photos, analytics and email list <strong>for good</strong>. Your account and other pages stay put.
+      </p>
+      <label className="block text-sm">
+        Type <span className="font-mono font-bold">{handle}</span> to confirm
+        <input name="handle" autoComplete="off" required className={input} />
+      </label>
+      {state?.error && <p className="text-sm text-red-700">{state.error}</p>}
+      <div className="flex gap-2">
+        <button disabled={pending} className="rounded-lg bg-red-600 px-4 py-2 font-semibold text-white hover:bg-red-700 disabled:opacity-50">
+          {pending ? "Flushing…" : "Flush this page"}
+        </button>
+        <button type="button" onClick={() => setOpen(false)} className={`${ghost} px-3 py-2`}>Never mind</button>
+      </div>
+    </form>
+  );
+}
+
 export function DeleteAccountForm({ handle }: { handle: string }) {
   const [open, setOpen] = useState(false);
   const [state, action, pending] = useActionState(deleteAccount, undefined);
@@ -783,7 +814,7 @@ export function DeleteAccountForm({ handle }: { handle: string }) {
   return (
     <form action={action} className="space-y-3 rounded-xl border-2 border-red-300 bg-red-50 p-4">
       <p className="text-sm text-red-900">
-        This deletes your page, links, photos, analytics and email list <strong>for good</strong>, and frees up linksh.it/{handle} for someone else. No undo, no graveyard.
+        This deletes your account and every page on it (links, photos, analytics, email lists) <strong>for good</strong>, and frees up linksh.it/{handle} for someone else. No undo, no graveyard.
       </p>
       <label className="block text-sm">
         Type <span className="font-mono font-bold">{handle}</span> to confirm
