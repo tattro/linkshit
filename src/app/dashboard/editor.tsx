@@ -470,7 +470,7 @@ export function LookForm({ user, avatar, background }: { user: { theme: string; 
           {THEMES.map((t) => (
             <label key={t.id} className="cursor-pointer">
               <input type="radio" name="theme" value={t.id} defaultChecked={user.theme === t.id} className="peer sr-only" />
-              <div className={`flex h-16 items-end rounded-lg p-2 text-xs font-bold ring-stone-900 ring-offset-2 peer-checked:ring-4 peer-focus-visible:ring-4 ${t.page}`}>
+              <div data-keep-colors className={`flex h-16 items-end rounded-lg p-2 text-xs font-bold ring-stone-900 ring-offset-2 peer-checked:ring-4 peer-focus-visible:ring-4 ${t.page}`}>
                 {t.name}
               </div>
             </label>
@@ -544,6 +544,7 @@ export function LookForm({ user, avatar, background }: { user: { theme: string; 
                 type="button"
                 onClick={() => applyPreset(p)}
                 title={p.name}
+                data-keep-colors
                 className="flex h-12 w-20 items-end rounded-lg p-1.5 text-left text-[11px] font-bold ring-stone-900 ring-offset-2 hover:ring-2 focus-visible:ring-4"
                 style={{ backgroundImage: gradientCss(p.bg, p.bg2, p.dir), color: p.text }}
               >
@@ -604,6 +605,7 @@ export function LookForm({ user, avatar, background }: { user: { theme: string; 
                 </div>
                 <div
                   aria-hidden
+                  data-keep-colors
                   className="h-9 flex-1 rounded-lg border-2 border-stone-300"
                   style={{ minWidth: 80, backgroundImage: gradientCss(colors.bg, bg2, bgDir) }}
                 />
@@ -724,7 +726,7 @@ export function ShareCard({ url, qrUrl, avatar, scans }: { url: string; qrUrl: s
 
   return (
     <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
-      <div className="h-40 w-40 shrink-0 rounded-xl border-2 border-stone-200 bg-white p-2" dangerouslySetInnerHTML={{ __html: svg }} />
+      <div data-keep-colors className="h-40 w-40 shrink-0 rounded-xl border-2 border-stone-200 bg-white p-2" dangerouslySetInnerHTML={{ __html: svg }} />
       <div className="min-w-0 space-y-3">
         <p className="break-all font-mono text-lg font-bold">{display}</p>
         <div className="flex flex-wrap gap-2">
