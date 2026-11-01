@@ -7,12 +7,12 @@ import { requireAccount, requireAdmin, requireUser } from "@/lib/auth";
 import { buttonEmail, sendEmail } from "@/lib/email";
 import { siteUrl } from "@/lib/request";
 
-export async function joinMarketplaceWaitlist() {
+/** "Let advertisers reach out to me": off unless the creator ticks it. */
+export async function setAdvertiserOptIn(formData: FormData) {
   const account = await requireAccount();
-  if (!account.marketplaceInterestAt) {
-    await db.update(users).set({ marketplaceInterestAt: new Date() }).where(eq(users.id, account.id));
-  }
-  revalidatePath("/dashboard/marketplace");
+  const on = formData.get("optIn") === "on";
+  await db.update(users).set({ marketplaceInterestAt: on ? (account.marketplaceInterestAt ?? new Date()) : null }).where(eq(users.id, account.id));
+  revalidatePath("/dashboard");
 }
 
 const MAX_LINKS = 100;

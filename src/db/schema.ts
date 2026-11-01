@@ -61,7 +61,7 @@ export const users = pgTable(
     // Stats email on/off (name is historical) and how often
     weeklyEmail: boolean("weekly_email").notNull().default(true),
     statsEvery: text("stats_every").$type<"week" | "month">().notNull().default("week"),
-    // Raised a hand for the marketplace waitlist
+    // Opted in to "let advertisers reach out to me" (null = no)
     marketplaceInterestAt: timestamp("marketplace_interest_at", { withTimezone: true }),
     emailVerifiedAt: timestamp("email_verified_at", { withTimezone: true }),
     isAdmin: boolean("is_admin").notNull().default(false),
