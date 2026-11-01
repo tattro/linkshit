@@ -116,8 +116,7 @@ function sectionOf(rows: { id: number; heading: boolean }[], id: number): string
  * Puts a link at the end of a section ("none" = the top group, above the first
  * section). Does nothing if the link is already in that section.
  */
-async function placeInSection(userId: number, linkId: number, raw: FormDataEntryValue | null) {
-  const target = String(raw ?? "");
+async function placeInSection(userId: number, linkId: number, target: string) {
   if (!target) return;
   const rows = await db
     .select({ id: links.id, heading: links.heading })
@@ -143,6 +142,23 @@ async function placeInSection(userId: number, linkId: number, raw: FormDataEntry
   });
 }
 
+/**
+ * Reads the Section menu. "new" creates the section (at the bottom of the
+ * list) and returns its id, so the link can go straight under it.
+ */
+async function resolveSection(userId: number, formData: FormData): Promise<{ target: string } | { error: string }> {
+  const target = String(formData.get("section") ?? "");
+  if (target !== "new") return { target };
+  const title = String(formData.get("newSection") ?? "").trim().slice(0, 60);
+  if (!title) return { error: "Give the new section a name, like Music." };
+  const [{ max }] = await db
+    .select({ max: sql<number>`coalesce(max(${links.position}), -1)::int` })
+    .from(links)
+    .where(and(eq(links.userId, userId), isNull(links.deletedAt)));
+  const [row] = await db.insert(links).values({ userId, position: max + 1, title, url: "", heading: true }).returning({ id: links.id });
+  return { target: String(row.id) };
+}
+
 export async function addLink(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const user = await requireUser();
   if (!(await rateLimit(`links:user:${user.id}`, 120, 60 * 60))) return { error: TOO_MANY };
@@ -153,11 +169,15 @@ export async function addLink(_prev: ActionState, formData: FormData): Promise<A
     .select({ count: sql<number>`count(*)::int`, max: sql<number>`coalesce(max(${links.position}), -1)::int` })
     .from(links)
     .where(and(eq(links.userId, user.id), isNull(links.deletedAt)));
-  if (count >= MAX_LINKS) return { error: `You've hit the ${MAX_LINKS} link limit. Impressive.` };
+  if (count >= MAX_LINKS - (formData.get("section") === "new" ? 1 : 0)) return { error: `You've hit the ${MAX_LINKS} link limit. Impressive.` };
+  const section = await resolveSection(user.id, formData);
+  if ("error" in section) return { error: section.error };
 
-  const [row] = await db.insert(links).values({ userId: user.id, position: max + 1, ...form.value }).returning({ id: links.id });
+  // Bottom of the list (below a section that was just made, if any)
+  const position = section.target === String(formData.get("section")) ? max + 1 : max + 2;
+  const [row] = await db.insert(links).values({ userId: user.id, position, ...form.value }).returning({ id: links.id });
   await saveThumb(row.id, form.thumb, false);
-  await placeInSection(user.id, row.id, formData.get("section"));
+  await placeInSection(user.id, row.id, section.target);
   refresh(user.handle);
   return { ok: true };
 }
@@ -168,10 +188,14 @@ export async function updateLink(_prev: ActionState, formData: FormData): Promis
   const id = Number(formData.get("id"));
   const form = await readLinkForm(formData);
   if ("error" in form) return { error: form.error };
+  const owned = await db.select({ id: links.id }).from(links).where(and(eq(links.id, id), eq(links.userId, user.id), eq(links.heading, false), isNull(links.deletedAt)));
+  if (!owned.length) return { error: "That link is gone. Refresh the page." };
+  const section = await resolveSection(user.id, formData);
+  if ("error" in section) return { error: section.error };
   const [row] = await db.update(links).set(form.value).where(and(eq(links.id, id), eq(links.userId, user.id), eq(links.heading, false))).returning({ id: links.id });
   if (row) {
     await saveThumb(row.id, form.thumb, form.removeThumb);
-    await placeInSection(user.id, row.id, formData.get("section"));
+    await placeInSection(user.id, row.id, section.target);
   }
   refresh(user.handle);
   return { ok: true };
