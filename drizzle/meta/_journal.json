@@ -43,6 +43,13 @@
       "when": 1793497539868,
       "tag": "0005_custom_domains",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793504051400,
+      "tag": "0006_growth_pack",
+      "breakpoints": true
     }
   ]
 }

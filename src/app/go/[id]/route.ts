@@ -32,13 +32,13 @@ export async function GET(req: Request, ctx: RouteContext<"/go/[id]">) {
   const [link] = await db
     .select({
       url: links.url, userId: links.userId, bannedAt: users.bannedAt, startsAt: links.startsAt, endsAt: links.endsAt,
-      openInApp: users.openInApp,
+      openInApp: users.openInApp, deletedAt: links.deletedAt,
     })
     .from(links)
     .innerJoin(users, eq(users.id, links.userId))
     .where(eq(links.id, linkId));
   const now = new Date();
-  if (!link || link.bannedAt || (link.startsAt && link.startsAt > now) || (link.endsAt && link.endsAt <= now)) return home;
+  if (!link || link.bannedAt || link.deletedAt || (link.startsAt && link.startsAt > now) || (link.endsAt && link.endsAt <= now)) return home;
 
   const visitor = visitorInfo(req.headers, new URL(req.url).host);
   after(async () => {

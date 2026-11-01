@@ -5,7 +5,9 @@ import "server-only";
  * Without a key, the message is logged instead so the flows still work locally.
  * Returns false if sending failed or email isn't configured in production.
  */
-export async function sendEmail(to: string, subject: string, text: string, html: string): Promise<boolean> {
+export async function sendEmail(
+  to: string, subject: string, text: string, html: string, headers?: Record<string, string>,
+): Promise<boolean> {
   const key = process.env.RESEND_API_KEY;
   const from = process.env.EMAIL_FROM ?? "linksh.it <hello@linksh.it>";
   if (!key) {
@@ -16,7 +18,7 @@ export async function sendEmail(to: string, subject: string, text: string, html:
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ from, to, subject, text, html }),
+      body: JSON.stringify({ from, to, subject, text, html, ...(headers ? { headers } : {}) }),
     });
     if (!res.ok) console.error("[email] Resend error", res.status, await res.text());
     return res.ok;

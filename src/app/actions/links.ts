@@ -1,8 +1,9 @@
 "use server";
 
-import { and, asc, eq, sql } from "drizzle-orm";
+import { and, eq, isNotNull, isNull, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
-import { db, links } from "@/db";
+import { db, links, users } from "@/db";
+import { fetchLinktree, linktreeUsername } from "@/lib/linktree";
 import { requireUser } from "@/lib/auth";
 import { embedFor } from "@/lib/embeds";
 import { rateLimit, TOO_MANY } from "@/lib/ratelimit";
@@ -61,7 +62,7 @@ export async function addLink(_prev: ActionState, formData: FormData): Promise<A
   const [{ count, max }] = await db
     .select({ count: sql<number>`count(*)::int`, max: sql<number>`coalesce(max(${links.position}), -1)::int` })
     .from(links)
-    .where(eq(links.userId, user.id));
+    .where(and(eq(links.userId, user.id), isNull(links.deletedAt)));
   if (count >= MAX_LINKS) return { error: `You've hit the ${MAX_LINKS} link limit. Impressive.` };
 
   await db.insert(links).values({ userId: user.id, position: max + 1, ...form.value });
@@ -80,30 +81,86 @@ export async function updateLink(_prev: ActionState, formData: FormData): Promis
   return { ok: true };
 }
 
+/** "Flush it": moves the link to the graveyard. */
 export async function deleteLink(formData: FormData) {
   const user = await requireUser();
   const id = Number(formData.get("id"));
-  await db.delete(links).where(and(eq(links.id, id), eq(links.userId, user.id)));
+  await db.update(links).set({ deletedAt: new Date() }).where(and(eq(links.id, id), eq(links.userId, user.id)));
   refresh(user.handle);
 }
 
-export async function moveLink(formData: FormData) {
+/** Brings a link back from the graveyard, at the bottom of the list. */
+export async function reviveLink(formData: FormData) {
   const user = await requireUser();
   const id = Number(formData.get("id"));
-  const dir = formData.get("dir") === "up" ? -1 : 1;
+  const [{ live, max }] = await db
+    .select({ live: sql<number>`count(*)::int`, max: sql<number>`coalesce(max(${links.position}), -1)::int` })
+    .from(links)
+    .where(and(eq(links.userId, user.id), isNull(links.deletedAt)));
+  if (live >= MAX_LINKS) return;
+  await db.update(links).set({ deletedAt: null, position: max + 1 })
+    .where(and(eq(links.id, id), eq(links.userId, user.id), isNotNull(links.deletedAt)));
+  refresh(user.handle);
+}
+
+/** Deletes a graveyard link for good. */
+export async function deleteLinkForever(formData: FormData) {
+  const user = await requireUser();
+  const id = Number(formData.get("id"));
+  await db.delete(links).where(and(eq(links.id, id), eq(links.userId, user.id), isNotNull(links.deletedAt)));
+  refresh(user.handle);
+}
+
+/** Saves a new order after drag and drop. Ignores ids that aren't the user's live links. */
+export async function reorderLinks(ids: number[]) {
+  const user = await requireUser();
+  if (!Array.isArray(ids) || ids.length > MAX_LINKS) return;
   const rows = await db
     .select({ id: links.id })
     .from(links)
-    .where(eq(links.userId, user.id))
-    .orderBy(asc(links.position), asc(links.id));
-  const i = rows.findIndex((r) => r.id === id);
-  const j = i + dir;
-  if (i < 0 || j < 0 || j >= rows.length) return;
-  [rows[i], rows[j]] = [rows[j], rows[i]];
+    .where(and(eq(links.userId, user.id), isNull(links.deletedAt)));
+  const mine = new Set(rows.map((r) => r.id));
+  const ordered = ids.filter((id) => Number.isInteger(id) && mine.has(id));
+  // Anything missing from the list keeps its place at the end
+  for (const r of rows) if (!ordered.includes(r.id)) ordered.push(r.id);
   await db.transaction(async (tx) => {
-    for (let k = 0; k < rows.length; k++) {
-      await tx.update(links).set({ position: k }).where(and(eq(links.id, rows[k].id), eq(links.userId, user.id)));
+    for (let k = 0; k < ordered.length; k++) {
+      await tx.update(links).set({ position: k }).where(and(eq(links.id, ordered[k]), eq(links.userId, user.id)));
     }
   });
   refresh(user.handle);
+}
+
+export type ImportState = { error?: string; imported?: number; skipped?: number } | undefined;
+
+/** Copies links (and name/bio, if empty) from a public Linktree page. */
+export async function importLinktree(_prev: ImportState, formData: FormData): Promise<ImportState> {
+  const user = await requireUser();
+  const username = linktreeUsername(String(formData.get("linktree") ?? ""));
+  if (!username) return { error: "Paste your Linktree link, like linktr.ee/yourname." };
+  if (!(await rateLimit(`import:user:${user.id}`, 5, 60 * 60))) return { error: TOO_MANY };
+  const profile = await fetchLinktree(username);
+  if (!profile) return { error: "Couldn't read that Linktree page. Check the name and make sure it's public." };
+  if (profile.links.length === 0) return { error: "Found the page, but no links on it." };
+
+  const existing = await db
+    .select({ url: links.url, position: links.position })
+    .from(links)
+    .where(and(eq(links.userId, user.id), isNull(links.deletedAt)));
+  const have = new Set(existing.map((l) => l.url));
+  let position = existing.reduce((m, l) => Math.max(m, l.position), -1) + 1;
+  let room = MAX_LINKS - existing.length;
+  let imported = 0, skipped = 0;
+  for (const l of profile.links) {
+    const url = normalizeUrl(l.url);
+    if (!url || have.has(url) || room <= 0 || (await unsafeReason(url))) { skipped++; continue; }
+    await db.insert(links).values({ userId: user.id, title: l.title, url, position: position++, embed: false });
+    have.add(url); room--; imported++;
+  }
+  const fill: { displayName?: string; bio?: string } = {};
+  if (!user.displayName && profile.name) fill.displayName = profile.name;
+  if (!user.bio && profile.bio) fill.bio = profile.bio;
+  if (Object.keys(fill).length) await db.update(users).set(fill).where(eq(users.id, user.id));
+  refresh(user.handle);
+  return { imported, skipped };
 }

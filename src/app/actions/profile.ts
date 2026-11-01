@@ -2,7 +2,9 @@
 
 import { eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
-import { avatars, backgrounds, db, users, type Socials, type Tips } from "@/db";
+import { avatars, backgrounds, db, handleRedirects, users, type Socials, type Tips } from "@/db";
+import { handleProblem, normalizeHandle } from "@/lib/handles";
+import { handleTaken } from "@/lib/handleTaken";
 import { TIP_PROVIDERS } from "@/lib/tips";
 import { requireUser } from "@/lib/auth";
 import { rateLimit, TOO_MANY } from "@/lib/ratelimit";
@@ -21,7 +23,8 @@ export async function updateProfile(_prev: ProfileState, formData: FormData): Pr
   const user = await requireUser();
   const displayName = String(formData.get("displayName") ?? "").trim().slice(0, 60);
   const bio = String(formData.get("bio") ?? "").trim().slice(0, 160);
-  await db.update(users).set({ displayName, bio }).where(eq(users.id, user.id));
+  const weeklyEmail = formData.get("weeklyEmail") === "on";
+  await db.update(users).set({ displayName, bio, weeklyEmail }).where(eq(users.id, user.id));
   refresh(user.handle);
   return { ok: true };
 }
@@ -135,5 +138,30 @@ export async function updateSignup(_prev: ProfileState, formData: FormData): Pro
   const signupPrompt = String(formData.get("signupPrompt") ?? "").trim().slice(0, 80);
   await db.update(users).set({ signupEnabled, signupPrompt }).where(eq(users.id, user.id));
   refresh(user.handle);
+  return { ok: true };
+}
+
+export async function changeHandle(_prev: ProfileState, formData: FormData): Promise<ProfileState> {
+  const user = await requireUser();
+  const handle = normalizeHandle(String(formData.get("handle") ?? ""));
+  if (handle === user.handle) return { error: "That's already your handle." };
+  const problem = handleProblem(handle);
+  if (problem) return { error: problem };
+  if (await handleTaken(handle, user.id)) return { error: `Someone already claimed linksh.it/${handle}.` };
+  if (!(await rateLimit(`rename:user:${user.id}`, 3, 24 * 60 * 60))) return { error: "You've renamed a lot today. Try again tomorrow." };
+  try {
+    await db.transaction(async (tx) => {
+      await tx.update(users).set({ handle }).where(eq(users.id, user.id));
+      // Old handle keeps redirecting here; taking back an old handle of your own clears its redirect
+      await tx.delete(handleRedirects).where(eq(handleRedirects.handle, handle));
+      await tx.insert(handleRedirects).values({ handle: user.handle, userId: user.id })
+        .onConflictDoUpdate({ target: handleRedirects.handle, set: { userId: user.id, createdAt: new Date() } });
+    });
+  } catch {
+    return { error: "That handle was just taken. Try another." };
+  }
+  revalidatePath("/dashboard");
+  revalidatePath(`/${user.handle}`);
+  revalidatePath(`/${handle}`);
   return { ok: true };
 }

@@ -26,8 +26,9 @@ const REASONS: [string, boolean][] = [
   ["Name you can say at Thanksgiving", false],
 ];
 
-export default async function Home() {
+export default async function Home({ searchParams }: PageProps<"/">) {
   const user = await getCurrentUser();
+  const { bye } = await searchParams;
   return (
     <div className="min-h-screen bg-stone-100 text-stone-900">
       <header className="mx-auto flex max-w-5xl items-center justify-between p-6">
@@ -44,6 +45,11 @@ export default async function Home() {
         </nav>
       </header>
 
+      {bye && (
+        <p role="status" className="mx-auto max-w-5xl px-6">
+          <span className="inline-block rounded-full bg-stone-900 px-4 py-2 text-sm font-semibold text-white">Account flushed. Bye 👋💩</span>
+        </p>
+      )}
       <main className="mx-auto grid max-w-5xl items-center gap-12 px-6 pb-24 pt-10 md:grid-cols-2">
         <section>
           <h1 className="text-5xl font-black leading-[1.05] tracking-tight md:text-6xl">

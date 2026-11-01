@@ -1,11 +1,12 @@
 "use client";
 
 import { startTransition, useActionState, useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { addLink, deleteLink, moveLink, updateLink, type ActionState } from "@/app/actions/links";
+import { addLink, deleteLink, deleteLinkForever, importLinktree, reviveLink, updateLink, type ActionState } from "@/app/actions/links";
 import {
-  removeAvatar, removeBackground, updateLook, updateProfile, updateSignup, updateSocials, updateTips, uploadAvatar, uploadBackground,
+  changeHandle, removeAvatar, removeBackground, updateLook, updateProfile, updateSignup, updateSocials, updateTips, uploadAvatar, uploadBackground,
 } from "@/app/actions/profile";
 import { resendVerification } from "@/app/actions/auth";
+import { deleteAccount } from "@/app/actions/account";
 import type { Link, Socials, Style, Tips } from "@/db/schema";
 import { setLookDraft } from "./lookDraft";
 import { embedFor } from "@/lib/embeds";
@@ -119,7 +120,7 @@ function scheduleLabel(l: Link) {
   return null;
 }
 
-export function LinkItem({ link, first, last }: { link: Link; first: boolean; last: boolean }) {
+export function LinkItem({ link, handle }: { link: Link; handle?: React.ReactNode }) {
   const [editing, setEditing] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [url, setUrl] = useState(link.url);
@@ -134,7 +135,7 @@ export function LinkItem({ link, first, last }: { link: Link; first: boolean; la
 
   if (editing) {
     return (
-      <li className="rounded-xl border-2 border-stone-900 p-3">
+      <div className="rounded-xl border-2 border-stone-900 bg-white p-3">
         <form action={action} className="grid gap-2">
           <input type="hidden" name="id" value={link.id} />
           <input name="title" defaultValue={link.title} required maxLength={100} className={input} />
@@ -146,25 +147,14 @@ export function LinkItem({ link, first, last }: { link: Link; first: boolean; la
             <button type="button" onClick={() => setEditing(false)} className={ghost}>Cancel</button>
           </div>
         </form>
-      </li>
+      </div>
     );
   }
 
   return (
-    <li className="rounded-xl border-2 border-stone-200 p-3">
+    <div className="rounded-xl border-2 border-stone-200 bg-white p-3">
       <div className="flex items-center gap-3">
-        <div className="flex flex-col gap-1">
-          <form action={moveLink}>
-            <input type="hidden" name="id" value={link.id} />
-            <input type="hidden" name="dir" value="up" />
-            <button disabled={first} className={ghost} aria-label="Move up">↑</button>
-          </form>
-          <form action={moveLink}>
-            <input type="hidden" name="id" value={link.id} />
-            <input type="hidden" name="dir" value="down" />
-            <button disabled={last} className={ghost} aria-label="Move down">↓</button>
-          </form>
-        </div>
+        {handle}
         <div className="min-w-0 flex-1">
           <p className="truncate font-semibold">
             {link.icon && <span className="mr-1">{link.icon}</span>}
@@ -194,7 +184,7 @@ export function LinkItem({ link, first, last }: { link: Link; first: boolean; la
           </>
         )}
       </div>
-    </li>
+    </div>
   );
 }
 
@@ -202,7 +192,7 @@ function Saved({ show }: { show: boolean }) {
   return show ? <span className="text-sm text-lime-700">Saved.</span> : null;
 }
 
-export function ProfileForm({ user }: { user: { displayName: string; bio: string } }) {
+export function ProfileForm({ user }: { user: { displayName: string; bio: string; weeklyEmail: boolean } }) {
   const [state, action, pending] = useActionState(updateProfile, undefined);
   return (
     <form action={action} className="space-y-4">
@@ -213,6 +203,10 @@ export function ProfileForm({ user }: { user: { displayName: string; bio: string
       <label className="block">
         <span className="text-sm font-semibold">Bio</span>
         <textarea name="bio" defaultValue={user.bio} maxLength={160} rows={2} className={input} placeholder="Say something. Or don't." />
+      </label>
+      <label className="flex items-center gap-2 text-sm">
+        <input type="checkbox" name="weeklyEmail" defaultChecked={user.weeklyEmail} className="h-4 w-4 accent-lime-500" />
+        Email me my weekly stats
       </label>
       <div className="flex items-center gap-3">
         <button disabled={pending} className={btn}>{pending ? "Saving…" : "Save"}</button>
@@ -734,5 +728,137 @@ function FontChip({ font, current, small }: { font: { id: string; name: string; 
         {font.name}
       </span>
     </label>
+  );
+}
+
+/** Flushed links. Rest in links. */
+export function Graveyard({ links }: { links: Link[] }) {
+  if (links.length === 0) return null;
+  return (
+    <details className="mt-4 rounded-xl border-2 border-dashed border-stone-300 p-3">
+      <summary className="cursor-pointer text-sm font-semibold text-stone-600">
+        🪦 Link graveyard ({links.length}) <span className="font-normal text-stone-400">· rest in links</span>
+      </summary>
+      <ul className="mt-3 space-y-2">
+        {links.map((l) => (
+          <li key={l.id} className="flex items-center gap-3 rounded-lg bg-stone-50 p-2 text-sm">
+            <div className="min-w-0 flex-1">
+              <p className="truncate font-semibold text-stone-600">{l.icon && <span className="mr-1">{l.icon}</span>}{l.title}</p>
+              <p className="truncate text-xs text-stone-400">{l.url} · {l.clicks} lifetime click{l.clicks === 1 ? "" : "s"}</p>
+            </div>
+            <form action={reviveLink}>
+              <input type="hidden" name="id" value={l.id} />
+              <button className="rounded-lg bg-lime-300 px-3 py-1 text-sm font-semibold text-stone-900 hover:bg-lime-400">Revive</button>
+            </form>
+            <ForeverButton id={l.id} />
+          </li>
+        ))}
+      </ul>
+    </details>
+  );
+}
+
+function ForeverButton({ id }: { id: number }) {
+  const [sure, setSure] = useState(false);
+  if (!sure) return <button onClick={() => setSure(true)} className={`${ghost} hover:border-red-600 hover:text-red-600`}>Delete forever</button>;
+  return (
+    <form action={deleteLinkForever} className="flex gap-1">
+      <input type="hidden" name="id" value={id} />
+      <button className="rounded-lg bg-red-600 px-2 py-1 text-sm font-semibold text-white">Really?</button>
+      <button type="button" onClick={() => setSure(false)} className={ghost}>No</button>
+    </form>
+  );
+}
+
+export function DeleteAccountForm({ handle }: { handle: string }) {
+  const [open, setOpen] = useState(false);
+  const [state, action, pending] = useActionState(deleteAccount, undefined);
+  if (!open) {
+    return (
+      <button type="button" onClick={() => setOpen(true)} className="rounded-lg border-2 border-red-300 px-4 py-2 text-sm font-semibold text-red-700 hover:border-red-600 hover:bg-red-50">
+        Delete my account
+      </button>
+    );
+  }
+  return (
+    <form action={action} className="space-y-3 rounded-xl border-2 border-red-300 bg-red-50 p-4">
+      <p className="text-sm text-red-900">
+        This deletes your page, links, photos, analytics and email list <strong>for good</strong>, and frees up linksh.it/{handle} for someone else. No undo, no graveyard.
+      </p>
+      <label className="block text-sm">
+        Type <span className="font-mono font-bold">{handle}</span> to confirm
+        <input name="handle" autoComplete="off" required className={input} />
+      </label>
+      <label className="block text-sm">
+        Your password
+        <input name="password" type="password" autoComplete="current-password" required className={input} />
+      </label>
+      {state?.error && <p className="text-sm text-red-700">{state.error}</p>}
+      <div className="flex gap-2">
+        <button disabled={pending} className="rounded-lg bg-red-600 px-4 py-2 font-semibold text-white hover:bg-red-700 disabled:opacity-50">
+          {pending ? "Flushing…" : "Flush my account"}
+        </button>
+        <button type="button" onClick={() => setOpen(false)} className={`${ghost} px-3 py-2`}>Never mind</button>
+      </div>
+    </form>
+  );
+}
+
+export function LinktreeImport() {
+  const [open, setOpen] = useState(false);
+  const [state, action, pending] = useActionState(importLinktree, undefined);
+  if (!open) {
+    return (
+      <button type="button" onClick={() => setOpen(true)} className="mt-3 text-sm text-stone-500 underline">
+        Moving from Linktree? Import your links
+      </button>
+    );
+  }
+  return (
+    <form action={action} className="mt-4 space-y-2 rounded-xl bg-stone-50 p-3">
+      <p className="text-sm font-semibold">Import from Linktree</p>
+      <div className="flex gap-2">
+        <input name="linktree" required placeholder="linktr.ee/yourname" aria-label="Your Linktree link" className={input} />
+        <button disabled={pending} className={`${btn} shrink-0`}>{pending ? "Importing…" : "Import"}</button>
+      </div>
+      <p className="text-xs text-stone-500">Copies your public links (and name and bio, if yours are empty). Nothing on Linktree changes.</p>
+      {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
+      {state?.imported !== undefined && (
+        <p className="text-sm text-lime-700">
+          Imported {state.imported} link{state.imported === 1 ? "" : "s"}{state.skipped ? ` (skipped ${state.skipped} duplicate or unusable)` : ""}. Welcome to the better name. 💩
+        </p>
+      )}
+    </form>
+  );
+}
+
+export function HandleForm({ handle }: { handle: string }) {
+  const [state, action, pending] = useActionState(changeHandle, undefined);
+  const [value, setValue] = useState(handle);
+  return (
+    <form action={action} className="space-y-2">
+      <label className="block text-sm font-semibold" htmlFor="handle-input">Your link</label>
+      <div className="flex gap-2">
+        <div className="flex flex-1 items-center rounded-lg border-2 border-stone-300 bg-white focus-within:border-stone-900">
+          <span className="pl-3 font-mono text-sm text-stone-500">linksh.it/</span>
+          <input
+            id="handle-input"
+            name="handle"
+            value={value}
+            onChange={(e) => setValue(e.target.value.toLowerCase())}
+            maxLength={30}
+            className="min-w-0 flex-1 bg-transparent py-2 pr-3 font-mono outline-none"
+          />
+        </div>
+        <button disabled={pending || value === handle} className={`${btn} shrink-0`}>{pending ? "Changing…" : "Change"}</button>
+      </div>
+      {value !== handle && (
+        <p className="text-xs text-stone-500">
+          linksh.it/{handle} will keep redirecting to your new link for 30 days, then anyone can claim it. Update your bios and QR codes before then.
+        </p>
+      )}
+      {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
+      {state?.ok && !pending && <p className="text-sm text-lime-700">Done. You&apos;re linksh.it/{handle} now.</p>}
+    </form>
   );
 }
