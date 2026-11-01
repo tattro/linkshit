@@ -1,6 +1,6 @@
 import { eq, sql } from "drizzle-orm";
 import { NextResponse, after } from "next/server";
-import { db, events, links, users } from "@/db";
+import { db, events, links, offers, users } from "@/db";
 import { androidIntent, appTarget, detectDevice } from "@/lib/deeplinks";
 import { visitorInfo } from "@/lib/request";
 
@@ -32,13 +32,14 @@ export async function GET(req: Request, ctx: RouteContext<"/go/[id]">) {
   const [link] = await db
     .select({
       url: links.url, userId: links.userId, bannedAt: users.bannedAt, startsAt: links.startsAt, endsAt: links.endsAt,
-      openInApp: users.openInApp, deletedAt: links.deletedAt,
+      openInApp: users.openInApp, deletedAt: links.deletedAt, offerId: links.offerId, offerActive: offers.active,
     })
     .from(links)
     .innerJoin(users, eq(users.id, links.userId))
+    .leftJoin(offers, eq(offers.id, links.offerId))
     .where(eq(links.id, linkId));
   const now = new Date();
-  if (!link || link.bannedAt || link.deletedAt || (link.startsAt && link.startsAt > now) || (link.endsAt && link.endsAt <= now)) return home;
+  if (!link || link.bannedAt || link.deletedAt || (link.offerId && !link.offerActive) || (link.startsAt && link.startsAt > now) || (link.endsAt && link.endsAt <= now)) return home;
 
   const visitor = visitorInfo(req.headers, new URL(req.url).host);
   after(async () => {
