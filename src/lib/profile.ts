@@ -22,7 +22,7 @@ export const getPublicProfile = cache(async (by: "handle" | "domain", key: strin
     .select({
       id: links.id, title: links.title, url: links.url, embed: links.embed, startsAt: links.startsAt, endsAt: links.endsAt,
       sensitive: links.sensitive, spotlight: links.spotlight, icon: links.icon, offerId: links.offerId,
-      thumbVersion: links.thumbVersion, lockCode: links.lockCode,
+      thumbVersion: links.thumbVersion, lockCode: links.lockCode, discountCode: links.discountCode,
     })
     .from(links)
     // Offers the advertiser has paused drop off every page
