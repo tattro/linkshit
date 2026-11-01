@@ -8,6 +8,7 @@ import {
 import { resendVerification } from "@/app/actions/auth";
 import type { Link, Socials, Style, Tips } from "@/db/schema";
 import { setLookDraft } from "./lookDraft";
+import { ChaosToggle } from "./ChaosMode";
 import { embedFor } from "@/lib/embeds";
 import { TIP_PROVIDERS } from "@/lib/tips";
 import { FONTS, parseStyle, GRADIENT_DIRS, GRADIENT_PRESETS, SHAPES, gradientCss, hasCustomColors } from "@/lib/style";
@@ -607,9 +608,12 @@ export function LookForm({ user, avatar, background }: { user: { theme: string; 
         </label>
       </fieldset>
 
-      <div className="flex items-center gap-3">
-        <button disabled={pending} className={btn}>{pending ? "Saving…" : "Save look"}</button>
-        <Saved show={!!state?.ok && !pending} />
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+        <div className="flex items-center gap-3">
+          <button disabled={pending} className={btn}>{pending ? "Saving…" : "Save look"}</button>
+          <Saved show={!!state?.ok && !pending} />
+        </div>
+        <ChaosToggle />
       </div>
     </form>
   );
