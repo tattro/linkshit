@@ -33,6 +33,8 @@ export type Backup = {
     signupEnabled: boolean;
     signupPrompt: string;
     contactEnabled?: boolean;
+    qaEnabled?: boolean;
+    qaPrompt?: string;
     lockCode: string | null;
     seoTitle: string;
     seoDescription: string;

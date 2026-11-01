@@ -7,11 +7,12 @@ import { SensitiveGate } from "./SensitiveGate";
 import { DiscountLink } from "./DiscountLink";
 import { SignupBox } from "./SignupBox";
 import { ContactBox } from "./ContactBox";
+import { AskBox } from "./AskBox";
 import { ChaosMode } from "./ChaosMode";
 import { backgroundImageStyle, buttonStyle, pageStyle } from "@/lib/style";
 import { getTheme } from "@/lib/themes";
 
-export type ProfileData = Pick<User, "id" | "handle" | "displayName" | "bio" | "theme" | "avatarVersion" | "bgVersion" | "signupEnabled" | "signupPrompt" | "contactEnabled"> & {
+export type ProfileData = Pick<User, "id" | "handle" | "displayName" | "bio" | "theme" | "avatarVersion" | "bgVersion" | "signupEnabled" | "signupPrompt" | "contactEnabled" | "qaEnabled" | "qaPrompt"> & {
   style: Style;
   socials: Socials;
   tips: Tips;
@@ -29,8 +30,9 @@ export function backgroundUrl(u: Pick<User, "id" | "bgVersion">) {
   return u.bgVersion > 0 ? `/bg/${u.id}?v=${u.bgVersion}` : null;
 }
 
-export function ProfileView({ user, links, preview = false, avatarOverride }: {
+export function ProfileView({ user, links, preview = false, avatarOverride, qa = [] }: {
   user: ProfileData;
+  qa?: { id: number; body: string; answer: string; answeredAt: Date }[];
   links: ProfileLink[];
   preview?: boolean;
   avatarOverride?: string | null;
@@ -175,6 +177,26 @@ export function ProfileView({ user, links, preview = false, avatarOverride }: {
           {links.length === 0 && <li className={`text-center text-sm ${theme.muted}`} style={mutedStyle}>Nothing here yet. Check back soon.</li>}
         </ul>
 
+        {user.qaEnabled && (
+          <div className="mt-6 w-full">
+            <AskBox userId={user.id} prompt={user.qaPrompt} buttonClass={btnClass} buttonStyle={btnStyle} preview={preview} />
+            {qa.length > 0 && (
+              <ul className="mt-3 max-h-[28rem] space-y-3 overflow-y-auto rounded-xl bg-current/5 p-3" aria-label="Questions and answers">
+                {qa.map((x) => (
+                  <li key={x.id} className="space-y-1.5">
+                    <p className="w-fit max-w-[85%] whitespace-pre-wrap break-words rounded-2xl rounded-bl-sm bg-current/10 px-3 py-2 text-sm">
+                      <span className={`block text-[11px] font-semibold ${theme.muted}`} style={mutedStyle}>🕵️ Anonymous</span>
+                      {x.body}
+                    </p>
+                    <p className={`ml-auto w-fit max-w-[85%] whitespace-pre-wrap break-words rounded-2xl rounded-br-sm px-3 py-2 text-sm ${btnClass}`} style={btnStyle}>
+                      {x.answer}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
         {user.contactEnabled && (
           <div className="mt-6 w-full">
             <ContactBox userId={user.id} buttonClass={btnClass} buttonStyle={btnStyle} preview={preview} />

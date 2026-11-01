@@ -320,7 +320,7 @@ export async function restorePage(_prev: ActionState, formData: FormData): Promi
       displayName: str(p.displayName, 60), bio: str(p.bio, 160),
       theme: THEMES.some((t) => t.id === p.theme) ? p.theme : user.theme,
       style, socials: pick(PLATFORMS, p.socials) as Socials, tips: pick(TIP_PROVIDERS, p.tips) as Tips,
-      openInApp: p.openInApp !== false, signupEnabled: p.signupEnabled === true, signupPrompt: str(p.signupPrompt, 80), contactEnabled: p.contactEnabled === true,
+      openInApp: p.openInApp !== false, signupEnabled: p.signupEnabled === true, signupPrompt: str(p.signupPrompt, 80), contactEnabled: p.contactEnabled === true, qaEnabled: p.qaEnabled === true, qaPrompt: str(p.qaPrompt, 60),
       lockCode: cleanCode(str(p.lockCode, 40)), seoTitle: str(p.seoTitle, 70), seoDescription: str(p.seoDescription, 200),
       metaPixel: cleanMetaPixel(str(p.metaPixel, 100)) ?? "", googleAnalytics: cleanGoogleAnalytics(str(p.googleAnalytics, 100)) ?? "",
       tiktokPixel: cleanTiktokPixel(str(p.tiktokPixel, 100)) ?? "", utm: p.utm === true,

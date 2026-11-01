@@ -3,6 +3,7 @@
 import NextLink from "next/link";
 import { startTransition, useActionState, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { deleteMessage, updateContact } from "@/app/actions/contact";
+import { answerQuestion, deleteQuestion, updateQA } from "@/app/actions/qa";
 import { addHeading, addLink, deleteLink, deleteLinkForever, importLinktree, restorePage, reviveLink, updateHeading, updateLink, type ActionState } from "@/app/actions/links";
 import {
   changeHandle, removeAvatar, removeBackground, updateLook, updateProfile, updateSignup, updateSocials, updateTips, uploadAvatar, uploadBackground,
@@ -925,6 +926,87 @@ export function TipsForm({ tips }: { tips: Tips }) {
         {state?.error && <span className="text-sm text-red-600">{state.error}</span>}
       </div>
     </form>
+  );
+}
+
+function AnswerForm({ id, answer }: { id: number; answer?: string }) {
+  const [state, action, pending] = useActionState(answerQuestion, undefined);
+  return (
+    <form action={action} className="mt-2 space-y-2">
+      <input type="hidden" name="id" value={id} />
+      <textarea name="answer" required maxLength={1000} rows={2} defaultValue={answer} placeholder="Your answer (posts it to your page)" className={input} />
+      <div className="flex items-center gap-2">
+        <button disabled={pending} className={`${btn} px-3 py-1.5 text-sm`}>{pending ? "Posting…" : answer ? "Update answer" : "Answer & post"}</button>
+        {state?.error && <span className="text-sm text-red-600">{state.error}</span>}
+      </div>
+    </form>
+  );
+}
+
+export function QASettings({ enabled, prompt, waiting, answered }: {
+  enabled: boolean;
+  prompt: string;
+  waiting: { id: number; body: string; createdAt: Date }[];
+  answered: { id: number; body: string; answer: string; answeredAt: Date }[];
+}) {
+  const [state, action, pending] = useActionState(updateQA, undefined);
+  const [showPosted, setShowPosted] = useState(false);
+  const del = (id: number, label: string) => (
+    <form action={deleteQuestion}>
+      <input type="hidden" name="id" value={id} />
+      <button className="text-xs text-stone-400 hover:text-red-600">{label}</button>
+    </form>
+  );
+  return (
+    <div className="space-y-4">
+      <form action={action} className="space-y-3">
+        <p className="-mt-2 text-sm text-stone-500">Visitors ask you anything, anonymously. Nothing shows on your page until you answer it, then it joins a scrollable Q&amp;A feed.</p>
+        <label className="flex items-center gap-2 text-sm font-semibold">
+          <input type="checkbox" name="qaEnabled" defaultChecked={enabled} className="h-4 w-4 accent-lime-500" />
+          Let visitors ask me anonymous questions
+        </label>
+        <input name="qaPrompt" defaultValue={prompt} maxLength={60} placeholder="💬 Talk to me" aria-label="Button text" className={input} />
+        <div className="flex items-center gap-3">
+          <button disabled={pending} className={btn}>{pending ? "Saving…" : "Save"}</button>
+          <Saved show={!!state?.ok && !pending} />
+        </div>
+      </form>
+      <div>
+        <p className="text-sm font-semibold">🕵️ Waiting for you ({waiting.length})</p>
+        {waiting.length === 0 && <p className="mt-1 text-xs text-stone-400">No new questions. Share your page and they&apos;ll roll in.</p>}
+        <ul className="mt-2 space-y-2">
+          {waiting.map((q) => (
+            <li key={q.id} className="rounded-xl border-2 border-stone-200 p-3 text-sm">
+              <div className="flex items-start justify-between gap-2">
+                <p className="min-w-0 whitespace-pre-wrap break-words">{q.body}</p>
+                {del(q.id, "Delete")}
+              </div>
+              <AnswerForm id={q.id} />
+            </li>
+          ))}
+        </ul>
+      </div>
+      {answered.length > 0 && (
+        <div>
+          <button type="button" onClick={() => setShowPosted((o) => !o)} className="text-sm font-semibold underline decoration-lime-500 decoration-2 underline-offset-2">
+            ✅ Posted on your page ({answered.length}) {showPosted ? "▴" : "▾"}
+          </button>
+          {showPosted && (
+            <ul className="mt-2 space-y-2">
+              {answered.map((q) => (
+                <li key={q.id} className="rounded-xl border-2 border-stone-200 p-3 text-sm">
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="min-w-0 whitespace-pre-wrap break-words text-stone-500">{q.body}</p>
+                    {del(q.id, "Take down")}
+                  </div>
+                  <AnswerForm id={q.id} answer={q.answer} />
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 
