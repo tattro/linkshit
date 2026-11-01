@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Bricolage_Grotesque, DM_Serif_Display, Geist, Geist_Mono, Nunito } from "next/font/google";
+import { extraFontVariables } from "@/lib/fonts";
 import "./globals.css";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
@@ -18,7 +19,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} ${serif.variable} ${rounded.variable} ${display.variable} antialiased`}>{children}</body>
+      <body className={`${geistSans.variable} ${geistMono.variable} ${serif.variable} ${rounded.variable} ${display.variable} ${extraFontVariables} antialiased`}>{children}</body>
     </html>
   );
 }

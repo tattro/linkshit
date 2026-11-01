@@ -7,7 +7,27 @@ export const FONTS = [
   { id: "mono", name: "Hacker", css: "var(--font-geist-mono), ui-monospace, monospace" },
   { id: "rounded", name: "Friendly", css: "var(--font-rounded), system-ui, sans-serif" },
   { id: "display", name: "Loud", css: "var(--font-display), Impact, sans-serif" },
-] as const;
+  { id: "beach", name: "Beach", css: "var(--font-beach), cursive", more: true },
+  { id: "marker", name: "Marker", css: "var(--font-marker), cursive", more: true },
+  { id: "pixel", name: "8-bit", css: "var(--font-pixel), system-ui, sans-serif", more: true },
+  { id: "poster", name: "Poster", css: "var(--font-poster), system-ui, sans-serif", more: true },
+  { id: "magazine", name: "Magazine", css: "var(--font-magazine), system-ui, sans-serif", more: true },
+  { id: "techy", name: "Techy", css: "var(--font-techy), system-ui, sans-serif", more: true },
+  { id: "handwritten", name: "Handwritten", css: "var(--font-handwritten), cursive", more: true },
+  { id: "diner", name: "Diner", css: "var(--font-diner), cursive", more: true },
+  { id: "headline", name: "Headline", css: "var(--font-headline), system-ui, sans-serif", more: true },
+  { id: "comic", name: "Comic Sans-ish", css: "var(--font-comic), system-ui, sans-serif", more: true },
+  { id: "scifi", name: "Sci-fi", css: "var(--font-scifi), system-ui, sans-serif", more: true },
+  { id: "spooky", name: "Spooky", css: "var(--font-spooky), cursive", more: true },
+  { id: "retro", name: "Retro", css: "var(--font-retro), system-ui, sans-serif", more: true },
+  { id: "bubbly", name: "Bubbly", css: "var(--font-bubbly), system-ui, sans-serif", more: true },
+  { id: "typewriter", name: "Typewriter", css: "var(--font-typewriter), system-ui, sans-serif", more: true },
+  { id: "comicbook", name: "Comic book", css: "var(--font-comicbook), system-ui, sans-serif", more: true },
+  { id: "royal", name: "Royal", css: "var(--font-royal), system-ui, sans-serif", more: true },
+  { id: "terminal", name: "Terminal", css: "var(--font-terminal), system-ui, sans-serif", more: true },
+  { id: "chunky", name: "Chunky", css: "var(--font-chunky), system-ui, sans-serif", more: true },
+  { id: "groovy", name: "Groovy", css: "var(--font-groovy), cursive", more: true },
+] as { id: string; name: string; css: string; more?: boolean }[];
 
 export const SHAPES = [
   { id: "rounded", name: "Rounded" },
