@@ -171,18 +171,18 @@ export default async function Analytics({ searchParams }: PageProps<"/dashboard/
 
         {pages.length > 1 && <PageComparison pages={pages} stats={perPage} activeId={user.id} days={days} />}
 
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-4 *:min-w-0 sm:grid-cols-3">
           <Stat label="Page views" value={totalViews.toLocaleString()} />
           <Stat label="Link clicks" value={totalClicks.toLocaleString()} />
           <Stat label="Click-through rate" value={ctr} />
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div className="grid gap-6 *:min-w-0 lg:grid-cols-2">
           <section className="rounded-2xl border-2 border-stone-900 bg-white p-6"><DailyChart title="Page views per day" unit="views" data={views} /></section>
           <section className="rounded-2xl border-2 border-stone-900 bg-white p-6"><DailyChart title="Link clicks per day" unit="clicks" data={clicks} /></section>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-3">
+        <div className="grid gap-6 *:min-w-0 lg:grid-cols-3">
           <Ranked title="Top links" rows={topLinks} empty="No clicks yet." />
           <Ranked title="Where visitors came from" rows={referrers.map((r) => ({ label: r.label!, value: r.value }))} empty="No referrers yet. Direct visits and apps that hide the referrer aren't listed." />
           <Ranked title="Top countries" rows={countries.map((r) => ({ label: countryName(r.label!), value: r.value }))} empty="No country data yet. It appears once the site is live on Vercel." />
