@@ -104,10 +104,12 @@ export default async function Dashboard({ searchParams }: PageProps<"/dashboard"
             </div>
           </Section>
 
-          <Section title="Custom domain">
-            <p className="-mt-2 mb-4 text-sm text-stone-500">Use your own domain instead of linksh.it/{user.handle}.</p>
-            <DomainForm current={user.customDomain} enabled={domainsEnabled()} apex={user.customDomain ? isApex(user.customDomain) : false} />
-          </Section>
+          {domainsEnabled() && (
+            <Section title="Custom domain">
+              <p className="-mt-2 mb-4 text-sm text-stone-500">Use your own domain instead of linksh.it/{user.handle}.</p>
+              <DomainForm current={user.customDomain} enabled={domainsEnabled()} apex={user.customDomain ? isApex(user.customDomain) : false} />
+            </Section>
+          )}
 
           <Section title="Share">
             <ShareCard url={pageUrl} qrSvg={qrSvg} />
