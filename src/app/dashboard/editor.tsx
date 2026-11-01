@@ -1001,14 +1001,9 @@ export function AdvertiserOptIn({ optedIn }: { optedIn: boolean }) {
           onChange={(e) => e.currentTarget.form?.requestSubmit()}
           className="mt-1 h-4 w-4 shrink-0 accent-lime-500"
         />
-        <span>
-          <span className="font-semibold">Let advertisers reach out to me so I can make more money with my linksh.it page</span>
-          <span className="block text-sm text-stone-500">
-            Totally optional. We never put ads on your page. Nothing shows up unless you pick it yourself.{" "}
-            <NextLink href="/dashboard/marketplace" className="font-semibold text-stone-900 underline decoration-lime-500 decoration-2 underline-offset-2">How it works</NextLink>
-          </span>
-        </span>
+        <span>I&apos;m open to advertisers reaching out to me so I can make money from my linksh.it</span>
       </label>
+      <NextLink href="/dashboard/marketplace" className="ml-7 inline-block text-sm font-semibold underline decoration-lime-500 decoration-2 underline-offset-2">See how it works</NextLink>
       {state && !pending && <Saved show />}
     </form>
   );
