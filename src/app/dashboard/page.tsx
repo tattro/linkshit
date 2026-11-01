@@ -4,6 +4,9 @@ import { answeredQuestions } from "@/lib/profile";
 import { sql } from "drizzle-orm";
 import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
+import Link from "next/link";
+import { SetupHide } from "./SetupHide";
 import { siteUrl } from "@/lib/request";
 import { PLATFORMS } from "@/lib/socials";
 import { avatarUrl, backgroundUrl, offersLast, visibleLinks } from "@/components/ProfileView";
@@ -19,9 +22,33 @@ import { AccountSettings, BackupForm, ContactSettings, QASettings, AddLinkForm, 
 
 export const metadata = { title: "Dashboard" };
 
-function Section({ title, children, aside }: { title: string; children: React.ReactNode; aside?: React.ReactNode }) {
+function Section({ title, children, aside, id, toggle }: {
+  title: string;
+  children: React.ReactNode;
+  aside?: React.ReactNode;
+  id?: string;
+  /** A feature you switch on or off: shows On/Off and folds away while it's off. */
+  toggle?: { on: boolean; blurb: string };
+}) {
+  if (toggle) {
+    return (
+      <details id={id} open={toggle.on} className="group scroll-mt-24 rounded-2xl border-2 border-stone-900 bg-white">
+        <summary className="flex cursor-pointer list-none items-center gap-3 p-5 [&::-webkit-details-marker]:hidden">
+          <div className="min-w-0 flex-1">
+            <h2 className="text-lg font-black">{title}</h2>
+            <p className="text-sm text-stone-500">{toggle.blurb}</p>
+          </div>
+          <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-bold ${toggle.on ? "bg-lime-300 text-stone-900" : "bg-stone-200 text-stone-600"}`}>
+            {toggle.on ? "On" : "Off"}
+          </span>
+          <span aria-hidden className="shrink-0 text-stone-400 transition group-open:rotate-180">▾</span>
+        </summary>
+        <div className="border-t-2 border-stone-100 p-5">{children}</div>
+      </details>
+    );
+  }
   return (
-    <section className="rounded-2xl border-2 border-stone-900 bg-white p-6">
+    <section id={id} className="scroll-mt-24 rounded-2xl border-2 border-stone-900 bg-white p-6">
       <div className="mb-4 flex items-baseline justify-between gap-4">
         <h2 className="text-lg font-black">{title}</h2>
         {aside}
@@ -31,12 +58,70 @@ function Section({ title, children, aside }: { title: string; children: React.Re
   );
 }
 
+const TABS = [
+  { id: "page", label: "✏️ My page" },
+  { id: "look", label: "🎨 Look" },
+  { id: "grow", label: "🚀 Grow" },
+  { id: "settings", label: "⚙️ Settings" },
+] as const;
+type Tab = (typeof TABS)[number]["id"];
+
+function Tabs({ active, badges }: { active: Tab; badges: Partial<Record<Tab, number>> }) {
+  return (
+    <nav aria-label="Dashboard sections" className="sticky top-0 z-20 -mx-6 bg-stone-100/95 px-6 py-2 backdrop-blur">
+      <ul className="grid grid-cols-4 gap-1 rounded-2xl border-2 border-stone-900 bg-white p-1">
+        {TABS.map((t) => (
+          <li key={t.id}>
+            <Link
+              href={t.id === "page" ? "/dashboard" : `/dashboard?tab=${t.id}`}
+              aria-current={active === t.id ? "page" : undefined}
+              className={`relative block rounded-xl px-1 py-2 text-center text-xs font-bold sm:text-sm ${active === t.id ? "bg-stone-900 text-white" : "text-stone-600 hover:bg-stone-100"}`}
+            >
+              {t.label}
+              {!!badges[t.id] && (
+                <span className="absolute -right-1 -top-1 rounded-full bg-red-500 px-1.5 text-[10px] leading-4 text-white">{badges[t.id]}</span>
+              )}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  );
+}
+
+function SetupChecklist({ steps }: { steps: { label: string; done: boolean; href: string }[] }) {
+  const left = steps.filter((x) => !x.done).length;
+  return (
+    <section className="rounded-2xl border-2 border-stone-900 bg-lime-200 p-5">
+      <div className="mb-3 flex items-baseline justify-between gap-3">
+        <h2 className="text-lg font-black">Get started</h2>
+        <span className="text-sm font-semibold">{steps.length - left} of {steps.length} done</span>
+      </div>
+      <ol className="space-y-2">
+        {steps.map((x, i) => (
+          <li key={x.label}>
+            <a href={x.href} className={`flex items-center gap-3 rounded-xl bg-white px-3 py-2.5 text-sm font-semibold ${x.done ? "text-stone-400" : "hover:ring-2 hover:ring-stone-900"}`}>
+              <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs ${x.done ? "bg-lime-400 text-stone-900" : "border-2 border-stone-900"}`}>
+                {x.done ? "✓" : i + 1}
+              </span>
+              <span className={`min-w-0 flex-1 ${x.done ? "line-through" : ""}`}>{x.label}</span>
+              {!x.done && <span aria-hidden>→</span>}
+            </a>
+          </li>
+        ))}
+      </ol>
+      <div className="mt-3 text-right"><SetupHide /></div>
+    </section>
+  );
+}
+
 export default async function Dashboard({ searchParams }: PageProps<"/dashboard">) {
   const s = await getSession();
   if (!s) redirect("/login");
   const { account, page: user } = s;
   const extraPage = user.id !== account.id;
-  const { welcome, verified, reset, newpage, pagegone } = await searchParams;
+  const { welcome, verified, reset, newpage, pagegone, tab: rawTab } = await searchParams;
+  const tab: Tab = TABS.some((t) => t.id === rawTab) ? (rawTab as Tab) : "page";
   const allRows = await db
     .select()
     .from(links)
@@ -56,6 +141,18 @@ export default async function Dashboard({ searchParams }: PageProps<"/dashboard"
   const pageUrl = `${await siteUrl()}/${user.handle}`;
   const [{ scans }] = await db.select({ scans: sql<number>`count(*)::int` }).from(events)
     .where(and(eq(events.userId, user.id), eq(events.kind, "view"), eq(events.referrer, QR_REFERRER)));
+  const [{ views }] = await db.select({ views: sql<number>`count(*)::int` }).from(events)
+    .where(and(eq(events.userId, user.id), eq(events.kind, "view")));
+  const realLinks = rows.filter((l) => !l.heading && !l.offerId).length;
+  const steps = [
+    { label: "Add your photo", done: user.avatarVersion > 0, href: "/dashboard#profile" },
+    { label: "Write a short bio", done: user.bio.trim() !== "", href: "/dashboard#profile" },
+    { label: "Add 3 links", done: realLinks >= 3, href: "/dashboard#add-link" },
+    { label: "Pick a look", done: user.theme !== "classic" || Object.keys(user.style ?? {}).length > 0, href: "/dashboard?tab=look" },
+    { label: "Share your page", done: views > 0, href: "/dashboard?tab=grow#share" },
+  ];
+  const showSetup = steps.some((x) => !x.done) && (await cookies()).get("setup_hidden")?.value !== "1";
+  const growBadge = waiting.length;
   const platforms = PLATFORMS.map(({ id, label, path, placeholder }) => ({ id, label, path, placeholder }));
 
   return (
@@ -86,99 +183,122 @@ export default async function Dashboard({ searchParams }: PageProps<"/dashboard"
           )}
           {!account.emailVerifiedAt && !verified && <VerifyBanner email={account.email ?? ""} />}
 
-          <Section title="Add a link">
-            <AddLinkForm sections={rows.filter((l) => l.heading).map((l) => ({ id: l.id, title: l.title }))} />
-            <LinktreeImport />
-          </Section>
+          <Tabs active={tab} badges={{ grow: growBadge }} />
 
-          <Section
-            title="Your links"
-            aside={<span className="text-sm text-stone-500">{totalClicks} total click{totalClicks === 1 ? "" : "s"}</span>}
-          >
-            {rows.length === 0 ? (
-              <p className="text-stone-500">No links yet. Your page is looking pretty empty.</p>
-            ) : (
-              <LinkList links={rows} />
-            )}
-            <Graveyard links={graves} />
-          </Section>
+          {tab === "page" && (
+            <>
+              {showSetup && <SetupChecklist steps={steps} />}
 
-          <Section title="Profile">
-            <div className="space-y-6">
-              <AvatarForm current={avatarUrl(user)} initial={(user.displayName || user.handle).slice(0, 1)} />
-              <HandleForm handle={user.handle} />
-              <ProfileForm user={{ displayName: user.displayName, bio: user.bio, statsEmail: account.weeklyEmail ? account.statsEvery : "off" }} />
-            </div>
-          </Section>
+              <Section id="add-link" title="Add a link">
+                <AddLinkForm sections={rows.filter((l) => l.heading).map((l) => ({ id: l.id, title: l.title }))} />
+                {realLinks < 3 && <LinktreeImport />}
+              </Section>
 
-          <Section title="Social icons">
-            <p className="-mt-2 mb-4 text-sm text-stone-500">These show as a row of icons under your bio. Usernames or links both work.</p>
-            <SocialsForm socials={user.socials} platforms={platforms} />
-          </Section>
+              <Section
+                title="Your links"
+                aside={<span className="text-sm text-stone-500">{totalClicks} total click{totalClicks === 1 ? "" : "s"}</span>}
+              >
+                {rows.length === 0 ? (
+                  <p className="text-stone-500">No links yet. Your page is looking pretty empty.</p>
+                ) : (
+                  <LinkList links={rows} />
+                )}
+                <Graveyard links={graves} />
+              </Section>
 
-          <Section title="Tip jar">
-            <p className="-mt-2 mb-4 text-sm text-stone-500">Adds a 💸 Tip jar button to your page. Fill in any you use. Money goes straight to you.</p>
-            <TipsForm tips={user.tips} />
-          </Section>
+              <Section id="profile" title="Photo, name & bio">
+                <div className="space-y-6">
+                  <AvatarForm current={avatarUrl(user)} initial={(user.displayName || user.handle).slice(0, 1)} />
+                  <ProfileForm user={{ displayName: user.displayName, bio: user.bio, statsEmail: account.weeklyEmail ? account.statsEvery : "off" }} />
+                </div>
+              </Section>
 
-          <Section title="Email list">
-            <p className="-mt-2 mb-4 text-sm text-stone-500">Turn this on and visitors can leave their email on your page. They get saved here. Download the list any time and import it into Mailchimp, Substack, or whatever you send from.</p>
-            <SignupSettings enabled={user.signupEnabled} prompt={user.signupPrompt} count={subs} recent={recentSubs} />
-          </Section>
+              <Section title="Social icons">
+                <p className="-mt-2 mb-4 text-sm text-stone-500">These show as a row of icons under your bio. Usernames or links both work.</p>
+                <SocialsForm socials={user.socials} platforms={platforms} />
+              </Section>
+            </>
+          )}
 
-          <Section title="Talk to me (anonymous Q&A)">
-            <QASettings enabled={user.qaEnabled} prompt={user.qaPrompt} waiting={waiting} answered={answered} />
-          </Section>
-
-          <Section title="Contact form">
-            <ContactSettings enabled={user.contactEnabled} messages={inbox} />
-          </Section>
-
-          <Section title="Make money (optional)">
-            <AdvertiserOptIn optedIn={Boolean(account.marketplaceInterestAt)} />
-          </Section>
-
-          <Section title="Look & feel">
-            <div className="space-y-6">
-              <StealLook />
-              <BackgroundForm current={backgroundUrl(user)} />
-              <LookForm key={JSON.stringify([user.theme, user.style])} user={{ theme: user.theme, style: user.style, openInApp: user.openInApp }} avatar={avatarUrl(user)} background={backgroundUrl(user)} />
-            </div>
-          </Section>
-
-          {domainsEnabled() && (
-            <Section title="Custom domain">
-              <p className="-mt-2 mb-4 text-sm text-stone-500">Use your own domain instead of linksh.it/{user.handle}.</p>
-              <DomainForm current={user.customDomain} enabled={domainsEnabled()} apex={user.customDomain ? isApex(user.customDomain) : false} />
+          {tab === "look" && (
+            <Section title="Look & feel">
+              <div className="space-y-6">
+                <StealLook />
+                <BackgroundForm current={backgroundUrl(user)} />
+                <LookForm key={JSON.stringify([user.theme, user.style])} user={{ theme: user.theme, style: user.style, openInApp: user.openInApp }} avatar={avatarUrl(user)} background={backgroundUrl(user)} />
+              </div>
             </Section>
           )}
 
-          <Section title="Share">
-            <ShareCard url={pageUrl} qrUrl={qrTarget(pageUrl)} avatar={avatarUrl(user)} scans={scans} />
-          </Section>
+          {tab === "grow" && (
+            <>
+              <Section id="share" title="Share your page">
+                <ShareCard url={pageUrl} qrUrl={qrTarget(pageUrl)} avatar={avatarUrl(user)} scans={scans} />
+              </Section>
 
-          <Section title="Power tools">
-            <p className="-mt-2 mb-4 text-sm text-stone-500">The stuff Linktree charges up to $35 a month for. Free here, obviously.</p>
-            <div className="space-y-6 [&>*+*]:border-t [&>*+*]:border-stone-200 [&>*+*]:pt-6">
-              <RedirectForm links={rows.filter((l) => !l.offerId && !l.heading).map((l) => ({ id: l.id, title: l.title }))} current={user.redirectLinkId} />
-              <PageLockForm code={user.lockCode} />
-              <SeoForm title={user.seoTitle} description={user.seoDescription} />
-              <TrackingForm metaPixel={user.metaPixel} googleAnalytics={user.googleAnalytics} tiktokPixel={user.tiktokPixel} utm={user.utm} />
-            </div>
-          </Section>
+              <p className="px-1 text-sm text-stone-500">Extras for your page. Turn on only what you need. Tap one to open it.</p>
 
-          <Section title="Backup">
-            <BackupForm />
-          </Section>
+              <Section title="💬 Anonymous Q&A" toggle={{ on: user.qaEnabled, blurb: waiting.length ? `${waiting.length} question${waiting.length === 1 ? "" : "s"} waiting for you` : "Visitors ask you anything; you pick what to answer." }}>
+                <QASettings enabled={user.qaEnabled} prompt={user.qaPrompt} waiting={waiting} answered={answered} />
+              </Section>
 
-          <Section title="Account">
-            <p className="-mt-2 mb-4 text-sm text-stone-500">Your login, shared by all your pages.</p>
-            <AccountSettings email={account.email ?? ""} />
-          </Section>
+              <Section title="📬 Email list" toggle={{ on: user.signupEnabled, blurb: subs ? `${subs} subscriber${subs === 1 ? "" : "s"} so far` : "Collect emails from visitors, download them any time." }}>
+                <p className="mb-4 text-sm text-stone-500">Visitors leave their email on your page and it&apos;s saved here. Download the list and import it into Mailchimp, Substack or whatever you send from.</p>
+                <SignupSettings enabled={user.signupEnabled} prompt={user.signupPrompt} count={subs} recent={recentSubs} />
+              </Section>
 
-          <Section title="Danger zone">
-            {extraPage ? <DeletePageForm handle={user.handle} /> : <DeleteAccountForm handle={user.handle} />}
-          </Section>
+              <Section title="✉️ Contact form" toggle={{ on: user.contactEnabled, blurb: inbox.length ? `${inbox.length} message${inbox.length === 1 ? "" : "s"} in your inbox` : "A Message me button. Your email stays private." }}>
+                <ContactSettings enabled={user.contactEnabled} messages={inbox} />
+              </Section>
+
+              <Section title="💸 Tip jar" toggle={{ on: Object.values(user.tips ?? {}).some(Boolean), blurb: "Let fans tip you. Money goes straight to you." }}>
+                <TipsForm tips={user.tips} />
+              </Section>
+
+              <Section title="🤝 Make money" toggle={{ on: Boolean(account.marketplaceInterestAt), blurb: "Get paid to feature brands you like." }}>
+                <AdvertiserOptIn optedIn={Boolean(account.marketplaceInterestAt)} />
+              </Section>
+            </>
+          )}
+
+          {tab === "settings" && (
+            <>
+              <Section title="Page address">
+                <HandleForm handle={user.handle} />
+              </Section>
+
+              {domainsEnabled() && (
+                <Section title="Custom domain" toggle={{ on: Boolean(user.customDomain), blurb: `Use your own domain instead of linksh.it/${user.handle}.` }}>
+                  <DomainForm current={user.customDomain} enabled={domainsEnabled()} apex={user.customDomain ? isApex(user.customDomain) : false} />
+                </Section>
+              )}
+
+              <Section title="🛠️ Power tools" toggle={{ on: Boolean(user.redirectLinkId || user.lockCode || user.seoTitle || user.seoDescription || user.metaPixel || user.googleAnalytics || user.tiktokPixel), blurb: "Redirect, page lock, Google preview, tracking pixels." }}>
+                <div className="space-y-6 [&>*+*]:border-t [&>*+*]:border-stone-200 [&>*+*]:pt-6">
+                  <RedirectForm links={rows.filter((l) => !l.offerId && !l.heading).map((l) => ({ id: l.id, title: l.title }))} current={user.redirectLinkId} />
+                  <PageLockForm code={user.lockCode} />
+                  <SeoForm title={user.seoTitle} description={user.seoDescription} />
+                  <TrackingForm metaPixel={user.metaPixel} googleAnalytics={user.googleAnalytics} tiktokPixel={user.tiktokPixel} utm={user.utm} />
+                </div>
+              </Section>
+
+              <Section title="Import & backup">
+                <div className="space-y-6">
+                  <LinktreeImport />
+                  <BackupForm />
+                </div>
+              </Section>
+
+              <Section title="Account">
+                <p className="-mt-2 mb-4 text-sm text-stone-500">Your login, shared by all your pages.</p>
+                <AccountSettings email={account.email ?? ""} />
+              </Section>
+
+              <Section title="Danger zone">
+                {extraPage ? <DeletePageForm handle={user.handle} /> : <DeleteAccountForm handle={user.handle} />}
+              </Section>
+            </>
+          )}
         </div>
 
         <PreviewDock>

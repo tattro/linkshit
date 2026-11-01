@@ -41,7 +41,10 @@ function toLocalInput(d: Date | string | null) {
 }
 
 function LinkExtras({ link, url }: { link?: Link; url: string }) {
-  const [open, setOpen] = useState(Boolean(link?.startsAt || link?.endsAt || link?.lockCode || link?.androidUrl || link?.thumbVersion));
+  const [open, setOpen] = useState(Boolean(
+    link?.startsAt || link?.endsAt || link?.lockCode || link?.androidUrl || link?.thumbVersion ||
+    link?.spotlight || link?.sensitive || link?.icon || link?.discountCode,
+  ));
   const canEmbed = url.trim() !== "" && embedFor(/^https?:\/\//i.test(url.trim()) ? url.trim() : `https://${url.trim()}`) !== null;
   return (
     <div className="sm:col-span-full">
@@ -52,45 +55,45 @@ function LinkExtras({ link, url }: { link?: Link; url: string }) {
           Show it right on my page (player or booking calendar) instead of a button
         </label>
       )}
-      <div className="mb-2 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
-        <label className="flex items-center gap-2">
-          <input type="checkbox" name="spotlight" defaultChecked={link?.spotlight} className="h-4 w-4 accent-lime-500" />
-          ✨ Spotlight (wiggles)
-        </label>
-        <label className="flex items-center gap-2">
-          <input type="checkbox" name="sensitive" defaultChecked={link?.sensitive} className="h-4 w-4 accent-lime-500" />
-          🔞 Sensitive (18+ warning)
-        </label>
-        <label className="flex items-center gap-2">
-          Icon
-          <input
-            name="icon"
-            defaultValue={link?.icon ?? ""}
-            placeholder="🔥"
-            maxLength={16}
-            aria-label="Emoji icon (optional)"
-            className="w-14 rounded-lg border-2 border-stone-300 bg-white px-2 py-1 text-center outline-none focus:border-stone-900"
-          />
-          <span className="text-xs text-stone-400">emoji, optional</span>
-        </label>
-      </div>
-      <label className="block text-sm">
-        <span className="font-medium">🏷️ Discount code</span> <span className="text-xs text-stone-400">optional · tapping the link copies it, then opens the link</span>
-        <input
-          name="discountCode"
-          defaultValue={link?.discountCode ?? ""}
-          maxLength={40}
-          autoComplete="off"
-          placeholder="e.g. TREVOR20"
-          className="mt-1 w-full rounded-lg border-2 border-stone-300 bg-white px-3 py-2 font-mono outline-none focus:border-stone-900"
-        />
-      </label>
       {!open ? (
         <button type="button" onClick={() => setOpen(true)} className="text-sm text-stone-500 underline">
-          More options: schedule, thumbnail, lock, Android link
+          ⚙️ More options (icon, spotlight, discount code, schedule, lock…)
         </button>
       ) : (
         <div className="space-y-3 rounded-xl bg-stone-50 p-3">
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
+            <label className="flex items-center gap-2">
+              <input type="checkbox" name="spotlight" defaultChecked={link?.spotlight} className="h-4 w-4 accent-lime-500" />
+              ✨ Spotlight (wiggles)
+            </label>
+            <label className="flex items-center gap-2">
+              <input type="checkbox" name="sensitive" defaultChecked={link?.sensitive} className="h-4 w-4 accent-lime-500" />
+              🔞 Sensitive (18+ warning)
+            </label>
+            <label className="flex items-center gap-2">
+              Icon
+              <input
+                name="icon"
+                defaultValue={link?.icon ?? ""}
+                placeholder="🔥"
+                maxLength={16}
+                aria-label="Emoji icon (optional)"
+                className="w-14 rounded-lg border-2 border-stone-300 bg-white px-2 py-1 text-center outline-none focus:border-stone-900"
+              />
+              <span className="text-xs text-stone-400">emoji, optional</span>
+            </label>
+          </div>
+          <label className="block text-sm">
+            <span className="font-medium">🏷️ Discount code</span> <span className="text-xs text-stone-400">optional · tapping the link copies it, then opens the link</span>
+            <input
+              name="discountCode"
+              defaultValue={link?.discountCode ?? ""}
+              maxLength={40}
+              autoComplete="off"
+              placeholder="e.g. TREVOR20"
+              className="mt-1 w-full rounded-lg border-2 border-stone-300 bg-white px-3 py-2 font-mono outline-none focus:border-stone-900"
+            />
+          </label>
           <div className="grid gap-2 sm:grid-cols-2">
             <div className="text-sm">
               <label className="block">
