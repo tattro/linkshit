@@ -13,7 +13,7 @@ import { DomainForm } from "./DomainForm";
 import { domainsEnabled, isApex } from "@/lib/domains";
 import { DashboardHeader } from "./DashboardHeader";
 import { LinkList } from "./LinkList";
-import { AccountSettings, AddLinkForm, AvatarForm, BackgroundForm, DeleteAccountForm, DeletePageForm, Graveyard, HandleForm, LinktreeImport, SignupSettings, StealLook, TipsForm, LookForm, ProfileForm, ShareCard, SocialsForm, VerifyBanner } from "./editor";
+import { AccountSettings, AddLinkForm, AdvertiserOptIn, AvatarForm, BackgroundForm, DeleteAccountForm, DeletePageForm, Graveyard, HandleForm, LinktreeImport, SignupSettings, StealLook, TipsForm, LookForm, ProfileForm, ShareCard, SocialsForm, VerifyBanner } from "./editor";
 
 export const metadata = { title: "Dashboard" };
 
@@ -116,6 +116,10 @@ export default async function Dashboard({ searchParams }: PageProps<"/dashboard"
           <Section title="Email list">
             <p className="-mt-2 mb-4 text-sm text-stone-500">Turn this on and visitors can leave their email on your page. They get saved here. Download the list any time and import it into Mailchimp, Substack, or whatever you send from.</p>
             <SignupSettings enabled={user.signupEnabled} prompt={user.signupPrompt} count={subs} recent={recentSubs} />
+          </Section>
+
+          <Section title="Make money (optional)">
+            <AdvertiserOptIn optedIn={Boolean(account.marketplaceInterestAt)} />
           </Section>
 
           <Section title="Look & feel">

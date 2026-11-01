@@ -1,5 +1,6 @@
 "use client";
 
+import NextLink from "next/link";
 import { startTransition, useActionState, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { addLink, deleteLink, deleteLinkForever, importLinktree, reviveLink, updateLink, type ActionState } from "@/app/actions/links";
 import {
@@ -9,6 +10,7 @@ import { changeEmail, changePassword, resendVerification } from "@/app/actions/a
 import { deleteAccount } from "@/app/actions/account";
 import { deletePage } from "@/app/actions/pages";
 import { stealLook, undoSteal } from "@/app/actions/steal";
+import { setAdvertiserOptIn } from "@/app/actions/marketplace";
 import type { Link, Socials, Style, Tips } from "@/db/schema";
 import { setLookDraft } from "./lookDraft";
 import { embedFor } from "@/lib/embeds";
@@ -980,5 +982,34 @@ export function AccountSettings({ email }: { email: string }) {
         {pwState?.ok && !pwPending && <p className="text-sm text-lime-700">{pwState.ok}</p>}
       </form>
     </div>
+  );
+}
+
+/** Opt-in only: nothing commercial ever lands on a page unless the creator picks it. */
+export function AdvertiserOptIn({ optedIn }: { optedIn: boolean }) {
+  const [state, action, pending] = useActionState(async (_: boolean | undefined, fd: FormData) => {
+    await setAdvertiserOptIn(fd);
+    return true;
+  }, undefined);
+  return (
+    <form action={action} className="space-y-3">
+      <label className="flex items-start gap-3">
+        <input
+          type="checkbox"
+          name="optIn"
+          defaultChecked={optedIn}
+          onChange={(e) => e.currentTarget.form?.requestSubmit()}
+          className="mt-1 h-4 w-4 shrink-0 accent-lime-500"
+        />
+        <span>
+          <span className="font-semibold">Let advertisers reach out to me so I can make more money with my linksh.it page</span>
+          <span className="block text-sm text-stone-500">
+            Totally optional. We never put ads on your page. Nothing shows up unless you pick it yourself.{" "}
+            <NextLink href="/dashboard/marketplace" className="font-semibold text-stone-900 underline decoration-lime-500 decoration-2 underline-offset-2">How it works</NextLink>
+          </span>
+        </span>
+      </label>
+      {state && !pending && <Saved show />}
+    </form>
   );
 }

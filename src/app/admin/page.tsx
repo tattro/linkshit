@@ -61,7 +61,7 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
           <div>
             <h1 className="text-2xl font-black">Admin</h1>
             <p className="text-sm text-stone-500">
-              {stats.total.toLocaleString()} accounts · {stats.week.toLocaleString()} new this week · {stats.banned.toLocaleString()} banned · {stats.marketplace.toLocaleString()} on the marketplace waitlist
+              {stats.total.toLocaleString()} accounts · {stats.week.toLocaleString()} new this week · {stats.banned.toLocaleString()} banned · {stats.marketplace.toLocaleString()} open to advertisers
             </p>
           </div>
           <form className="flex gap-2">
