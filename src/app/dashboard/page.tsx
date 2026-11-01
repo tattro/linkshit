@@ -15,7 +15,7 @@ import { DashboardHeader } from "./DashboardHeader";
 import { LinkList } from "./LinkList";
 import { PageLockForm, RedirectForm, SeoForm, TrackingForm } from "./extras";
 import { QR_REFERRER, qrTarget } from "@/lib/qr";
-import { AccountSettings, AddHeadingForm, BackupForm, ContactSettings, QASettings, AddLinkForm, AdvertiserOptIn, AvatarForm, BackgroundForm, DeleteAccountForm, DeletePageForm, Graveyard, HandleForm, LinktreeImport, SignupSettings, StealLook, TipsForm, LookForm, ProfileForm, ShareCard, SocialsForm, VerifyBanner } from "./editor";
+import { AccountSettings, BackupForm, ContactSettings, QASettings, AddLinkForm, AdvertiserOptIn, AvatarForm, BackgroundForm, DeleteAccountForm, DeletePageForm, Graveyard, HandleForm, LinktreeImport, SignupSettings, StealLook, TipsForm, LookForm, ProfileForm, ShareCard, SocialsForm, VerifyBanner } from "./editor";
 
 export const metadata = { title: "Dashboard" };
 
@@ -88,7 +88,6 @@ export default async function Dashboard({ searchParams }: PageProps<"/dashboard"
 
           <Section title="Add a link">
             <AddLinkForm sections={rows.filter((l) => l.heading).map((l) => ({ id: l.id, title: l.title }))} />
-            <AddHeadingForm />
             <LinktreeImport />
           </Section>
 

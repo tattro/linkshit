@@ -1,10 +1,10 @@
 "use client";
 
 import NextLink from "next/link";
-import { startTransition, useActionState, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { startTransition, useActionState, useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
 import { deleteMessage, updateContact } from "@/app/actions/contact";
 import { answerQuestion, deleteQuestion, updateQA } from "@/app/actions/qa";
-import { addHeading, addLink, deleteLink, deleteLinkForever, importLinktree, restorePage, reviveLink, updateHeading, updateLink, type ActionState } from "@/app/actions/links";
+import { addLink, deleteLink, deleteLinkForever, importLinktree, restorePage, reviveLink, updateHeading, updateLink, type ActionState } from "@/app/actions/links";
 import {
   changeHandle, removeAvatar, removeBackground, updateLook, updateProfile, updateSignup, updateSocials, updateTips, uploadAvatar, uploadBackground,
 } from "@/app/actions/profile";
@@ -141,84 +141,63 @@ function LinkExtras({ link, url }: { link?: Link; url: string }) {
 export type SectionOption = { id: number; title: string };
 
 /**
- * "Which section does this link go in?" Includes "New section…", which shows a
- * box to name it, so a link and its section can be made in one go.
+ * "Category": type a name like Music. An existing one is reused (suggested as
+ * you type), a new one is created as a title on the page, blank means none.
  */
-function SectionPicker({ sections, current, className = "" }: { sections: SectionOption[]; current: string; className?: string }) {
-  const [choice, setChoice] = useState(current);
+function CategoryBox({ sections, defaultValue = "", className = "" }: { sections: SectionOption[]; defaultValue?: string; className?: string }) {
+  const [value, setValue] = useState(defaultValue);
+  const listId = useId();
+  const typed = value.trim().toLowerCase();
+  const isNew = typed !== "" && !sections.some((s) => s.title.trim().toLowerCase() === typed);
   return (
-    <div className={`min-w-0 ${className}`}>
-      <label className="block">
-        <span className="text-sm font-semibold">Section</span>
-        <select name="section" value={choice} onChange={(e) => setChoice(e.target.value)} className={`${input} mt-1`}>
-          <option value="none">No section</option>
-          {sections.map((s) => (
-            <option key={s.id} value={s.id}>{s.title}</option>
-          ))}
-          <option value="new">➕ New section…</option>
-        </select>
-      </label>
-      {choice === "new" && (
-        <label className="mt-2 block">
-          <span className="text-sm font-semibold">New section name</span>
-          <input name="newSection" required maxLength={60} autoFocus placeholder="e.g. Music" className={`${input} mt-1`} />
-          <span className="mt-1 block text-xs text-stone-500">It shows as a title on your page, with this link under it.</span>
-        </label>
+    <label className={`block min-w-0 ${className}`}>
+      <span className="text-sm font-semibold">➕ Category</span> <span className="text-xs text-stone-400">optional</span>
+      <input
+        name="sectionName"
+        list={listId}
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        maxLength={60}
+        autoComplete="off"
+        placeholder="e.g. Music, Art, Business"
+        className={`${input} mt-1`}
+      />
+      <datalist id={listId}>
+        {sections.map((s) => <option key={s.id} value={s.title} />)}
+      </datalist>
+      {isNew && <span className="mt-1 block text-xs text-stone-500">New category: &quot;{value.trim()}&quot; will show as a title on your page, with this link under it.</span>}
+      {!isNew && sections.length > 0 && typed === "" && (
+        <span className="mt-1 block text-xs text-stone-500">Yours so far: {sections.map((s) => s.title).join(", ")}</span>
       )}
-    </div>
+    </label>
   );
 }
 
 export function AddLinkForm({ sections = [] }: { sections?: SectionOption[] }) {
   const [state, action, pending] = useActionState(addLink, undefined);
   const [url, setUrl] = useState("");
+  const [title, setTitle] = useState("");
   const [key, setKey] = useState(0);
   const formRef = useRef<HTMLFormElement>(null);
   const [handled, setHandled] = useState<ActionState>(undefined);
   if (state !== handled) {
     setHandled(state);
-    if (state?.ok) { setUrl(""); setKey((k) => k + 1); }
+    if (state?.ok) { setUrl(""); setTitle(""); setKey((k) => k + 1); }
   }
   return (
     <form key={key} ref={formRef} action={action} className="grid gap-3 sm:grid-cols-[1fr_1.5fr] sm:items-end">
       <label className="block min-w-0">
         <span className="text-sm font-semibold">Title</span>
-        <input name="title" required maxLength={100} placeholder="My website" className={`${input} mt-1`} />
+        <input name="title" required maxLength={100} placeholder="My website" value={title} onChange={(e) => setTitle(e.target.value)} className={`${input} mt-1`} />
       </label>
       <label className="block min-w-0">
         <span className="text-sm font-semibold">Link</span>
-        <input name="url" inputMode="url" autoCapitalize="off" autoCorrect="off" placeholder="yourwebsite.com" value={url} onChange={(e) => setUrl(e.target.value)} className={`${input} mt-1`} />
+        <input name="url" inputMode="url" autoCapitalize="off" autoCorrect="off" spellCheck={false} placeholder="yourwebsite.com" value={url} onChange={(e) => setUrl(e.target.value)} className={`${input} mt-1`} />
       </label>
-      <SectionPicker sections={sections} current={String(sections.at(-1)?.id ?? "none")} className="sm:col-span-2" />
+      <CategoryBox key={key} sections={sections} className="sm:col-span-2" />
       <button disabled={pending} className={`${btn} sm:col-span-2 sm:justify-self-start`}>{pending ? "Adding…" : "Add link"}</button>
       {state?.error && <p className="text-sm font-semibold text-red-600 sm:col-span-2">{state.error}</p>}
       <LinkExtras url={url} />
-    </form>
-  );
-}
-
-/** "+ Add a section heading": a small toggle under the add-link form. */
-export function AddHeadingForm() {
-  const [open, setOpen] = useState(false);
-  const [state, action, pending] = useActionState(async (prev: ActionState, fd: FormData) => {
-    const result = await addHeading(prev, fd);
-    if (result?.ok) setOpen(false);
-    return result;
-  }, undefined);
-  if (!open) {
-    return (
-      <button type="button" onClick={() => setOpen(true)} className={`${ghost} mt-4 w-full border-dashed py-2.5 font-semibold`}>
-        ➕ Add a section (like &quot;Music&quot; or &quot;Projects&quot;)
-      </button>
-    );
-  }
-  return (
-    <form action={action} className="mt-4 flex flex-wrap gap-2 rounded-xl border-2 border-dashed border-stone-300 p-3">
-      <p className="w-full text-sm text-stone-500">A section is a title on your page, like &quot;Music&quot;. Once it exists, pick it in the Section menu when you add a link, or drag links under it.</p>
-      <input name="title" required maxLength={60} autoFocus placeholder="e.g. Music projects" aria-label="Section title" className={`${input} min-w-0 flex-1`} />
-      <button disabled={pending} className={btn}>{pending ? "Adding…" : "Add section"}</button>
-      <button type="button" onClick={() => setOpen(false)} className={ghost}>Cancel</button>
-      {state?.error && <p className="w-full text-sm text-red-600">{state.error}</p>}
     </form>
   );
 }
@@ -246,7 +225,7 @@ function HeadingItem({ link, handle }: { link: Link; handle?: React.ReactNode })
         ) : (
           <>
             <p className="min-w-0 flex-1 truncate text-sm font-bold uppercase tracking-widest text-stone-600">
-              <span className="mr-2 rounded bg-stone-200 px-1.5 py-0.5 text-[10px] font-medium normal-case tracking-normal text-stone-600">section</span>
+              <span className="mr-2 rounded bg-stone-200 px-1.5 py-0.5 text-[10px] font-medium normal-case tracking-normal text-stone-600">category</span>
               {link.title}
             </p>
             {confirming ? (
@@ -334,7 +313,7 @@ function LinkRowItem({ link, handle, sections, section }: { link: Link; handle?:
           <input type="hidden" name="id" value={link.id} />
           <input name="title" defaultValue={link.title} required maxLength={100} className={input} />
           <input name="url" value={url} onChange={(e) => setUrl(e.target.value)} required className={input} />
-          {!link.offerId && <SectionPicker sections={sections} current={section} />}
+          {!link.offerId && <CategoryBox sections={sections} defaultValue={sections.find((s) => String(s.id) === section)?.title ?? ""} />}
           <LinkExtras link={link} url={url} />
           {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
           <div className="flex gap-2">

@@ -75,7 +75,7 @@ async function readLinkForm(formData: FormData) {
   if (!rawUrl && /^\S+\.[a-z]{2,}(\/\S*)?$/i.test(title)) rawUrl = title;
   if (!rawUrl) return { error: "Put the web address in the Link box (e.g. morthvargr.com)." } as const;
   const url = normalizeUrl(rawUrl);
-  if (!url) return { error: "That doesn't look like a valid web address." } as const;
+  if (!url) return { error: `"${rawUrl.slice(0, 80)}" doesn't look like a web address. Try something like morthvargr.com.` } as const;
   const unsafe = await unsafeReason(url);
   if (unsafe) return { error: unsafe } as const;
   const tz = Number(formData.get("tz") ?? 0) || 0;
@@ -143,20 +143,29 @@ async function placeInSection(userId: number, linkId: number, target: string) {
 }
 
 /**
- * Reads the Section menu. "new" creates the section (at the bottom of the
- * list) and returns its id, so the link can go straight under it.
+ * Reads the Category box. Blank = no category; a name that matches an existing
+ * section (ignoring case) reuses it; a new name creates the section at the
+ * bottom of the list. Returns the section to put the link in.
+ * `created` is true when a new section was just added.
  */
-async function resolveSection(userId: number, formData: FormData): Promise<{ target: string } | { error: string }> {
-  const target = String(formData.get("section") ?? "");
-  if (target !== "new") return { target };
-  const title = String(formData.get("newSection") ?? "").trim().slice(0, 60);
-  if (!title) return { error: "Give the new section a name, like Music." };
+async function resolveSection(userId: number, formData: FormData): Promise<{ target: string; created: boolean } | null> {
+  const raw = formData.get("sectionName");
+  if (raw === null) return null; // form without a Category box: leave the link where it is
+  const name = String(raw).replace(/\s+/g, " ").trim().slice(0, 60);
+  if (!name) return { target: "none", created: false };
+  const rows = await db
+    .select({ id: links.id, title: links.title, position: links.position })
+    .from(links)
+    .where(and(eq(links.userId, userId), eq(links.heading, true), isNull(links.deletedAt)))
+    .orderBy(asc(links.position), asc(links.id));
+  const match = rows.find((r) => r.title.trim().toLowerCase() === name.toLowerCase());
+  if (match) return { target: String(match.id), created: false };
   const [{ max }] = await db
     .select({ max: sql<number>`coalesce(max(${links.position}), -1)::int` })
     .from(links)
     .where(and(eq(links.userId, userId), isNull(links.deletedAt)));
-  const [row] = await db.insert(links).values({ userId, position: max + 1, title, url: "", heading: true }).returning({ id: links.id });
-  return { target: String(row.id) };
+  const [row] = await db.insert(links).values({ userId, position: max + 1, title: name, url: "", heading: true }).returning({ id: links.id });
+  return { target: String(row.id), created: true };
 }
 
 export async function addLink(_prev: ActionState, formData: FormData): Promise<ActionState> {
@@ -169,15 +178,14 @@ export async function addLink(_prev: ActionState, formData: FormData): Promise<A
     .select({ count: sql<number>`count(*)::int`, max: sql<number>`coalesce(max(${links.position}), -1)::int` })
     .from(links)
     .where(and(eq(links.userId, user.id), isNull(links.deletedAt)));
-  if (count >= MAX_LINKS - (formData.get("section") === "new" ? 1 : 0)) return { error: `You've hit the ${MAX_LINKS} link limit. Impressive.` };
+  if (count >= MAX_LINKS) return { error: `You've hit the ${MAX_LINKS} link limit. Impressive.` };
   const section = await resolveSection(user.id, formData);
-  if ("error" in section) return { error: section.error };
 
   // Bottom of the list (below a section that was just made, if any)
-  const position = section.target === String(formData.get("section")) ? max + 1 : max + 2;
+  const position = section?.created ? max + 2 : max + 1;
   const [row] = await db.insert(links).values({ userId: user.id, position, ...form.value }).returning({ id: links.id });
   await saveThumb(row.id, form.thumb, false);
-  await placeInSection(user.id, row.id, section.target);
+  if (section) await placeInSection(user.id, row.id, section.target);
   refresh(user.handle);
   return { ok: true };
 }
@@ -191,11 +199,10 @@ export async function updateLink(_prev: ActionState, formData: FormData): Promis
   const owned = await db.select({ id: links.id }).from(links).where(and(eq(links.id, id), eq(links.userId, user.id), eq(links.heading, false), isNull(links.deletedAt)));
   if (!owned.length) return { error: "That link is gone. Refresh the page." };
   const section = await resolveSection(user.id, formData);
-  if ("error" in section) return { error: section.error };
   const [row] = await db.update(links).set(form.value).where(and(eq(links.id, id), eq(links.userId, user.id), eq(links.heading, false))).returning({ id: links.id });
   if (row) {
     await saveThumb(row.id, form.thumb, form.removeThumb);
-    await placeInSection(user.id, row.id, section.target);
+    if (section) await placeInSection(user.id, row.id, section.target);
   }
   refresh(user.handle);
   return { ok: true };
