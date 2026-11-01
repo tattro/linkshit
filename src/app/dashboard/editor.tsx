@@ -8,7 +8,6 @@ import {
 import { resendVerification } from "@/app/actions/auth";
 import type { Link, Socials, Style, Tips } from "@/db/schema";
 import { setLookDraft } from "./lookDraft";
-import { ChaosToggle } from "./ChaosMode";
 import { embedFor } from "@/lib/embeds";
 import { TIP_PROVIDERS } from "@/lib/tips";
 import { FONTS, parseStyle, GRADIENT_DIRS, GRADIENT_PRESETS, SHAPES, gradientCss, hasCustomColors } from "@/lib/style";
@@ -613,7 +612,10 @@ export function LookForm({ user, avatar, background }: { user: { theme: string; 
           <button disabled={pending} className={btn}>{pending ? "Saving…" : "Save look"}</button>
           <Saved show={!!state?.ok && !pending} />
         </div>
-        <ChaosToggle />
+        <label className="flex cursor-pointer items-center gap-2 text-sm font-black text-red-600">
+          <input type="checkbox" name="chaos" defaultChecked={s.chaos} className="h-5 w-5 accent-red-600" />
+          Chaos mode (don&apos;t press this)
+        </label>
       </div>
     </form>
   );
