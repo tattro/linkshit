@@ -140,19 +140,32 @@ function LinkExtras({ link, url }: { link?: Link; url: string }) {
 
 export type SectionOption = { id: number; title: string };
 
-/** "Which section does this link go in?" Only shown once the page has sections. */
+/**
+ * "Which section does this link go in?" Includes "New section…", which shows a
+ * box to name it, so a link and its section can be made in one go.
+ */
 function SectionPicker({ sections, current, className = "" }: { sections: SectionOption[]; current: string; className?: string }) {
-  if (sections.length === 0) return null;
+  const [choice, setChoice] = useState(current);
   return (
-    <label className={`block min-w-0 ${className}`}>
-      <span className="text-sm font-semibold">Section</span>
-      <select name="section" defaultValue={current} className={`${input} mt-1`}>
-        <option value="none">No section (top of my page)</option>
-        {sections.map((s) => (
-          <option key={s.id} value={s.id}>{s.title}</option>
-        ))}
-      </select>
-    </label>
+    <div className={`min-w-0 ${className}`}>
+      <label className="block">
+        <span className="text-sm font-semibold">Section</span>
+        <select name="section" value={choice} onChange={(e) => setChoice(e.target.value)} className={`${input} mt-1`}>
+          <option value="none">No section</option>
+          {sections.map((s) => (
+            <option key={s.id} value={s.id}>{s.title}</option>
+          ))}
+          <option value="new">➕ New section…</option>
+        </select>
+      </label>
+      {choice === "new" && (
+        <label className="mt-2 block">
+          <span className="text-sm font-semibold">New section name</span>
+          <input name="newSection" required maxLength={60} autoFocus placeholder="e.g. Music" className={`${input} mt-1`} />
+          <span className="mt-1 block text-xs text-stone-500">It shows as a title on your page, with this link under it.</span>
+        </label>
+      )}
+    </div>
   );
 }
 
@@ -170,11 +183,11 @@ export function AddLinkForm({ sections = [] }: { sections?: SectionOption[] }) {
     <form key={key} ref={formRef} action={action} className="grid gap-3 sm:grid-cols-[1fr_1.5fr] sm:items-end">
       <label className="block min-w-0">
         <span className="text-sm font-semibold">Title</span>
-        <input name="title" required maxLength={100} placeholder="e.g. My website" className={`${input} mt-1`} />
+        <input name="title" required maxLength={100} placeholder="My website" className={`${input} mt-1`} />
       </label>
       <label className="block min-w-0">
         <span className="text-sm font-semibold">Link</span>
-        <input name="url" inputMode="url" autoCapitalize="off" autoCorrect="off" placeholder="e.g. morthvargr.com" value={url} onChange={(e) => setUrl(e.target.value)} className={`${input} mt-1`} />
+        <input name="url" inputMode="url" autoCapitalize="off" autoCorrect="off" placeholder="yourwebsite.com" value={url} onChange={(e) => setUrl(e.target.value)} className={`${input} mt-1`} />
       </label>
       <SectionPicker sections={sections} current={String(sections.at(-1)?.id ?? "none")} className="sm:col-span-2" />
       <button disabled={pending} className={`${btn} sm:col-span-2 sm:justify-self-start`}>{pending ? "Adding…" : "Add link"}</button>
