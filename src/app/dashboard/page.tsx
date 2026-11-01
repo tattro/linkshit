@@ -6,7 +6,7 @@ import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { siteUrl } from "@/lib/request";
 import { PLATFORMS } from "@/lib/socials";
-import { avatarUrl, backgroundUrl, liveLinks } from "@/components/ProfileView";
+import { avatarUrl, backgroundUrl, liveLinks, offersLast } from "@/components/ProfileView";
 import { LivePreview } from "./LivePreview";
 import { PreviewDock } from "./PreviewDock";
 import { DomainForm } from "./DomainForm";
@@ -155,7 +155,7 @@ export default async function Dashboard({ searchParams }: PageProps<"/dashboard"
                 avatarVersion: user.avatarVersion, bgVersion: user.bgVersion, style: user.style, socials: user.socials,
                 tips: user.tips, signupEnabled: user.signupEnabled, signupPrompt: user.signupPrompt,
               }}
-              links={liveLinks(rows)}
+              links={offersLast(liveLinks(rows))}
             />
           </div>
         </PreviewDock>

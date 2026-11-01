@@ -15,7 +15,7 @@ export type ProfileData = Pick<User, "id" | "handle" | "displayName" | "bio" | "
   tips: Tips;
 };
 
-export type ProfileLink = Pick<LinkRow, "id" | "title" | "url" | "embed" | "sensitive" | "spotlight" | "icon">;
+export type ProfileLink = Pick<LinkRow, "id" | "title" | "url" | "embed" | "sensitive" | "spotlight" | "icon" | "offerId">;
 
 export function avatarUrl(u: Pick<User, "id" | "avatarVersion">) {
   return u.avatarVersion > 0 ? `/avatar/${u.id}?v=${u.avatarVersion}` : null;
@@ -129,7 +129,7 @@ export function ProfileView({ user, links, preview = false, avatarOverride }: {
               <a
                 href={preview ? l.url : `/go/${l.id}`}
                 target={preview ? "_blank" : undefined}
-                rel="noopener noreferrer nofollow"
+                rel={`noopener noreferrer nofollow${l.offerId ? " sponsored" : ""}`}
                 className={`${btnClass} relative ${l.spotlight ? "spotlight" : ""}`}
                 style={btnStyle}
               >
@@ -144,6 +144,11 @@ export function ProfileView({ user, links, preview = false, avatarOverride }: {
             return (
               <li key={l.id}>
                 {l.sensitive ? <SensitiveGate title={l.title} className={btnClass} style={btnStyle}>{anchor}</SensitiveGate> : anchor}
+                {l.offerId && (
+                  <p className={`mt-1 text-center text-[11px] ${theme.muted}`} style={mutedStyle}>
+                    Affiliate link · I may earn a commission if you buy or sign up
+                  </p>
+                )}
               </li>
             );
           })}
@@ -164,6 +169,11 @@ export function ProfileView({ user, links, preview = false, avatarOverride }: {
 }
 
 /** Links that should be visible right now (respects scheduling). */
+/** Marketplace offers always sit at the very bottom of a page. */
+export function offersLast<T extends { offerId: number | null }>(rows: T[]): T[] {
+  return [...rows.filter((l) => !l.offerId), ...rows.filter((l) => l.offerId)];
+}
+
 export function liveLinks<T extends Pick<LinkRow, "startsAt" | "endsAt">>(rows: T[], now = new Date()): T[] {
   return rows.filter((l) => (!l.startsAt || l.startsAt <= now) && (!l.endsAt || l.endsAt > now));
 }

@@ -164,6 +164,7 @@ export function LinkItem({ link, handle }: { link: Link; handle?: React.ReactNod
             {link.embed && <span className="ml-2 rounded bg-violet-100 px-1.5 py-0.5 text-xs font-medium text-violet-800">embed</span>}
             {link.spotlight && <span className="ml-2 rounded bg-yellow-100 px-1.5 py-0.5 text-xs font-medium text-yellow-800">✨ spotlight</span>}
             {link.sensitive && <span className="ml-2 rounded bg-red-100 px-1.5 py-0.5 text-xs font-medium text-red-800">🔞 18+</span>}
+            {link.offerId && <span className="ml-2 rounded bg-lime-100 px-1.5 py-0.5 text-xs font-medium text-lime-800" title="Pinned to the bottom of your page with an affiliate disclaimer">💸 marketplace</span>}
           </p>
           <p className="truncate text-sm text-stone-500">{link.url}</p>
           {label && <span className={`mt-1 inline-block rounded px-1.5 py-0.5 text-xs ${label.cls}`}>{label.text}</span>}

@@ -71,6 +71,13 @@
       "when": 1793506113712,
       "tag": "0009_marketplace_waitlist",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1793507278180,
+      "tag": "0010_marketplace_offers",
+      "breakpoints": true
     }
   ]
 }

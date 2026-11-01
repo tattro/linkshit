@@ -1,7 +1,9 @@
 import { desc, eq, ilike, isNotNull, or, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import Link from "next/link";
-import { db, links, users } from "@/db";
+import { db, links, offerRequests, offers, users } from "@/db";
+import { decideOfferRequest, setOfferActive, setOfferAutoApprove } from "@/app/actions/marketplace";
+import { OfferForm } from "./OfferForm";
 import { setBan } from "@/app/actions/admin";
 import { requireAdmin } from "@/lib/auth";
 import { DashboardHeader } from "../dashboard/DashboardHeader";
@@ -21,6 +23,22 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
       : undefined;
 
   const owner = alias(users, "owner");
+  const offerRows = await db
+    .select({
+      id: offers.id, title: offers.title, advertiser: offers.advertiser, payout: offers.payout, category: offers.category,
+      url: offers.url, active: offers.active, autoApprove: offers.autoApprove,
+      added: sql<number>`(select count(*)::int from ${links} where ${links.offerId} = ${offers.id} and ${links.deletedAt} is null)`,
+      clicks: sql<number>`(select coalesce(sum(${links.clicks}), 0)::int from ${links} where ${links.offerId} = ${offers.id})`,
+    })
+    .from(offers)
+    .orderBy(desc(offers.createdAt));
+  const pending = await db
+    .select({ id: offerRequests.id, createdAt: offerRequests.createdAt, offer: offers.title, advertiser: offers.advertiser, handle: users.handle })
+    .from(offerRequests)
+    .innerJoin(offers, eq(offers.id, offerRequests.offerId))
+    .innerJoin(users, eq(users.id, offerRequests.userId))
+    .where(eq(offerRequests.status, "pending"))
+    .orderBy(offerRequests.createdAt);
   const [rows, [stats]] = await Promise.all([
     db.select({
       id: users.id, handle: users.handle, email: sql<string>`coalesce(${users.email}, ${owner.email} || ' (extra page)')`, displayName: users.displayName, createdAt: users.createdAt,
@@ -105,6 +123,89 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
           </table>
         </div>
         <p className="text-sm text-stone-500">Banning hides the page, kills their sessions, and blocks login. Showing the newest 100 matches.</p>
+
+        <section className="space-y-4 rounded-2xl border-2 border-stone-900 bg-white p-6">
+          <div>
+            <h2 className="text-lg font-black">Marketplace offers</h2>
+            <p className="text-sm text-stone-500">Active offers show up in every creator&apos;s Marketplace tab. Pausing one hides it from the Marketplace and from every page that added it.</p>
+          </div>
+          {pending.length > 0 && (
+            <div className="rounded-xl border-2 border-amber-300 bg-amber-50 p-4">
+              <h3 className="font-black">Waiting for approval ({pending.length})</h3>
+              <ul className="mt-2 space-y-2 text-sm">
+                {pending.map((r) => (
+                  <li key={r.id} className="flex flex-wrap items-center justify-between gap-2">
+                    <span>
+                      <a href={`/${r.handle}`} target="_blank" className="font-mono font-semibold underline">@{r.handle}</a> wants{" "}
+                      <span className="font-semibold">{r.offer}</span> <span className="text-stone-500">({r.advertiser})</span>
+                    </span>
+                    <span className="flex gap-2">
+                      <form action={decideOfferRequest}>
+                        <input type="hidden" name="id" value={r.id} />
+                        <input type="hidden" name="approve" value="1" />
+                        <button className="rounded bg-lime-300 px-2 py-1 font-semibold">Approve</button>
+                      </form>
+                      <form action={decideOfferRequest}>
+                        <input type="hidden" name="id" value={r.id} />
+                        <input type="hidden" name="approve" value="0" />
+                        <button className="rounded border-2 border-stone-300 px-2 py-1 font-semibold">Decline</button>
+                      </form>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          <OfferForm />
+          {offerRows.length > 0 && (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead className="text-stone-500">
+                  <tr>
+                    <th className="py-2 pr-4 font-medium">Offer</th>
+                    <th className="py-2 pr-4 font-medium">Payout</th>
+                    <th className="py-2 pr-4 text-right font-medium">On pages</th>
+                    <th className="py-2 pr-4 text-right font-medium">Clicks</th>
+                    <th className="py-2 pr-4 font-medium">Approval</th>
+                    <th className="py-2" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {offerRows.map((o) => (
+                    <tr key={o.id} className="border-t border-stone-100 align-top">
+                      <td className="py-2 pr-4">
+                        <div className="font-semibold">{o.title}</div>
+                        <div className="text-xs text-stone-500">{o.advertiser}{o.category ? ` · ${o.category}` : ""}</div>
+                        <div className="max-w-md truncate font-mono text-xs text-stone-400">{o.url}</div>
+                      </td>
+                      <td className="py-2 pr-4">{o.payout || "–"}</td>
+                      <td className="py-2 pr-4 text-right tabular-nums">{o.added}</td>
+                      <td className="py-2 pr-4 text-right tabular-nums">{o.clicks}</td>
+                      <td className="py-2 pr-4">
+                        <form action={setOfferAutoApprove}>
+                          <input type="hidden" name="id" value={o.id} />
+                          <input type="hidden" name="auto" value={o.autoApprove ? "0" : "1"} />
+                          <button className="text-left underline decoration-stone-300 underline-offset-2" title="Click to switch">
+                            {o.autoApprove ? "Auto" : "Manual"}
+                          </button>
+                        </form>
+                      </td>
+                      <td className="py-2">
+                        <form action={setOfferActive}>
+                          <input type="hidden" name="id" value={o.id} />
+                          <input type="hidden" name="active" value={o.active ? "0" : "1"} />
+                          <button className={`rounded px-2 py-1 font-semibold ${o.active ? "border-2 border-stone-300" : "bg-lime-300"}`}>
+                            {o.active ? "Pause" : "Activate"}
+                          </button>
+                        </form>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
       </main>
     </div>
   );

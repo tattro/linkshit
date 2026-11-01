@@ -126,6 +126,37 @@ export const emailTokens = pgTable(
   (t) => [index("email_tokens_user_idx").on(t.userId, t.kind)],
 );
 
+/** Advertiser offers creators can add to their page from the Marketplace. */
+export const offers = pgTable("offers", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(), // button text on the creator's page
+  advertiser: text("advertiser").notNull(),
+  description: text("description").notNull().default(""),
+  payout: text("payout").notNull().default(""), // e.g. "30% per sale" or "$20 per signup"
+  category: text("category").notNull().default(""),
+  icon: text("icon").notNull().default(""),
+  // Tracking URL; {handle} and {uid} get swapped for the creator's when they add it
+  url: text("url").notNull(),
+  active: boolean("active").notNull().default(true),
+  // Off = creators request it and someone approves before it goes on their page
+  autoApprove: boolean("auto_approve").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** A creator asking to run an offer that needs approval. */
+export const offerRequests = pgTable(
+  "offer_requests",
+  {
+    id: serial("id").primaryKey(),
+    offerId: integer("offer_id").notNull().references(() => offers.id, { onDelete: "cascade" }),
+    userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }), // the page
+    status: text("status").$type<"pending" | "approved" | "declined">().notNull().default("pending"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    decidedAt: timestamp("decided_at", { withTimezone: true }),
+  },
+  (t) => [uniqueIndex("offer_requests_offer_user_idx").on(t.offerId, t.userId)],
+);
+
 export const links = pgTable(
   "links",
   {
@@ -145,6 +176,8 @@ export const links = pgTable(
     spotlight: boolean("spotlight").notNull().default(false),
     // Optional emoji shown on the button; brand icons are picked automatically
     icon: text("icon").notNull().default(""),
+    // Added from the Marketplace: pinned to the bottom with an affiliate disclaimer
+    offerId: integer("offer_id").references(() => offers.id, { onDelete: "set null" }),
     // Set when "flushed": the link moves to the graveyard and can be revived
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
     // Only visible between these times when set
