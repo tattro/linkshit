@@ -7,6 +7,7 @@ import { siteUrl } from "@/lib/request";
 import { PLATFORMS } from "@/lib/socials";
 import { avatarUrl, backgroundUrl, liveLinks } from "@/components/ProfileView";
 import { LivePreview } from "./LivePreview";
+import { PreviewDock } from "./PreviewDock";
 import { DomainForm } from "./DomainForm";
 import { domainsEnabled, isApex } from "@/lib/domains";
 import { DashboardHeader } from "./DashboardHeader";
@@ -116,8 +117,7 @@ export default async function Dashboard({ searchParams }: PageProps<"/dashboard"
           </Section>
         </div>
 
-        <aside className="lg:sticky lg:top-8 lg:self-start">
-          <p className="mb-2 text-center text-sm font-semibold text-stone-500">Live preview</p>
+        <PreviewDock>
           <div data-chaos-bounds className="mx-auto h-[640px] w-full max-w-[340px] overflow-y-auto rounded-[2.5rem] border-8 border-stone-900 shadow-xl [&>div]:min-h-full">
             <LivePreview
               user={{
@@ -128,7 +128,7 @@ export default async function Dashboard({ searchParams }: PageProps<"/dashboard"
               links={liveLinks(rows)}
             />
           </div>
-        </aside>
+        </PreviewDock>
       </main>
     </div>
   );
