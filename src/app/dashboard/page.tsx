@@ -164,7 +164,7 @@ export default async function Dashboard({ searchParams }: PageProps<"/dashboard"
         </div>
 
         <PreviewDock>
-          <div data-chaos-bounds className="mx-auto h-[640px] w-full max-w-[340px] overflow-y-auto rounded-[2.5rem] border-8 border-stone-900 shadow-xl [&>div]:min-h-full">
+          <div data-chaos-bounds data-keep-colors className="mx-auto h-[640px] w-full max-w-[340px] overflow-y-auto rounded-[2.5rem] border-8 border-stone-900 shadow-xl [&>div]:min-h-full">
             <LivePreview
               user={{
                 id: user.id, handle: user.handle, displayName: user.displayName, bio: user.bio, theme: user.theme,

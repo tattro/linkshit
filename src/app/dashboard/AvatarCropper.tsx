@@ -151,6 +151,7 @@ export function AvatarCropper({ file, onCancel, onDone }: { file: File; onCancel
         ) : (
           <div
             ref={boxRef}
+            data-keep-colors
             onPointerDown={onPointerDown}
             onPointerMove={onPointerMove}
             onPointerUp={onPointerUp}

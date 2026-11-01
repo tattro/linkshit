@@ -1,4 +1,7 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
+import { DarkModeToggle } from "./DarkModeToggle";
+import { DARK_COOKIE } from "@/lib/darkMode";
 import { logout } from "@/app/actions/auth";
 import { Logo } from "@/components/Logo";
 import { accountPages, getSession, isAdmin } from "@/lib/auth";
@@ -9,6 +12,7 @@ export async function DashboardHeader({ active }: { active: "editor" | "analytic
   if (!s) return null;
   const { account, page } = s;
   const pages = await accountPages(account.id);
+  const dark = (await cookies()).get(DARK_COOKIE)?.value === "dark";
   const tab = (key: typeof active) =>
     `rounded-full px-3 py-1.5 font-semibold ${active === key ? "bg-stone-900 text-white" : "text-stone-600 hover:bg-stone-100"}`;
   return (
@@ -25,7 +29,8 @@ export async function DashboardHeader({ active }: { active: "editor" | "analytic
             {isAdmin(account) && <Link href="/admin" className={tab("admin")}>Admin</Link>}
           </nav>
         </div>
-        <div className="flex min-w-0 items-center gap-4 text-sm">
+        <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+          <DarkModeToggle initial={dark} />
           <PageSwitcher pages={pages} activeId={page.id} to={active === "analytics" ? "analytics" : "editor"} />
           <a href={`/${page.handle}`} target="_blank" className="min-w-0 truncate font-mono font-semibold underline decoration-lime-500 decoration-2 underline-offset-4">
             linksh.it/{page.handle} ↗
