@@ -1,0 +1,1 @@
+ALTER TABLE "users" ADD COLUMN "stats_every" text DEFAULT 'week' NOT NULL;

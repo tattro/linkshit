@@ -38,7 +38,7 @@ export function PageSwitcher({ pages, activeId, to }: { pages: P[]; activeId: nu
         </ul>
         <div className="mt-1 border-t border-stone-200 pt-2">
           {pages.length >= MAX_PAGES ? (
-            <p className="px-3 py-1 text-xs text-stone-500">{MAX_PAGES} pages max. That&apos;s plenty of shit.</p>
+            <p className="px-3 py-1 text-xs text-stone-500">{MAX_PAGES} pages max. That&apos;s plenty of sh.it.</p>
           ) : !adding ? (
             <button type="button" onClick={() => setAdding(true)} className="w-full rounded-lg px-3 py-2 text-left font-semibold text-lime-700 hover:bg-lime-50">
               + New page

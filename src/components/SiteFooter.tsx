@@ -18,7 +18,7 @@ export function SiteFooter({ creator = false }: { creator?: boolean }) {
         <Link href="/terms" className="hover:text-stone-900">Terms of Service</Link>
         <Link href="/contact" className="hover:text-stone-900">Contact</Link>
       </nav>
-      <p className="mt-3 text-xs text-stone-400">&copy; 2026 linksh.it &middot; all your shit, one link</p>
+      <p className="mt-3 text-xs text-stone-400">&copy; 2026 linksh.it &middot; all your sh.it, one link</p>
     </footer>
   );
 }

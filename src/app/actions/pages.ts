@@ -41,7 +41,10 @@ export async function switchPage(formData: FormData) {
   const s = await getSession();
   if (!s) redirect("/login");
   const id = Number(formData.get("id"));
-  const back = formData.get("to") === "analytics" ? "/dashboard/analytics" : "/dashboard";
+  const days = Number(formData.get("days"));
+  const back = formData.get("to") === "analytics"
+    ? `/dashboard/analytics${[7, 30, 90].includes(days) ? `?days=${days}` : ""}`
+    : "/dashboard";
   if (id === s.account.id) {
     await db.update(sessions).set({ activePageId: null }).where(eq(sessions.id, s.sessionId));
   } else {

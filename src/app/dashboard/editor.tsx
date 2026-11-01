@@ -193,7 +193,7 @@ function Saved({ show }: { show: boolean }) {
   return show ? <span className="text-sm text-lime-700">Saved.</span> : null;
 }
 
-export function ProfileForm({ user }: { user: { displayName: string; bio: string; weeklyEmail: boolean } }) {
+export function ProfileForm({ user }: { user: { displayName: string; bio: string; statsEmail: "week" | "month" | "off" } }) {
   const [state, action, pending] = useActionState(updateProfile, undefined);
   return (
     <form action={action} className="space-y-4">
@@ -206,8 +206,12 @@ export function ProfileForm({ user }: { user: { displayName: string; bio: string
         <textarea name="bio" defaultValue={user.bio} maxLength={160} rows={2} className={input} placeholder="Say something. Or don't." />
       </label>
       <label className="flex items-center gap-2 text-sm">
-        <input type="checkbox" name="weeklyEmail" defaultChecked={user.weeklyEmail} className="h-4 w-4 accent-lime-500" />
-        Email me my weekly stats
+        <span>Email me my stats</span>
+        <select name="statsEmail" defaultValue={user.statsEmail} className="rounded-lg border-2 border-stone-300 bg-white px-2 py-1 outline-none focus:border-stone-900">
+          <option value="week">Every week</option>
+          <option value="month">Every month</option>
+          <option value="off">Never</option>
+        </select>
       </label>
       <div className="flex items-center gap-3">
         <button disabled={pending} className={btn}>{pending ? "Saving…" : "Save"}</button>

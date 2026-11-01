@@ -12,7 +12,7 @@ const display = Bricolage_Grotesque({ variable: "--font-display", subsets: ["lat
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://linksh.it"),
-  title: { default: "linksh.it — all your links, one shitty URL", template: "%s · linksh.it" },
+  title: { default: "linksh.it — all your links, one sh.itty URL", template: "%s · linksh.it" },
   description: "Claim linksh.it/yourname and put every link you've got in one place.",
 };
 

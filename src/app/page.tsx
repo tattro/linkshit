@@ -53,7 +53,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
       <main className="mx-auto grid max-w-5xl items-center gap-12 px-6 pb-24 pt-10 md:grid-cols-2">
         <section>
           <h1 className="text-5xl font-black leading-[1.05] tracking-tight md:text-6xl">
-            All your shit.<br />
+            All your sh.it.<br />
             <span className="bg-lime-300 px-2">One link.</span>
           </h1>
           <p className="mt-6 max-w-md text-lg text-stone-600">
