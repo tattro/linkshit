@@ -2,16 +2,20 @@ import NextLink from "next/link";
 import type { Link as LinkRow, Socials, Style, User } from "@/db";
 import { embedFor } from "@/lib/embeds";
 import { platform, PLATFORMS } from "@/lib/socials";
-import { buttonStyle, pageStyle } from "@/lib/style";
+import { backgroundImageStyle, buttonStyle, pageStyle } from "@/lib/style";
 import { getTheme } from "@/lib/themes";
 
-export type ProfileData = Pick<User, "id" | "handle" | "displayName" | "bio" | "theme" | "avatarVersion"> & {
+export type ProfileData = Pick<User, "id" | "handle" | "displayName" | "bio" | "theme" | "avatarVersion" | "bgVersion"> & {
   style: Style;
   socials: Socials;
 };
 
 export function avatarUrl(u: Pick<User, "id" | "avatarVersion">) {
   return u.avatarVersion > 0 ? `/avatar/${u.id}?v=${u.avatarVersion}` : null;
+}
+
+export function backgroundUrl(u: Pick<User, "id" | "bgVersion">) {
+  return u.bgVersion > 0 ? `/bg/${u.id}?v=${u.bgVersion}` : null;
 }
 
 export function ProfileView({ user, links, preview = false, avatarOverride }: {
@@ -24,10 +28,15 @@ export function ProfileView({ user, links, preview = false, avatarOverride }: {
   const name = user.displayName || user.handle;
   const avatar = avatarOverride !== undefined ? avatarOverride : avatarUrl(user);
   const socials = PLATFORMS.filter((p) => user.socials[p.id]);
-  const btnStyle = buttonStyle(user.style);
+  const bgUrl = backgroundUrl(user);
+  // With a tinted background photo, flip text to match the tint unless the user picked a text colour.
+  const tintText = bgUrl && user.style.bgTint ? (user.style.bgTint === "dark" ? "#ffffff" : "#1c1917") : undefined;
+  const style = { ...user.style, text: user.style.text ?? tintText };
+  const btnStyle = buttonStyle(style);
+  const mutedStyle = style.text ? { color: style.text, opacity: 0.7 } : undefined;
 
   return (
-    <div className={`flex min-h-full flex-col items-center px-5 py-12 ${theme.page}`} style={pageStyle(user.style)}>
+    <div className={`flex min-h-full flex-col items-center px-5 py-12 ${theme.page}`} style={{ ...pageStyle(style), ...backgroundImageStyle(bgUrl, style) }}>
       <div className="flex w-full max-w-md flex-1 flex-col items-center">
         {avatar ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -38,7 +47,7 @@ export function ProfileView({ user, links, preview = false, avatarOverride }: {
           </div>
         )}
         <h1 className="mt-4 text-xl font-bold">{name}</h1>
-        <p className={`text-sm ${theme.muted}`} style={user.style.text ? { color: user.style.text, opacity: 0.7 } : undefined}>
+        <p className={`text-sm ${theme.muted}`} style={mutedStyle}>
           @{user.handle}
         </p>
         {user.bio && <p className="mt-3 whitespace-pre-line text-center">{user.bio}</p>}
@@ -94,10 +103,10 @@ export function ProfileView({ user, links, preview = false, avatarOverride }: {
               </li>
             );
           })}
-          {links.length === 0 && <li className={`text-center text-sm ${theme.muted}`}>Nothing here yet. Check back soon.</li>}
+          {links.length === 0 && <li className={`text-center text-sm ${theme.muted}`} style={mutedStyle}>Nothing here yet. Check back soon.</li>}
         </ul>
       </div>
-      <NextLink href="/" className={`mt-12 font-mono text-xs ${theme.muted} hover:underline`}>
+      <NextLink href="/" className={`mt-12 font-mono text-xs ${theme.muted} hover:underline`} style={mutedStyle}>
         made with linksh.it
       </NextLink>
     </div>

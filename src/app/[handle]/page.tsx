@@ -10,7 +10,7 @@ const getProfile = cache(async (handle: string) => {
   const [user] = await db
     .select({
       id: users.id, handle: users.handle, displayName: users.displayName, bio: users.bio, theme: users.theme,
-      style: users.style, socials: users.socials, avatarVersion: users.avatarVersion, bannedAt: users.bannedAt,
+      style: users.style, socials: users.socials, avatarVersion: users.avatarVersion, bgVersion: users.bgVersion, bannedAt: users.bannedAt,
     })
     .from(users)
     .where(eq(users.handle, handle));
