@@ -10,6 +10,21 @@ async function claim(formData: FormData) {
   redirect(`/signup?handle=${encodeURIComponent(handle)}`);
 }
 
+const REASONS: [string, boolean][] = [
+  ["Better name than linktr.ee", true],
+  ["Impress your friends", true],
+  ["Show the world you actually are funny", true],
+  ["Free. Like, actually free", true],
+  ["Steals the colours right off your selfie", true],
+  ["Opens Instagram in the app, not that cursed in-app browser", true],
+  ["Has a theme called \u201cNumber Two\u201d", true],
+  ["Roasts you when you forget your password", true],
+  ["Italian domain, which is basically luxury", true],
+  ["Makes your mom ask \u201cwait, what\u2019s the link?\u201d twice", true],
+  ["Analytics proving nobody clicked your SoundCloud", true],
+  ["Name you can say at Thanksgiving", false],
+];
+
 export default async function Home() {
   const user = await getCurrentUser();
   return (
@@ -59,6 +74,45 @@ export default async function Home() {
           </div>
         </section>
       </main>
+
+      <section className="border-t border-stone-200 bg-white px-6 py-24">
+        <div className="mx-auto max-w-2xl">
+          <p className="text-center text-sm font-bold uppercase tracking-widest text-lime-600">The science is in</p>
+          <h2 className="mt-3 text-center text-4xl font-black tracking-tight md:text-5xl">
+            Why you should <span className="bg-lime-300 px-2">linksh.it</span>
+          </h2>
+          <ul className="mt-12 divide-y divide-stone-100 overflow-hidden rounded-3xl border border-stone-200 bg-stone-50 shadow-sm">
+            {REASONS.map(([text, yes]) => (
+              <li key={text} className="flex items-center gap-4 px-6 py-4">
+                <span
+                  aria-hidden
+                  className={`grid h-8 w-8 shrink-0 place-items-center rounded-full text-sm font-black ${
+                    yes ? "bg-lime-300 text-stone-900" : "bg-red-100 text-red-600"
+                  }`}
+                >
+                  {yes ? "\u2713" : "\u2715"}
+                </span>
+                <span className={`text-base md:text-lg ${yes ? "font-semibold" : "font-semibold text-stone-400 line-through decoration-red-400 decoration-2"}`}>
+                  <span className="sr-only">{yes ? "Yes: " : "No: "}</span>
+                  {text}
+                </span>
+              </li>
+            ))}
+          </ul>
+          <div className="mt-12 text-center">
+            <Link
+              href={user ? "/dashboard" : "/signup"}
+              className="inline-block rounded-full bg-stone-900 px-8 py-4 font-bold text-white hover:bg-lime-500 hover:text-stone-900"
+            >
+              {user ? "Go to your dashboard" : "Fine, I\u2019ll claim mine"}
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      <footer className="bg-stone-100 py-8 text-center text-sm text-stone-500">
+        linksh.it &middot; all your shit, one link
+      </footer>
     </div>
   );
 }
