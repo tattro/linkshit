@@ -6,7 +6,7 @@ import "server-only";
  * Returns false if sending failed or email isn't configured in production.
  */
 export async function sendEmail(
-  to: string, subject: string, text: string, html: string, headers?: Record<string, string>,
+  to: string, subject: string, text: string, html: string, headers?: Record<string, string>, replyTo?: string,
 ): Promise<boolean> {
   const key = process.env.RESEND_API_KEY;
   const from = process.env.EMAIL_FROM ?? "linksh.it <hello@linksh.it>";
@@ -18,7 +18,7 @@ export async function sendEmail(
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ from, to, subject, text, html, ...(headers ? { headers } : {}) }),
+      body: JSON.stringify({ from, to, subject, text, html, ...(headers ? { headers } : {}), ...(replyTo ? { reply_to: replyTo } : {}) }),
     });
     if (!res.ok) console.error("[email] Resend error", res.status, await res.text());
     return res.ok;
@@ -30,7 +30,7 @@ export async function sendEmail(
 
 export const emailConfigured = () => Boolean(process.env.RESEND_API_KEY) || process.env.NODE_ENV !== "production";
 
-const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
+export const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
 
 export function buttonEmail(heading: string, body: string, cta: string, url: string) {
   const text = `${heading}\n\n${body}\n\n${cta}: ${url}\n\nDidn't ask for this? Ignore it and carry on. Nothing happens unless you click.\n— linksh.it`;

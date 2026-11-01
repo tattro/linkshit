@@ -17,6 +17,7 @@ export default function Privacy() {
         <li><strong>Account info:</strong> your email address and a hashed password (we never see or store the actual password).</li>
         <li><strong>Your page:</strong> handle, display name, bio, profile photo, links, social profiles, and style settings. This is public by design.</li>
         <li><strong>Analytics for your page:</strong> when someone views your page or clicks a link, we record the time, the referring website&apos;s domain, and an approximate country. We don&apos;t store visitors&apos; names or full IP addresses in analytics.</li>
+        <li><strong>Messages and signups from visitors:</strong> if a page has a contact form or email signup box, we store what visitors send (their email, and for messages their name and message) so the page owner can read it. Contact messages are also emailed to the page owner.</li>
         <li><strong>Security data:</strong> IP addresses are used briefly for rate limiting and spam prevention, and to avoid counting the same view twice.</li>
       </ul>
 

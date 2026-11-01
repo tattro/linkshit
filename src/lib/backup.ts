@@ -32,6 +32,7 @@ export type Backup = {
     openInApp: boolean;
     signupEnabled: boolean;
     signupPrompt: string;
+    contactEnabled?: boolean;
     lockCode: string | null;
     seoTitle: string;
     seoDescription: string;
