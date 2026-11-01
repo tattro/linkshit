@@ -16,6 +16,11 @@ export function SignupForm({ handle }: { handle: string }) {
       <input name="website" tabIndex={-1} autoComplete="off" aria-hidden className="absolute -left-[9999px] h-0 w-0 opacity-0" />
       {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
       <button disabled={pending} className={buttonCls}>{pending ? "Claiming…" : "Create my page"}</button>
+      <p className="text-center text-xs text-stone-500">
+        By signing up you agree to our{" "}
+        <a href="/terms" target="_blank" className="underline">Terms</a> and{" "}
+        <a href="/privacy" target="_blank" className="underline">Privacy Policy</a>.
+      </p>
     </form>
   );
 }
