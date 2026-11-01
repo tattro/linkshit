@@ -16,6 +16,28 @@ export const SHAPES = [
   { id: "outline", name: "Outline" },
 ] as const;
 
+export const GRADIENT_DIRS = [
+  { id: "down", name: "↓", label: "Top to bottom", css: "linear-gradient(180deg, A, B)" },
+  { id: "diag", name: "↘", label: "Diagonal", css: "linear-gradient(135deg, A, B)" },
+  { id: "right", name: "→", label: "Left to right", css: "linear-gradient(90deg, A, B)" },
+  { id: "radial", name: "◎", label: "From the centre", css: "radial-gradient(circle at 50% 30%, A, B)" },
+] as const;
+
+/** Quick-pick gradients: [from, to, direction]. */
+export const GRADIENT_PRESETS = [
+  { name: "Sunset", bg: "#ff7e5f", bg2: "#7b2ff7", dir: "down", text: "#ffffff" },
+  { name: "Toxic", bg: "#0f2027", bg2: "#a3e635", dir: "down", text: "#ffffff" },
+  { name: "Cotton candy", bg: "#fbc2eb", bg2: "#a6c1ee", dir: "diag", text: "#1c1917" },
+  { name: "Ocean", bg: "#2193b0", bg2: "#0b1d3a", dir: "down", text: "#ffffff" },
+  { name: "Peach", bg: "#ffecd2", bg2: "#fcb69f", dir: "diag", text: "#1c1917" },
+  { name: "Brown note", bg: "#f5e6c8", bg2: "#6b3f1d", dir: "radial", text: "#1c1917" },
+] as const;
+
+export function gradientCss(a: string, b: string, dir: string = "down") {
+  const d = GRADIENT_DIRS.find((x) => x.id === dir) ?? GRADIENT_DIRS[0];
+  return d.css.replace("A", a).replace("B", b);
+}
+
 const HEX = /^#[0-9a-f]{6}$/i;
 
 /** Validate untrusted form input into a Style object. */
@@ -29,6 +51,11 @@ export function parseStyle(input: Record<string, unknown>): Style {
     style.text = pick("text");
     style.button = pick("button");
     style.buttonText = pick("buttonText");
+    if (input.bgMode === "gradient" && style.bg) {
+      style.bg2 = pick("bg2");
+      const dir = GRADIENT_DIRS.find((d) => d.id === input.bgDir)?.id;
+      if (style.bg2 && dir && dir !== "down") style.bgDir = dir;
+    }
   }
   if (font && font !== "sans") style.font = font;
   if (shape && shape !== "rounded") style.shape = shape;
@@ -39,6 +66,7 @@ export function parseStyle(input: Record<string, unknown>): Style {
 export function pageStyle(s: Style): CSSProperties {
   return {
     ...(s.bg ? { backgroundColor: s.bg } : {}),
+    ...(s.bg && s.bg2 ? { backgroundImage: gradientCss(s.bg, s.bg2, s.bgDir) } : {}),
     ...(s.text ? { color: s.text } : {}),
     ...(s.font ? { fontFamily: FONTS.find((f) => f.id === s.font)?.css } : {}),
   };

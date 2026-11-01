@@ -19,6 +19,8 @@ export type Socials = Partial<Record<string, string>>;
 /** Optional per-user overrides layered on top of the chosen theme preset. */
 export type Style = {
   bg?: string; // hex
+  bg2?: string; // second gradient stop; when set, the background is a gradient
+  bgDir?: "down" | "diag" | "right" | "radial";
   text?: string;
   button?: string;
   buttonText?: string;

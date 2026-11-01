@@ -4,7 +4,8 @@ import { db, links } from "@/db";
 import { isAdmin, requireUser } from "@/lib/auth";
 import { siteUrl } from "@/lib/request";
 import { PLATFORMS } from "@/lib/socials";
-import { avatarUrl, backgroundUrl, liveLinks, ProfileView } from "@/components/ProfileView";
+import { avatarUrl, backgroundUrl, liveLinks } from "@/components/ProfileView";
+import { LivePreview } from "./LivePreview";
 import { DashboardHeader } from "./DashboardHeader";
 import { AddLinkForm, AvatarForm, BackgroundForm, LinkItem, LookForm, ProfileForm, ShareCard, SocialsForm, VerifyBanner } from "./editor";
 
@@ -97,7 +98,13 @@ export default async function Dashboard({ searchParams }: PageProps<"/dashboard"
         <aside className="lg:sticky lg:top-8 lg:self-start">
           <p className="mb-2 text-center text-sm font-semibold text-stone-500">Live preview</p>
           <div className="mx-auto h-[640px] w-full max-w-[340px] overflow-y-auto rounded-[2.5rem] border-8 border-stone-900 shadow-xl [&>div]:min-h-full">
-            <ProfileView user={user} links={liveLinks(rows)} preview />
+            <LivePreview
+              user={{
+                id: user.id, handle: user.handle, displayName: user.displayName, bio: user.bio, theme: user.theme,
+                avatarVersion: user.avatarVersion, bgVersion: user.bgVersion, style: user.style, socials: user.socials,
+              }}
+              links={liveLinks(rows)}
+            />
           </div>
         </aside>
       </main>

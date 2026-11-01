@@ -5,7 +5,8 @@ import { addLink, deleteLink, moveLink, updateLink, type ActionState } from "@/a
 import { removeAvatar, removeBackground, updateLook, updateProfile, updateSocials, uploadAvatar, uploadBackground } from "@/app/actions/profile";
 import { resendVerification } from "@/app/actions/auth";
 import type { Link, Socials, Style } from "@/db/schema";
-import { FONTS, SHAPES, hasCustomColors } from "@/lib/style";
+import { setLookDraft } from "./lookDraft";
+import { FONTS, parseStyle, GRADIENT_DIRS, GRADIENT_PRESETS, SHAPES, gradientCss, hasCustomColors } from "@/lib/style";
 import { THEMES } from "@/lib/themes";
 
 export const input = "w-full rounded-lg border-2 border-stone-300 bg-white px-3 py-2 outline-none focus:border-stone-900";
@@ -371,7 +372,29 @@ export function LookForm({ user, avatar, background }: { user: { theme: string; 
   const [colors, setColors] = useState({
     bg: s.bg ?? "#f5f5f4", text: s.text ?? "#1c1917", button: s.button ?? "#ffffff", buttonText: s.buttonText ?? "#1c1917",
   });
+  const [bgMode, setBgMode] = useState<"solid" | "gradient">(s.bg2 ? "gradient" : "solid");
+  const [bg2, setBg2] = useState(s.bg2 ?? "#7b2ff7");
+  const [bgDir, setBgDir] = useState<string>(s.bgDir ?? "down");
   const [stealing, setStealing] = useState(false);
+
+  const formRef = useRef<HTMLFormElement>(null);
+  function publishDraft() {
+    const form = formRef.current;
+    if (!form) return;
+    const data = Object.fromEntries(new FormData(form));
+    setLookDraft({ theme: String(data.theme ?? user.theme), style: parseStyle(data) });
+  }
+  // Controlled bits (colours, presets, stolen palettes) change without a form event.
+  useEffect(publishDraft, [custom, colors, bgMode, bg2, bgDir]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => () => setLookDraft(null), []);
+
+  function applyPreset(p: (typeof GRADIENT_PRESETS)[number]) {
+    setCustom(true);
+    setBgMode("gradient");
+    setBg2(p.bg2);
+    setBgDir(p.dir);
+    setColors((c) => ({ ...c, bg: p.bg, text: p.text }));
+  }
   const [stealError, setStealError] = useState<string | null>(null);
 
   async function steal(src: string) {
@@ -388,7 +411,7 @@ export function LookForm({ user, avatar, background }: { user: { theme: string; 
     }
   }
   return (
-    <form action={action} className="space-y-5">
+    <form ref={formRef} action={action} onChange={publishDraft} className="space-y-5">
       <fieldset>
         <legend className="mb-2 text-sm font-semibold">Theme</legend>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -451,6 +474,23 @@ export function LookForm({ user, avatar, background }: { user: { theme: string; 
           </div>
         </div>
         {stealError && <p className="mt-2 text-sm text-red-600">{stealError}</p>}
+        <div className="mt-3">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-stone-500">Quick gradients</p>
+          <div className="flex flex-wrap gap-2">
+            {GRADIENT_PRESETS.map((p) => (
+              <button
+                key={p.name}
+                type="button"
+                onClick={() => applyPreset(p)}
+                title={p.name}
+                className="flex h-12 w-20 items-end rounded-lg p-1.5 text-left text-[11px] font-bold ring-stone-900 ring-offset-2 hover:ring-2 focus-visible:ring-4"
+                style={{ backgroundImage: gradientCss(p.bg, p.bg2, p.dir), color: p.text }}
+              >
+                {p.name}
+              </button>
+            ))}
+          </div>
+        </div>
         {custom && (
           <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
             {([
@@ -470,6 +510,44 @@ export function LookForm({ user, avatar, background }: { user: { theme: string; 
                 {label}
               </label>
             ))}
+          </div>
+        )}
+        {custom && (
+          <div className="mt-4 space-y-3 rounded-xl border-2 border-stone-200 p-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm font-semibold">Background:</span>
+              {(["solid", "gradient"] as const).map((m) => (
+                <label key={m} className="cursor-pointer">
+                  <input type="radio" name="bgMode" value={m} checked={bgMode === m} onChange={() => setBgMode(m)} className="peer sr-only" />
+                  <span className="inline-block rounded-lg border-2 border-stone-300 px-3 py-1 text-sm font-semibold capitalize peer-checked:border-stone-900 peer-checked:bg-lime-200 peer-focus-visible:ring-4 peer-focus-visible:ring-lime-300">
+                    {m}
+                  </span>
+                </label>
+              ))}
+            </div>
+            {bgMode === "gradient" && (
+              <div className="flex flex-wrap items-center gap-4">
+                <label className="flex items-center gap-2 text-sm">
+                  <input type="color" name="bg2" value={bg2} onChange={(e) => setBg2(e.target.value)} className="h-9 w-12 cursor-pointer rounded border-2 border-stone-300" />
+                  Fades into
+                </label>
+                <div className="flex gap-1" role="radiogroup" aria-label="Gradient direction">
+                  {GRADIENT_DIRS.map((d) => (
+                    <label key={d.id} className="cursor-pointer" title={d.label}>
+                      <input type="radio" name="bgDir" value={d.id} checked={bgDir === d.id} onChange={() => setBgDir(d.id)} className="peer sr-only" aria-label={d.label} />
+                      <span className="grid h-9 w-9 place-items-center rounded-lg border-2 border-stone-300 text-lg peer-checked:border-stone-900 peer-checked:bg-lime-200 peer-focus-visible:ring-4 peer-focus-visible:ring-lime-300">
+                        {d.name}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+                <div
+                  aria-hidden
+                  className="h-9 flex-1 rounded-lg border-2 border-stone-300"
+                  style={{ minWidth: 80, backgroundImage: gradientCss(colors.bg, bg2, bgDir) }}
+                />
+              </div>
+            )}
           </div>
         )}
       </fieldset>
