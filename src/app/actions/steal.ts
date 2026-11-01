@@ -43,6 +43,7 @@ export async function stealLook(_prev: StealState, formData: FormData): Promise<
     const victim = victimHandle ? await getPublicProfile("handle", victimHandle) : null;
     if (!victim) return { error: `Nobody's at linksh.it/${handle}. Check the spelling?` };
     if (victim.user.id === user.id) return { error: "That's your own page, genius." };
+    if (victim.user.lockCode) return { error: "That page is locked, so its look is off limits." };
     const theme = THEMES.some((t) => t.id === victim.user.theme) ? victim.user.theme : user.theme;
     await save(user.id, user.handle, { theme, style: sanitizeStyle(victim.user.style) });
     return { ok: `Stole linksh.it/${victim.user.handle}'s look. 😈 Your links and photo stayed yours.`, previous };

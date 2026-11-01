@@ -22,7 +22,8 @@ export default function Privacy() {
 
       <h2>Cookies</h2>
       <p>
-        We use one cookie to keep you logged in. That&apos;s it. No advertising or third-party tracking cookies.
+        We use one cookie to keep you logged in, and one to remember a code you typed to open a locked page or link. linksh.it itself sets no advertising cookies.
+        Some creators add their own Meta, Google Analytics or TikTok tracking to their page. If they do, those companies may set cookies when you visit that page, under their own privacy policies.
       </p>
 
       <h2>How we use it</h2>

@@ -78,6 +78,13 @@
       "when": 1793507278180,
       "tag": "0010_marketplace_offers",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1793509806802,
+      "tag": "0011_linktree_paid_free",
+      "breakpoints": true
     }
   ]
 }

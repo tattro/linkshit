@@ -13,6 +13,8 @@ export async function generateMetadata({ params }: PageProps<"/[handle]">): Prom
     if (moved) redirect(`/${moved}`);
     notFound();
   }
+  // Crawlers get a real redirect in redirect mode (when the page isn't locked)
+  if (profile.redirectTo && !profile.user.lockCode) redirect(`/go/${profile.redirectTo}`);
   return profileMetadata(profile, `/${profile?.user.handle ?? ""}`);
 }
 

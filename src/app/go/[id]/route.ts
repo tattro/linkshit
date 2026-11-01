@@ -3,6 +3,8 @@ import { NextResponse, after } from "next/server";
 import { db, events, links, offers, users } from "@/db";
 import { androidIntent, appTarget, detectDevice } from "@/lib/deeplinks";
 import { visitorInfo } from "@/lib/request";
+import { lockCookie, tokenMatches } from "@/lib/locks";
+import { withUtm } from "@/lib/tracking";
 
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 
@@ -33,6 +35,8 @@ export async function GET(req: Request, ctx: RouteContext<"/go/[id]">) {
     .select({
       url: links.url, userId: links.userId, bannedAt: users.bannedAt, startsAt: links.startsAt, endsAt: links.endsAt,
       openInApp: users.openInApp, deletedAt: links.deletedAt, offerId: links.offerId, offerActive: offers.active,
+      lockCode: links.lockCode, androidUrl: links.androidUrl, utm: users.utm, handle: users.handle,
+      pageLock: users.lockCode,
     })
     .from(links)
     .innerJoin(users, eq(users.id, links.userId))
@@ -41,17 +45,30 @@ export async function GET(req: Request, ctx: RouteContext<"/go/[id]">) {
   const now = new Date();
   if (!link || link.bannedAt || link.deletedAt || (link.offerId && !link.offerActive) || (link.startsAt && link.startsAt > now) || (link.endsAt && link.endsAt <= now)) return home;
 
+  // Locked link (or a link on a locked page): visitors type the code first
+  const jar = req.headers.get("cookie") ?? "";
+  const cookie = (name: string) => jar.split(/;\s*/).find((c) => c.startsWith(`${name}=`))?.slice(name.length + 1);
+  if (link.pageLock && !tokenMatches(cookie(lockCookie("page", link.userId)), "page", link.userId, link.pageLock)) {
+    return NextResponse.redirect(new URL(`/${link.handle}`, req.url));
+  }
+  if (link.lockCode && !tokenMatches(cookie(lockCookie("link", linkId)), "link", linkId, link.lockCode)) {
+    return NextResponse.redirect(new URL(`/locked/${linkId}`, req.url));
+  }
+
   const visitor = visitorInfo(req.headers, new URL(req.url).host);
   after(async () => {
     await db.update(links).set({ clicks: sql`${links.clicks} + 1` }).where(eq(links.id, linkId));
     if (visitor) await db.insert(events).values({ userId: link.userId, linkId, kind: "click", ...visitor });
   });
 
+  const device = detectDevice(req.headers.get("user-agent") ?? "");
+  // A separate Android link (e.g. Google Play when the main one is the App Store)
+  const base = device.os === "android" && link.androidUrl ? link.androidUrl : link.url;
+  const dest = link.utm ? withUtm(base, link.handle) : base;
   if (link.openInApp) {
-    const device = detectDevice(req.headers.get("user-agent") ?? "");
-    const target = appTarget(link.url);
-    if (target && device.os === "android") return NextResponse.redirect(androidIntent(link.url, target.androidPackage), 302);
-    if (target && device.os === "ios") return openInAppPage(target.ios, link.url, target.name);
+    const target = appTarget(dest);
+    if (target && device.os === "android") return NextResponse.redirect(androidIntent(dest, target.androidPackage), 302);
+    if (target && device.os === "ios") return openInAppPage(target.ios, dest, target.name);
   }
-  return NextResponse.redirect(link.url, 302);
+  return NextResponse.redirect(dest, 302);
 }

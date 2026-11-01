@@ -1,5 +1,6 @@
 import "server-only";
 import { headers } from "next/headers";
+import { deviceKind } from "@/lib/tracking";
 
 export async function clientIp(): Promise<string> {
   const h = await headers();
@@ -29,5 +30,5 @@ export function visitorInfo(h: Headers, ownHost?: string) {
     } catch {}
   }
   const country = h.get("x-vercel-ip-country")?.slice(0, 2).toUpperCase() ?? null;
-  return { referrer, country };
+  return { referrer, country, device: deviceKind(ua) };
 }

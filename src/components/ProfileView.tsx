@@ -15,7 +15,9 @@ export type ProfileData = Pick<User, "id" | "handle" | "displayName" | "bio" | "
   tips: Tips;
 };
 
-export type ProfileLink = Pick<LinkRow, "id" | "title" | "url" | "embed" | "sensitive" | "spotlight" | "icon" | "offerId">;
+export type ProfileLink = Pick<LinkRow, "id" | "title" | "url" | "embed" | "sensitive" | "spotlight" | "icon" | "offerId" | "thumbVersion"> & {
+  locked?: boolean;
+};
 
 export function avatarUrl(u: Pick<User, "id" | "avatarVersion">) {
   return u.avatarVersion > 0 ? `/avatar/${u.id}?v=${u.avatarVersion}` : null;
@@ -105,7 +107,7 @@ export function ProfileView({ user, links, preview = false, avatarOverride }: {
 
         <ul className="mt-8 w-full space-y-3">
           {links.map((l) => {
-            const embed = l.embed ? embedFor(l.url) : null;
+            const embed = l.embed && !l.locked ? embedFor(l.url) : null;
             if (embed) {
               const frame = (
                 <iframe
@@ -133,12 +135,16 @@ export function ProfileView({ user, links, preview = false, avatarOverride }: {
                 className={`${btnClass} relative ${l.spotlight ? "spotlight" : ""}`}
                 style={btnStyle}
               >
-                {(l.icon || brand) && (
+                {l.thumbVersion > 0 ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={`/thumb/${l.id}?v=${l.thumbVersion}`} alt="" className="absolute left-1.5 top-1/2 h-11 w-11 -translate-y-1/2 rounded-lg object-cover" />
+                ) : (l.icon || brand) && (
                   <span aria-hidden className="absolute left-4 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center text-xl leading-none">
                     {l.icon ? l.icon : <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d={brand!} /></svg>}
                   </span>
                 )}
-                <span className={l.icon || brand ? "px-6" : undefined}>{l.title}</span>
+                <span className={l.thumbVersion > 0 ? "px-11" : l.icon || brand || l.locked ? "px-6" : undefined}>{l.title}</span>
+                {l.locked && <span aria-label="Needs a code" className="absolute right-4 top-1/2 -translate-y-1/2 text-base leading-none">🔒</span>}
               </a>
             );
             return (
