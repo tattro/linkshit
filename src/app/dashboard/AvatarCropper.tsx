@@ -7,7 +7,15 @@ const OUT = 400; // size of the saved photo, px
 const MAX_ZOOM = 4;
 const SMALLEST = 0.3; // zoomed all the way out, the photo's long side is 30% of the box
 
-const FEATHER = 0.78; // the sharp photo starts fading out at 78% of the way to its edge
+const FEATHER = 0.9; // the sharp photo starts fading out at 90% of the way to its edge, so faces stay crisp
+
+/** What fills the gaps when the photo is zoomed out smaller than the circle. */
+type Fill = "blur" | "background" | "none";
+const FILLS: { id: Fill; label: string }[] = [
+  { id: "blur", label: "📸 Blur my photo" },
+  { id: "background", label: "🎨 Fade into my background" },
+  { id: "none", label: "Leave it" },
+];
 
 type Pt = { x: number; y: number };
 
@@ -22,9 +30,10 @@ function blurredCover(bitmap: ImageBitmap, size: number) {
     ctx.drawImage(src, (dw - w * s) / 2, (dw - h * s) / 2, w * s, h * s);
     return c;
   };
-  const tiny = step(bitmap, bitmap.width, bitmap.height, 12);
-  const mid = step(tiny, 12, 12, 48);
-  return step(mid, 48, 48, size);
+  // Softer than before: keeps a hint of shapes and colors instead of pure mush
+  const tiny = step(bitmap, bitmap.width, bitmap.height, 20);
+  const mid = step(tiny, 20, 20, 80);
+  return step(mid, 80, 80, size);
 }
 
 /** The photo with its edges faded out in an oval, so it melts into the blur behind it. */
@@ -52,7 +61,7 @@ export function AvatarCropper({ file, onCancel, onDone }: { file: File; onCancel
   const [error, setError] = useState(false);
   const [zoom, setZoom] = useState(1);
   const [pos, setPos] = useState<Pt>({ x: 0, y: 0 });
-  const [blurFill, setBlurFill] = useState(true);
+  const [fill, setFill] = useState<Fill>("blur");
   const pointers = useRef(new Map<number, Pt>());
   const pinch = useRef<{ dist: number; zoom: number } | null>(null);
   const boxRef = useRef<HTMLDivElement>(null);
@@ -74,7 +83,8 @@ export function AvatarCropper({ file, onCancel, onDone }: { file: File; onCancel
   const scale = base * zoom;
   // Zoomed out far enough that the photo no longer covers the box
   const gaps = bitmap ? bitmap.width * scale < VIEW - 0.5 || bitmap.height * scale < VIEW - 0.5 : false;
-  const blurring = gaps && blurFill;
+  const blurring = gaps && fill === "blur";
+  const feathering = gaps && fill !== "none";
 
   // Zoomed out past "fills the circle" is fine: the gaps stay see-through and show the page background
   const minZoom = bitmap ? Math.ceil(((SMALLEST * VIEW) / Math.max(bitmap.width, bitmap.height) / base) * 100) / 100 : 1;
@@ -131,8 +141,9 @@ export function AvatarCropper({ file, onCancel, onDone }: { file: File; onCancel
     const k = canvas.width / VIEW;
     const ctx = canvas.getContext("2d")!;
     const w = bitmap.width * scale * k, h = bitmap.height * scale * k;
-    if (blurring) {
-      ctx.drawImage(blurredCover(bitmap, canvas.width), 0, 0);
+    if (feathering) {
+      // "background" leaves the faded edge see-through so the page background shows
+      if (blurring) ctx.drawImage(blurredCover(bitmap, canvas.width), 0, 0);
       ctx.drawImage(featheredPhoto(bitmap, w, h), pos.x * k, pos.y * k, w, h);
     } else {
       ctx.drawImage(bitmap, pos.x * k, pos.y * k, w, h);
@@ -162,7 +173,7 @@ export function AvatarCropper({ file, onCancel, onDone }: { file: File; onCancel
           >
             {src && blurring && (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={src} alt="" draggable={false} className="pointer-events-none absolute inset-0 h-full w-full scale-125 object-cover blur-xl" />
+              <img src={src} alt="" draggable={false} className="pointer-events-none absolute inset-0 h-full w-full scale-110 object-cover blur-lg" />
             )}
             {src && bitmap && (
               // eslint-disable-next-line @next/next/no-img-element
@@ -175,7 +186,7 @@ export function AvatarCropper({ file, onCancel, onDone }: { file: File; onCancel
                   width: bitmap.width * scale,
                   height: bitmap.height * scale,
                   transform: `translate(${pos.x}px, ${pos.y}px)`,
-                  ...(blurring ? { maskImage: `radial-gradient(closest-side, #000 ${FEATHER * 100}%, transparent 100%)`, WebkitMaskImage: `radial-gradient(closest-side, #000 ${FEATHER * 100}%, transparent 100%)` } : {}),
+                  ...(feathering ? { maskImage: `radial-gradient(closest-side, #000 ${FEATHER * 100}%, transparent 100%)`, WebkitMaskImage: `radial-gradient(closest-side, #000 ${FEATHER * 100}%, transparent 100%)` } : {}),
                 }}
               />
             )}
@@ -199,10 +210,22 @@ export function AvatarCropper({ file, onCancel, onDone }: { file: File; onCancel
           <span aria-hidden>➕</span>
         </label>
         {gaps && (
-          <label className="mt-3 flex items-center justify-center gap-2 text-sm">
-            <input type="checkbox" checked={blurFill} onChange={(e) => setBlurFill(e.target.checked)} className="h-4 w-4 accent-lime-500" />
-            Fill the circle with a blur of my photo
-          </label>
+          <fieldset className="mt-3">
+            <legend className="mx-auto text-xs text-stone-500">My photo is square and I&apos;m stupid. Fill the gaps with:</legend>
+            <div className="mt-1.5 flex flex-wrap justify-center gap-1.5">
+              {FILLS.map((f) => (
+                <button
+                  key={f.id}
+                  type="button"
+                  aria-pressed={fill === f.id}
+                  onClick={() => setFill(f.id)}
+                  className={`rounded-full border-2 px-2.5 py-1 text-xs font-semibold ${fill === f.id ? "border-stone-900 bg-stone-900 text-white" : "border-stone-300 hover:border-stone-900"}`}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+          </fieldset>
         )}
         <div className="mt-4 flex gap-2">
           <button type="button" onClick={onCancel} className="flex-1 rounded-lg border-2 border-stone-300 px-4 py-2 font-semibold hover:border-stone-900">Cancel</button>
