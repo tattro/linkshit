@@ -4,7 +4,7 @@ import { Logo } from "@/components/Logo";
 import { accountPages, getSession, isAdmin } from "@/lib/auth";
 import { PageSwitcher } from "./PageSwitcher";
 
-export async function DashboardHeader({ active }: { active: "editor" | "analytics" | "admin" }) {
+export async function DashboardHeader({ active }: { active: "editor" | "analytics" | "marketplace" | "admin" }) {
   const s = await getSession();
   if (!s) return null;
   const { account, page } = s;
@@ -14,11 +14,14 @@ export async function DashboardHeader({ active }: { active: "editor" | "analytic
   return (
     <header className="border-b-2 border-stone-900 bg-white">
       <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-6 py-4">
-        <div className="flex items-center gap-6">
+        <div className="flex min-w-0 flex-wrap items-center gap-x-6 gap-y-2">
           <Logo />
-          <nav className="flex gap-1 text-sm">
+          <nav className="flex flex-wrap gap-1 text-sm">
             <Link href="/dashboard" className={tab("editor")}>Editor</Link>
             <Link href="/dashboard/analytics" className={tab("analytics")}>Analytics</Link>
+            <Link href="/dashboard/marketplace" className={`${tab("marketplace")} whitespace-nowrap`}>
+              Marketplace <span className="ml-0.5 rounded-full bg-lime-300 px-1.5 py-0.5 text-[10px] font-black uppercase text-stone-900">Soon</span>
+            </Link>
             {isAdmin(account) && <Link href="/admin" className={tab("admin")}>Admin</Link>}
           </nav>
         </div>

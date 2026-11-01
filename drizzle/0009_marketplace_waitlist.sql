@@ -1,0 +1,1 @@
+ALTER TABLE "users" ADD COLUMN "marketplace_interest_at" timestamp with time zone;
