@@ -6,7 +6,7 @@ import { avatars, backgrounds, db, handleRedirects, users, type Socials, type Ti
 import { handleProblem, normalizeHandle } from "@/lib/handles";
 import { handleTaken } from "@/lib/handleTaken";
 import { TIP_PROVIDERS } from "@/lib/tips";
-import { requireUser } from "@/lib/auth";
+import { requireAccount, requireUser } from "@/lib/auth";
 import { rateLimit, TOO_MANY } from "@/lib/ratelimit";
 import { PLATFORMS } from "@/lib/socials";
 import { parseStyle } from "@/lib/style";
@@ -23,8 +23,10 @@ export async function updateProfile(_prev: ProfileState, formData: FormData): Pr
   const user = await requireUser();
   const displayName = String(formData.get("displayName") ?? "").trim().slice(0, 60);
   const bio = String(formData.get("bio") ?? "").trim().slice(0, 160);
-  const weeklyEmail = formData.get("weeklyEmail") === "on";
-  await db.update(users).set({ displayName, bio, weeklyEmail }).where(eq(users.id, user.id));
+  await db.update(users).set({ displayName, bio }).where(eq(users.id, user.id));
+  // The weekly email setting lives on the account, whichever page is being edited
+  const account = await requireAccount();
+  await db.update(users).set({ weeklyEmail: formData.get("weeklyEmail") === "on" }).where(eq(users.id, account.id));
   refresh(user.handle);
   return { ok: true };
 }

@@ -2,7 +2,8 @@ import "server-only";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createHash, randomBytes } from "node:crypto";
-import { and, eq, gt, isNull, lt } from "drizzle-orm";
+import { and, asc, eq, gt, isNull, lt, or, sql } from "drizzle-orm";
+import { cache } from "react";
 import { db, emailTokens, sessions, users, type User } from "@/db";
 import { buttonEmail, sendEmail } from "./email";
 import { siteUrl } from "./request";
@@ -28,18 +29,35 @@ export async function createSession(userId: number) {
   });
 }
 
-export async function getCurrentUser(): Promise<User | null> {
+export const MAX_PAGES = 5;
+
+/** The logged-in account plus the page the dashboard is currently editing (often the same row). */
+export const getSession = cache(async (): Promise<{ sessionId: string; account: User; page: User } | null> => {
   const token = (await cookies()).get(COOKIE)?.value;
   if (!token) return null;
+  const sessionId = hashToken(token);
   const rows = await db
-    .select({ user: users, expiresAt: sessions.expiresAt })
+    .select({ user: users, expiresAt: sessions.expiresAt, activePageId: sessions.activePageId })
     .from(sessions)
     .innerJoin(users, eq(users.id, sessions.userId))
-    .where(eq(sessions.id, hashToken(token)))
+    .where(eq(sessions.id, sessionId))
     .limit(1);
   const row = rows[0];
   if (!row || row.expiresAt < new Date() || row.user.bannedAt) return null;
-  return row.user;
+  let page = row.user;
+  if (row.activePageId && row.activePageId !== row.user.id) {
+    const [extra] = await db
+      .select()
+      .from(users)
+      .where(and(eq(users.id, row.activePageId), eq(users.ownerId, row.user.id)));
+    if (extra) page = extra;
+  }
+  return { sessionId, account: row.user, page };
+});
+
+/** The page being edited. Everything page-level (links, look, analytics) goes through this. */
+export async function getCurrentUser(): Promise<User | null> {
+  return (await getSession())?.page ?? null;
 }
 
 export async function requireUser(): Promise<User> {
@@ -48,13 +66,29 @@ export async function requireUser(): Promise<User> {
   return user;
 }
 
+/** The login itself: email, password, verification, admin, deleting everything. */
+export async function requireAccount(): Promise<User> {
+  const s = await getSession();
+  if (!s) redirect("/login");
+  return s.account;
+}
+
+/** All pages on the account, main page first. */
+export async function accountPages(accountId: number) {
+  return db
+    .select({ id: users.id, handle: users.handle, displayName: users.displayName })
+    .from(users)
+    .where(or(eq(users.id, accountId), eq(users.ownerId, accountId)))
+    .orderBy(sql`${users.ownerId} nulls first`, asc(users.createdAt));
+}
+
 export function isAdmin(user: Pick<User, "isAdmin" | "email">) {
   const list = (process.env.ADMIN_EMAILS ?? "").split(",").map((e) => e.trim().toLowerCase()).filter(Boolean);
-  return user.isAdmin || list.includes(user.email.toLowerCase());
+  return user.isAdmin || list.includes((user.email ?? "").toLowerCase());
 }
 
 export async function requireAdmin(): Promise<User> {
-  const user = await requireUser();
+  const user = await requireAccount();
   if (!isAdmin(user)) redirect("/dashboard");
   return user;
 }
@@ -102,6 +136,7 @@ export async function peekEmailToken(token: string, kind: "verify" | "reset"): P
 }
 
 export async function sendVerificationEmail(user: Pick<User, "id" | "email" | "handle">) {
+  if (!user.email) return false;
   const token = await createEmailToken(user.id, "verify");
   const url = `${await siteUrl()}/verify?token=${token}`;
   const { text, html } = buttonEmail(
@@ -113,6 +148,7 @@ export async function sendVerificationEmail(user: Pick<User, "id" | "email" | "h
 }
 
 export async function sendResetEmail(user: Pick<User, "id" | "email" | "handle">) {
+  if (!user.email) return false;
   const token = await createEmailToken(user.id, "reset");
   const url = `${await siteUrl()}/reset?token=${token}`;
   const { text, html } = buttonEmail(

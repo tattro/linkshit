@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db, sessions, users } from "@/db";
 import {
-  consumeEmailToken, createSession, destroySession, requireUser, sendResetEmail, sendVerificationEmail,
+  consumeEmailToken, createSession, destroySession, requireAccount, sendResetEmail, sendVerificationEmail,
 } from "@/lib/auth";
 import { handleProblem, normalizeHandle } from "@/lib/handles";
 import { handleTaken } from "@/lib/handleTaken";
@@ -41,7 +41,7 @@ export async function signup(_prev: FormState, formData: FormData): Promise<Form
   if (await handleTaken(handle)) return { error: `Someone already claimed linksh.it/${handle}.`, fields };
 
   const passwordHash = await bcrypt.hash(parsed.data.password, 12);
-  let user: { id: number; email: string; handle: string };
+  let user: { id: number; email: string | null; handle: string };
   try {
     [user] = await db
       .insert(users)
@@ -65,7 +65,7 @@ export async function login(_prev: FormState, formData: FormData): Promise<FormS
     return { error: TOO_MANY, fields: { email } };
   }
   const [user] = await db.select().from(users).where(eq(users.email, email));
-  const ok = user ? await bcrypt.compare(password, user.passwordHash) : false;
+  const ok = user?.passwordHash ? await bcrypt.compare(password, user.passwordHash) : false;
   if (!user || !ok) return { error: "Wrong email or password.", fields: { email } };
   if (user.bannedAt) return { error: "This account has been suspended.", fields: { email } };
   await createSession(user.id);
@@ -106,7 +106,7 @@ export async function resetPassword(_prev: FormState, formData: FormData): Promi
 }
 
 export async function resendVerification(): Promise<FormState> {
-  const user = await requireUser();
+  const user = await requireAccount();
   if (user.emailVerifiedAt) return { ok: "You're already verified." };
   if (!(await rateLimit(`verify:user:${user.id}`, 3, 60 * 60))) return { error: TOO_MANY };
   const sent = await sendVerificationEmail(user);

@@ -2,7 +2,8 @@ import { asc, eq } from "drizzle-orm";
 import QRCode from "qrcode";
 import { db, links, subscribers } from "@/db";
 import { sql } from "drizzle-orm";
-import { isAdmin, requireUser } from "@/lib/auth";
+import { getSession } from "@/lib/auth";
+import { redirect } from "next/navigation";
 import { siteUrl } from "@/lib/request";
 import { PLATFORMS } from "@/lib/socials";
 import { avatarUrl, backgroundUrl, liveLinks } from "@/components/ProfileView";
@@ -12,7 +13,7 @@ import { DomainForm } from "./DomainForm";
 import { domainsEnabled, isApex } from "@/lib/domains";
 import { DashboardHeader } from "./DashboardHeader";
 import { LinkList } from "./LinkList";
-import { AddLinkForm, AvatarForm, BackgroundForm, DeleteAccountForm, Graveyard, HandleForm, LinktreeImport, SignupSettings, TipsForm, LookForm, ProfileForm, ShareCard, SocialsForm, VerifyBanner } from "./editor";
+import { AddLinkForm, AvatarForm, BackgroundForm, DeleteAccountForm, DeletePageForm, Graveyard, HandleForm, LinktreeImport, SignupSettings, TipsForm, LookForm, ProfileForm, ShareCard, SocialsForm, VerifyBanner } from "./editor";
 
 export const metadata = { title: "Dashboard" };
 
@@ -29,8 +30,11 @@ function Section({ title, children, aside }: { title: string; children: React.Re
 }
 
 export default async function Dashboard({ searchParams }: PageProps<"/dashboard">) {
-  const user = await requireUser();
-  const { welcome, verified, reset } = await searchParams;
+  const s = await getSession();
+  if (!s) redirect("/login");
+  const { account, page: user } = s;
+  const extraPage = user.id !== account.id;
+  const { welcome, verified, reset, newpage, pagegone } = await searchParams;
   const allRows = await db
     .select()
     .from(links)
@@ -46,7 +50,7 @@ export default async function Dashboard({ searchParams }: PageProps<"/dashboard"
 
   return (
     <div className="min-h-screen bg-stone-100 text-stone-900">
-      <DashboardHeader handle={user.handle} active="editor" admin={isAdmin(user)} />
+      <DashboardHeader active="editor" />
 
       <main className="mx-auto grid max-w-6xl gap-8 px-6 py-8 lg:grid-cols-[1fr_360px]">
         <div className="min-w-0 space-y-8">
@@ -58,7 +62,19 @@ export default async function Dashboard({ searchParams }: PageProps<"/dashboard"
           )}
           {verified && <div className="rounded-2xl border-2 border-stone-900 bg-lime-300 p-4 font-bold">Email confirmed. You&apos;re legit. ✅</div>}
           {reset && <div className="rounded-2xl border-2 border-stone-900 bg-lime-300 p-4 font-bold">New password saved and you&apos;re back in. Try not to forget this one. 🧻</div>}
-          {!user.emailVerifiedAt && !verified && <VerifyBanner email={user.email} />}
+          {newpage && (
+            <div className="rounded-2xl border-2 border-stone-900 bg-lime-300 p-5">
+              <p className="font-bold">New page, who dis? linksh.it/{user.handle} is live. 🎉</p>
+              <p className="text-sm">Same login, totally separate links and look. Switch pages any time from the 📄 menu up top.</p>
+            </div>
+          )}
+          {pagegone && <div className="rounded-2xl border-2 border-stone-900 bg-lime-300 p-4 font-bold">Page flushed. You&apos;re back on your main page. 🧻</div>}
+          {extraPage && (
+            <div className="rounded-2xl border-2 border-dashed border-stone-400 bg-white p-3 text-sm text-stone-600">
+              Editing <span className="font-mono font-semibold text-stone-900">linksh.it/{user.handle}</span>, one of your extra pages.
+            </div>
+          )}
+          {!account.emailVerifiedAt && !verified && <VerifyBanner email={account.email ?? ""} />}
 
           <Section title="Add a link">
             <AddLinkForm />
@@ -81,7 +97,7 @@ export default async function Dashboard({ searchParams }: PageProps<"/dashboard"
             <div className="space-y-6">
               <AvatarForm current={avatarUrl(user)} initial={(user.displayName || user.handle).slice(0, 1)} />
               <HandleForm handle={user.handle} />
-              <ProfileForm user={{ displayName: user.displayName, bio: user.bio, weeklyEmail: user.weeklyEmail }} />
+              <ProfileForm user={{ displayName: user.displayName, bio: user.bio, weeklyEmail: account.weeklyEmail }} />
             </div>
           </Section>
 
@@ -119,7 +135,7 @@ export default async function Dashboard({ searchParams }: PageProps<"/dashboard"
           </Section>
 
           <Section title="Danger zone">
-            <DeleteAccountForm handle={user.handle} />
+            {extraPage ? <DeletePageForm handle={user.handle} /> : <DeleteAccountForm handle={user.handle} />}
           </Section>
         </div>
 

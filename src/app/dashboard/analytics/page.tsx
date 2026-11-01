@@ -1,7 +1,7 @@
 import { and, desc, eq, gte, isNotNull, sql } from "drizzle-orm";
 import Link from "next/link";
 import { db, events, links } from "@/db";
-import { isAdmin, requireUser } from "@/lib/auth";
+import { requireUser } from "@/lib/auth";
 import { DashboardHeader } from "../DashboardHeader";
 import { DailyChart } from "./DailyChart";
 
@@ -84,7 +84,7 @@ export default async function Analytics({ searchParams }: PageProps<"/dashboard/
 
   return (
     <div className="min-h-screen bg-stone-100 text-stone-900">
-      <DashboardHeader handle={user.handle} active="analytics" admin={isAdmin(user)} />
+      <DashboardHeader active="analytics" />
       <main className="mx-auto max-w-6xl space-y-6 px-6 py-8">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h1 className="text-2xl font-black">Who&apos;s been looking</h1>

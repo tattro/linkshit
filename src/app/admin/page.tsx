@@ -1,4 +1,5 @@
-import { desc, ilike, isNotNull, or, sql } from "drizzle-orm";
+import { desc, eq, ilike, isNotNull, or, sql } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import Link from "next/link";
 import { db, links, users } from "@/db";
 import { setBan } from "@/app/actions/admin";
@@ -19,22 +20,23 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
       ? or(ilike(users.handle, `%${query}%`), ilike(users.email, `%${query}%`), ilike(users.displayName, `%${query}%`))
       : undefined;
 
+  const owner = alias(users, "owner");
   const [rows, [stats]] = await Promise.all([
     db.select({
-      id: users.id, handle: users.handle, email: users.email, displayName: users.displayName, createdAt: users.createdAt,
+      id: users.id, handle: users.handle, email: sql<string>`coalesce(${users.email}, ${owner.email} || ' (extra page)')`, displayName: users.displayName, createdAt: users.createdAt,
       bannedAt: users.bannedAt, banReason: users.banReason, verified: users.emailVerifiedAt,
       linkCount: sql<number>`(select count(*)::int from ${links} where ${links.userId} = ${users.id})`,
-    }).from(users).where(where).orderBy(desc(users.createdAt)).limit(100),
+    }).from(users).leftJoin(owner, eq(owner.id, users.ownerId)).where(where).orderBy(desc(users.createdAt)).limit(100),
     db.select({
-      total: sql<number>`count(*)::int`,
+      total: sql<number>`count(*) filter (where ${users.ownerId} is null)::int`,
       banned: sql<number>`count(${users.bannedAt})::int`,
-      week: sql<number>`count(*) filter (where ${users.createdAt} > now() - interval '7 days')::int`,
+      week: sql<number>`count(*) filter (where ${users.ownerId} is null and ${users.createdAt} > now() - interval '7 days')::int`,
     }).from(users),
   ]);
 
   return (
     <div className="min-h-screen bg-stone-100 text-stone-900">
-      <DashboardHeader handle={admin.handle} active="admin" admin />
+      <DashboardHeader active="admin" />
       <main className="mx-auto max-w-6xl space-y-6 px-6 py-8">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
