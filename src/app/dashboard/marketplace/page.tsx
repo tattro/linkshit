@@ -27,7 +27,10 @@ export default async function Marketplace() {
           <p className="mx-auto mt-4 max-w-xl text-lg font-semibold">
             A way to monetize your link in bio, with the best payouts from advertisers in your niche.
           </p>
-          <p className="mx-auto mt-3 max-w-xl text-stone-800">
+          <p className="mx-auto mt-5 inline-block rounded-2xl bg-stone-900 px-5 py-3 text-lg font-black text-lime-300">
+            You don&apos;t pay for linksh.it. No subscription fees.<br />But you might get paid by us. 💸
+          </p>
+          <p className="mx-auto mt-4 max-w-xl text-stone-800">
             It&apos;s not an ad. It&apos;s a referral to a product that fits the stuff you talk about, and you get paid a commission for everyone who signs up.
           </p>
           <p className="mx-auto mt-3 max-w-xl text-sm text-stone-700">
