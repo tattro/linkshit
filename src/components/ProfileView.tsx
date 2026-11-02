@@ -20,7 +20,7 @@ export type ProfileData = Pick<User, "id" | "handle" | "displayName" | "bio" | "
   tips: Tips;
 };
 
-export type ProfileLink = Pick<LinkRow, "id" | "title" | "url" | "embed" | "sensitive" | "spotlight" | "icon" | "offerId" | "thumbVersion" | "discountCode" | "heading" | "music" | "price"> & { dropsAt?: Date | null } & {
+export type ProfileLink = Pick<LinkRow, "id" | "title" | "url" | "embed" | "sensitive" | "spotlight" | "icon" | "offerId" | "thumbVersion" | "discountCode" | "heading" | "music" | "price" | "latest"> & { dropsAt?: Date | null } & {
   locked?: boolean;
 };
 
@@ -67,6 +67,24 @@ export function ProfileView({ user, links, preview = false, avatarOverride, qa =
       ))}
     </div>
   );
+
+  const latestRow = (l: ProfileLink) => {
+    const item = l.locked ? null : l.latest?.item;
+    if (!item) return null;
+    return (
+      <a
+        href={preview ? item.url : `/go/${l.id}?to=latest`}
+        target={preview ? "_blank" : undefined}
+        rel="noopener noreferrer nofollow"
+        className="tint mt-2 flex items-center gap-2 rounded-xl px-3 py-2 text-left text-sm [--tint:0.08]"
+      >
+        <span className="shrink-0 rounded-full bg-red-600 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
+          {l.latest!.kind === "youtube" ? "New video" : "New episode"}
+        </span>
+        <span className="min-w-0 truncate font-medium">{item.title}</span>
+      </a>
+    );
+  };
 
   return (
     <div className={`flex min-h-full flex-col items-center px-5 py-12 ${theme.page}`} style={{ ...pageStyle(style), ...backgroundImageStyle(bgUrl, style) }}>
@@ -198,6 +216,7 @@ export function ProfileView({ user, links, preview = false, avatarOverride, qa =
                   return code ? <DiscountLink code={code} href={preview ? l.url : `/go/${l.id}`} newTab={preview} mutedClass={theme.muted} mutedStyle={mutedStyle}>{gated}</DiscountLink> : gated;
                 })()}
                 {musicRow(l)}
+                {latestRow(l)}
                 {l.offerId && (
                   <p className={`mt-1 text-center text-[11px] ${theme.muted}`} style={mutedStyle}>
                     Affiliate link · I may earn a commission if you buy or sign up

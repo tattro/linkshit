@@ -35,7 +35,7 @@ export async function GET(req: Request, ctx: RouteContext<"/go/[id]">) {
     .select({
       url: links.url, userId: links.userId, bannedAt: users.bannedAt, startsAt: links.startsAt, endsAt: links.endsAt,
       openInApp: users.openInApp, deletedAt: links.deletedAt, offerId: links.offerId, offerActive: offers.active,
-      lockCode: links.lockCode, androidUrl: links.androidUrl, music: links.music, heading: links.heading, utm: users.utm, handle: users.handle,
+      lockCode: links.lockCode, androidUrl: links.androidUrl, music: links.music, latest: links.latest, heading: links.heading, utm: users.utm, handle: users.handle,
       pageLock: users.lockCode,
     })
     .from(links)
@@ -65,7 +65,7 @@ export async function GET(req: Request, ctx: RouteContext<"/go/[id]">) {
   // A separate Android link (e.g. Google Play when the main one is the App Store)
   // "Listen on Apple Music" etc. under a music link
   const to = new URL(req.url).searchParams.get("to");
-  const musicUrl = to ? link.music?.links.find((m) => m.p === to)?.url : undefined;
+  const musicUrl = to === "latest" ? link.latest?.item?.url : to ? link.music?.links.find((m) => m.p === to)?.url : undefined;
   const base = musicUrl ?? (device.os === "android" && link.androidUrl ? link.androidUrl : link.url);
   const dest = link.utm ? withUtm(base, link.handle) : base;
   if (link.openInApp) {

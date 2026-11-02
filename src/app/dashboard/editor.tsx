@@ -19,6 +19,7 @@ import { AvatarCropper } from "./AvatarCropper";
 import { GENERAL_CATEGORIES } from "@/lib/creatorTypes";
 import { isMusicUrl } from "@/lib/music";
 import { isStoreUrl } from "@/lib/stores";
+import { latestKind } from "@/lib/feeds";
 import { embedFor } from "@/lib/embeds";
 import { TIP_PROVIDERS } from "@/lib/tips";
 import { FONTS, parseStyle, GRADIENT_DIRS, GRADIENT_PRESETS, SHAPES, gradientCss, hasCustomColors } from "@/lib/style";
@@ -49,7 +50,8 @@ function LinkExtras({ link, url }: { link?: Link; url: string }) {
     link?.spotlight || link?.sensitive || link?.icon || link?.discountCode || link?.price,
   ));
   const canEmbed = url.trim() !== "" && embedFor(/^https?:\/\//i.test(url.trim()) ? url.trim() : `https://${url.trim()}`) !== null;
-  const canGrab = url.trim() !== "" && !isMusicUrl(url) && !canEmbed;
+  const feedKind = latestKind(url);
+  const canGrab = url.trim() !== "" && !isMusicUrl(url) && !canEmbed && !feedKind;
   return (
     <div className="sm:col-span-full">
       <TzInput />
@@ -57,6 +59,15 @@ function LinkExtras({ link, url }: { link?: Link; url: string }) {
         <label className="mb-2 flex items-start gap-2 text-sm">
           <input type="checkbox" name="music" defaultChecked={link ? Boolean(link.music) : true} className="mt-0.5 h-4 w-4 accent-lime-500" />
           <span>🎵 Add &quot;Listen on Spotify, Apple Music, YouTube…&quot; buttons <span className="text-stone-400">(we find it on every app for you)</span></span>
+        </label>
+      )}
+      {feedKind && (
+        <label className="mb-2 flex items-start gap-2 text-sm">
+          <input type="checkbox" name="latest" defaultChecked={link ? Boolean(link.latest) : true} className="mt-0.5 h-4 w-4 accent-lime-500" />
+          <span>
+            {feedKind === "youtube" ? "📺 Always show my newest video under this link" : "🎙️ Always show my newest episode under this link"}{" "}
+            <span className="text-stone-400">(updates by itself)</span>
+          </span>
         </label>
       )}
       {canGrab && (
@@ -371,6 +382,7 @@ function LinkRowItem({ link, handle, sections, section }: { link: Link; handle?:
             {link.spotlight && <span className="ml-2 rounded bg-yellow-100 px-1.5 py-0.5 text-xs font-medium text-yellow-800">✨ spotlight</span>}
             {link.sensitive && <span className="ml-2 rounded bg-red-100 px-1.5 py-0.5 text-xs font-medium text-red-800">🔞 18+</span>}
             {link.music && <span className="ml-2 rounded bg-pink-100 px-1.5 py-0.5 text-xs font-medium text-pink-800">🎵 {link.music.links.length} apps</span>}
+            {link.latest?.item && <span className="ml-2 rounded bg-red-100 px-1.5 py-0.5 text-xs font-medium text-red-800">{link.latest.kind === "youtube" ? "📺" : "🎙️"} newest: {link.latest.item.title.slice(0, 30)}</span>}
             {link.price && <span className="ml-2 rounded bg-emerald-100 px-1.5 py-0.5 text-xs font-medium text-emerald-800">{link.price}</span>}
             {link.discountCode && <span className="ml-2 rounded bg-sky-100 px-1.5 py-0.5 text-xs font-medium text-sky-800">🏷️ {link.discountCode}</span>}
             {link.lockCode && <span className="ml-2 rounded bg-stone-200 px-1.5 py-0.5 text-xs font-medium text-stone-700">🔒 locked</span>}

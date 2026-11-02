@@ -40,7 +40,7 @@ const MAX_IMAGE = 600 * 1024; // share images run bigger than hand-uploaded thum
 export async function pagePreview(url: string): Promise<{ image: { data: Buffer; contentType: string } | null; price: string | null }> {
   const empty = { image: null, price: null };
   try {
-    const page = await safeFetch(url, { maxBytes: 1_500_000, accept: "text/html" });
+    const page = await safeFetch(url, { maxBytes: 1_500_000, accept: "text/html", truncate: true });
     if (!page || !/html/i.test(page.contentType)) return empty;
     const html = page.body.toString("utf8");
     const price = findPrice(html);

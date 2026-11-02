@@ -141,6 +141,13 @@
       "when": 1793646672580,
       "tag": "0019_link_price",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1793646876167,
+      "tag": "0020_link_latest",
+      "breakpoints": true
     }
   ]
 }

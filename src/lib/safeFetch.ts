@@ -32,8 +32,11 @@ async function publicHost(u: URL): Promise<boolean> {
   }
 }
 
-/** GET a public URL (following up to 3 checked redirects), reading at most maxBytes. */
-export async function safeFetch(url: string, { maxBytes, accept }: { maxBytes: number; accept: string }) {
+/**
+ * GET a public URL (following up to 3 checked redirects), reading at most maxBytes.
+ * Over the cap it gives up, or with `truncate` keeps the first maxBytes (fine for HTML heads).
+ */
+export async function safeFetch(url: string, { maxBytes, accept, truncate = false }: { maxBytes: number; accept: string; truncate?: boolean }) {
   let current = new URL(url);
   for (let hop = 0; hop < 4; hop++) {
     if (!(await publicHost(current))) return null;
@@ -56,7 +59,12 @@ export async function safeFetch(url: string, { maxBytes, accept }: { maxBytes: n
       const { done, value } = await reader.read();
       if (done) break;
       size += value.length;
-      if (size > maxBytes) { await reader.cancel(); return null; }
+      if (size > maxBytes) {
+        await reader.cancel();
+        if (!truncate) return null;
+        chunks.push(value.subarray(0, value.length - (size - maxBytes)));
+        break;
+      }
       chunks.push(value);
     }
     return { url: current, contentType: res.headers.get("content-type") ?? "", body: Buffer.concat(chunks) };

@@ -20,6 +20,7 @@ import { normalizeUrl } from "@/lib/urls";
 import { isMusicUrl } from "@/lib/music";
 import { lookupMusic } from "@/lib/musicLookup";
 import { pagePreview } from "@/lib/pagePreview";
+import { setUpLatest } from "@/lib/latest";
 
 export type ActionState = { error?: string; ok?: boolean } | undefined;
 
@@ -102,16 +103,17 @@ async function readLinkForm(formData: FormData) {
   const thumb = await readThumb(formData);
   if (thumb && "error" in thumb) return { error: thumb.error } as const;
   const music = formData.get("music") === "on" && !lockCode && isMusicUrl(url) ? await lookupMusic(url) : null;
+  const latest = formData.get("latest") === "on" && !lockCode ? await setUpLatest(url) : null;
   let price: string | null = String(formData.get("price") ?? "").trim().slice(0, 20) || null;
   let image: { data: Buffer; contentType: string } | null = thumb;
   // "Grab the product picture and price": fills in whatever the person didn't set themselves
-  if (formData.get("grab") === "on" && !music && !embed) {
+  if (formData.get("grab") === "on" && !music && !embed && !latest) {
     const preview = await pagePreview(url);
     price ??= preview.price;
     image ??= preview.image;
   }
   // A locked link can't play inline, or the lock would be pointless
-  return { value: { title, url, startsAt, endsAt, embed: embed && !lockCode, sensitive, spotlight, icon, lockCode, discountCode, androidUrl, countdown, music, price }, thumb: image, removeThumb: formData.get("removeThumb") === "on" && !image } as const;
+  return { value: { title, url, startsAt, endsAt, embed: embed && !lockCode, sensitive, spotlight, icon, lockCode, discountCode, androidUrl, countdown, music, price, latest }, thumb: image, removeThumb: formData.get("removeThumb") === "on" && !image } as const;
 }
 
 /** Which section a link sits in: the nearest heading above it, or "none". */
