@@ -14,6 +14,7 @@ export function SiteFooter({ creator = false }: { creator?: boolean }) {
         </p>
       )}
       <nav className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-xs font-medium text-stone-500">
+        <Link href="/pricing" className="hover:text-stone-900">Pricing (lol, free)</Link>
         <Link href="/privacy" className="hover:text-stone-900">Privacy Policy</Link>
         <Link href="/terms" className="hover:text-stone-900">Terms of Service</Link>
         <Link href="/contact" className="hover:text-stone-900">Contact</Link>
