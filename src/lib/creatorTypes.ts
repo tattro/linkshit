@@ -24,7 +24,7 @@ export const CREATOR_TYPES = {
   },
   podcaster: {
     label: "🎙️ Podcaster", blurb: "Episodes, where to listen, sponsors", categories: ["Episodes", "Listen", "Sponsors", "Merch"],
-    firstLinks: "Add where people can listen", grow: ["signup", "qa"],
+    firstLinks: "Add where people can listen", grow: ["signup", "qa", "kit"],
     tip: "Paste your show on Spotify or Apple Podcasts, then tick \"Show it right on my page\" so people can play it there.",
     linkPlaceholder: "open.spotify.com/show/…",
   },
@@ -36,7 +36,7 @@ export const CREATOR_TYPES = {
   },
   creator: {
     label: "📱 Content creator", blurb: "Videos, socials, brand deals", categories: ["Videos", "Socials", "Shop", "Collabs"],
-    firstLinks: "Add your latest video and socials", grow: ["qa", "tips"],
+    firstLinks: "Add your latest video and socials", grow: ["qa", "tips", "kit"],
     tip: "Paste your latest YouTube or TikTok and tick \"Show it right on my page\" so it plays there. Add your socials under Social icons.",
     linkPlaceholder: "youtube.com/watch?v=…",
   },
@@ -72,7 +72,7 @@ export const CREATOR_TYPES = {
 } as const satisfies Record<string, TypeInfo>;
 
 export type CreatorType = keyof typeof CREATOR_TYPES;
-export type GrowFeature = "signup" | "qa" | "contact" | "tips";
+export type GrowFeature = "signup" | "qa" | "contact" | "tips" | "kit";
 
 export const isCreatorType = (v: unknown): v is CreatorType => typeof v === "string" && v in CREATOR_TYPES;
 

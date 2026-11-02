@@ -38,6 +38,18 @@ export async function setPageLock(_prev: ExtrasState, formData: FormData): Promi
   return { ok: true };
 }
 
+/** Turns the media kit on (with reach and rates) or off. */
+export async function setMediaKit(_prev: ExtrasState, formData: FormData): Promise<ExtrasState> {
+  const user = await requireUser();
+  const on = formData.get("kitEnabled") === "on";
+  const reach = String(formData.get("reach") ?? "").trim().slice(0, 300);
+  const rates = String(formData.get("rates") ?? "").trim().slice(0, 500);
+  await db.update(users).set({ mediaKit: on ? { reach, rates } : null }).where(eq(users.id, user.id));
+  revalidatePath(`/${user.handle}/kit`);
+  refresh(user.handle);
+  return { ok: true };
+}
+
 /** The whole page behind an "I'm 18+" screen. */
 export async function setAdultGate(_prev: ExtrasState, formData: FormData): Promise<ExtrasState> {
   const user = await requireUser();

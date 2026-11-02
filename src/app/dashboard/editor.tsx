@@ -191,12 +191,12 @@ function GeoRules({ rules }: { rules: GeoRule[] }) {
       <span className="text-stone-500">🌍 Send some countries somewhere else (optional) · e.g. UK fans to your UK store</span>
       <div className="mt-1 space-y-2">
         {Array.from({ length: count }, (_, i) => (
-          <div key={i} className="flex gap-2">
-            <select name="geoCountry" defaultValue={rules[i]?.c ?? ""} aria-label={`Country ${i + 1}`} className={`${input} w-36 shrink-0`}>
+          <div key={i} className="grid gap-1 sm:grid-cols-[10rem_1fr] sm:gap-2">
+            <select name="geoCountry" defaultValue={rules[i]?.c ?? ""} aria-label={`Country ${i + 1}`} className={input}>
               <option value="">Country…</option>
               {GEO_COUNTRIES.map((c) => <option key={c} value={c}>{countryName(c)}</option>)}
             </select>
-            <input name="geoUrl" defaultValue={rules[i]?.url ?? ""} aria-label={`Link for country ${i + 1}`} placeholder="their link" className={`${input} min-w-0 flex-1`} />
+            <input name="geoUrl" defaultValue={rules[i]?.url ?? ""} aria-label={`Link for country ${i + 1}`} placeholder="where they go instead" className={input} />
           </div>
         ))}
       </div>

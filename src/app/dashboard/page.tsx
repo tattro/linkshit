@@ -18,7 +18,7 @@ import { DomainForm } from "./DomainForm";
 import { domainsEnabled, isApex } from "@/lib/domains";
 import { DashboardHeader } from "./DashboardHeader";
 import { LinkList } from "./LinkList";
-import { AdultGateForm, PageLockForm, RedirectForm, SeoForm, TrackingForm } from "./extras";
+import { AdultGateForm, MediaKitForm, PageLockForm, RedirectForm, SeoForm, TrackingForm } from "./extras";
 import { QR_REFERRER, qrTarget } from "@/lib/qr";
 import { AccountSettings, BackupForm, ContactSettings, QASettings, AddLinkForm, AdvertiserOptIn, AvatarForm, BackgroundForm, DeleteAccountForm, DeletePageForm, Graveyard, HandleForm, LinktreeImport, SignupSettings, StealLook, TipsForm, LookForm, ProfileForm, ShareCard, SocialsForm, VerifyBanner } from "./editor";
 
@@ -276,6 +276,10 @@ export default async function Dashboard({ searchParams }: PageProps<"/dashboard"
 
               <Section title="💸 Tip jar" toggle={{ on: Object.values(user.tips ?? {}).some(Boolean), suggested: suggested.includes("tips"), blurb: "Let fans tip you. Money goes straight to you." }}>
                 <TipsForm tips={user.tips} />
+              </Section>
+
+              <Section title="📊 Media kit" toggle={{ on: Boolean(user.mediaKit), suggested: suggested.includes("kit"), blurb: "A page for brands with your reach, rates and real stats." }}>
+                <MediaKitForm kit={user.mediaKit} url={`${pageUrl}/kit`} />
               </Section>
 
               <Section title="🤝 Make money" toggle={{ on: Boolean(account.marketplaceInterestAt), blurb: "Get paid to feature brands you like." }}>
