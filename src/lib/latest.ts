@@ -4,9 +4,18 @@ import { db, links } from "@/db";
 import { latestKind, type LatestFeed } from "@/lib/feeds";
 import { safeFetch } from "@/lib/safeFetch";
 import { normalizeUrl } from "@/lib/urls";
+import { lookupMusic } from "@/lib/musicLookup";
 
 // Overridable for local tests only
 const YOUTUBE = process.env.YOUTUBE_FEED_BASE || "https://www.youtube.com";
+const ITUNES = process.env.ITUNES_API_BASE || "https://itunes.apple.com";
+const SPOTIFY_OEMBED = process.env.SPOTIFY_OEMBED_BASE || "https://open.spotify.com";
+
+async function getJson<T>(url: string): Promise<T | null> {
+  const res = await safeFetch(url, { maxBytes: 500_000, accept: "application/json" });
+  if (!res) return null;
+  try { return JSON.parse(res.body.toString("utf8")) as T; } catch { return null; }
+}
 
 const decode = (s: string) =>
   s.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1")
@@ -23,12 +32,59 @@ async function findFeed(url: string): Promise<string | null> {
   if (kind === "podcast") {
     const appleId = /podcasts\.apple\.com/i.test(url) ? url.match(/\/id(\d+)/)?.[1] : null;
     if (!appleId) return url;
-    const res = await safeFetch(`https://itunes.apple.com/lookup?id=${appleId}&entity=podcast`, { maxBytes: 200_000, accept: "application/json" });
-    if (!res) return null;
-    const feed = (JSON.parse(res.body.toString("utf8")) as { results?: { feedUrl?: unknown }[] }).results?.[0]?.feedUrl;
+    const data = await getJson<{ results?: { feedUrl?: unknown }[] }>(`${ITUNES}/lookup?id=${appleId}&entity=podcast`);
+    const feed = data?.results?.[0]?.feedUrl;
     return typeof feed === "string" ? normalizeUrl(feed) : null;
   }
+  if (kind === "release") {
+    const id = await appleArtistId(url);
+    return id ? `itunes:${id}` : null;
+  }
   return null;
+}
+
+/**
+ * Apple's artist id: straight from an Apple Music link, or for a Spotify artist,
+ * their name (from Spotify's public oEmbed, no key) looked up on Apple.
+ */
+async function appleArtistId(url: string): Promise<string | null> {
+  const direct = /music\.apple\.com/i.test(url) ? url.match(/\/artist\/(?:[^/]+\/)?(\d+)/)?.[1] : null;
+  if (direct) return direct;
+  const embed = await getJson<{ title?: unknown }>(`${SPOTIFY_OEMBED}/oembed?url=${encodeURIComponent(url)}`);
+  const name = typeof embed?.title === "string" ? embed.title.trim() : "";
+  if (!name) return null;
+  const found = await getJson<{ results?: { artistId?: unknown; artistName?: unknown }[] }>(
+    `${ITUNES}/search?term=${encodeURIComponent(name)}&entity=musicArtist&limit=5`,
+  );
+  // Only trust an exact name match, so we don't follow a different artist
+  const hit = found?.results?.find((r) => typeof r.artistName === "string" && r.artistName.toLowerCase() === name.toLowerCase());
+  return hit && typeof hit.artistId === "number" ? String(hit.artistId) : null;
+}
+
+type AppleAlbum = { wrapperType?: string; collectionName?: string; collectionViewUrl?: string; releaseDate?: string };
+
+/** The artist's newest album or single on Apple, linked on the same app the musician's link points to. */
+async function newestRelease(feed: string, linkUrl: string): Promise<{ title: string; url: string } | null> {
+  const id = feed.slice("itunes:".length);
+  if (!/^\d+$/.test(id)) return null;
+  const data = await getJson<{ results?: AppleAlbum[] }>(`${ITUNES}/lookup?id=${id}&entity=album&sort=recent&limit=20`);
+  const albums = (data?.results ?? []).filter((r) => r.wrapperType === "collection" && r.collectionName && r.collectionViewUrl && r.releaseDate);
+  // Today's or past releases only (pre-orders have a future date)
+  const now = Date.now();
+  const newest = albums
+    .filter((a) => Date.parse(a.releaseDate!) <= now)
+    .sort((a, b) => Date.parse(b.releaseDate!) - Date.parse(a.releaseDate!))[0];
+  if (!newest) return null;
+  const appleUrl = normalizeUrl(newest.collectionViewUrl!.replace(/[?&]uo=\d+/, ""));
+  if (!appleUrl) return null;
+  const title = newest.collectionName!.replace(/ - (Single|EP)$/i, "").slice(0, 120);
+  // A Spotify musician wants fans to land on Spotify
+  if (/open\.spotify\.com/i.test(linkUrl)) {
+    const music = await lookupMusic(appleUrl);
+    const spotify = music?.links.find((m) => m.p === "spotify")?.url;
+    if (spotify) return { title, url: spotify };
+  }
+  return { title, url: appleUrl };
 }
 
 async function channelIdFromPage(url: string): Promise<string | null> {
@@ -55,6 +111,7 @@ export function newestItem(xml: string, fallbackUrl: string): { title: string; u
 }
 
 async function fetchNewest(feed: string, fallbackUrl: string) {
+  if (feed.startsWith("itunes:")) return newestRelease(feed, fallbackUrl);
   // Only the top of the feed matters: the newest item comes first
   const res = await safeFetch(feed, { maxBytes: 400_000, accept: "application/rss+xml, application/atom+xml, text/xml", truncate: true });
   return res ? newestItem(res.body.toString("utf8"), fallbackUrl) : null;

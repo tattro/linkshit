@@ -35,7 +35,7 @@ export async function createPage(_prev: PageState, formData: FormData): Promise<
         ...(from && {
           displayName: from.displayName, bio: from.bio, theme: from.theme, style: from.style, socials: from.socials,
           tips: from.tips, openInApp: from.openInApp, signupEnabled: from.signupEnabled, signupPrompt: from.signupPrompt, contactEnabled: from.contactEnabled, qaEnabled: from.qaEnabled, qaPrompt: from.qaPrompt, creatorType: from.creatorType,
-          lockCode: from.lockCode, seoTitle: from.seoTitle, seoDescription: from.seoDescription,
+          lockCode: from.lockCode, adultGate: from.adultGate, seoTitle: from.seoTitle, seoDescription: from.seoDescription,
           metaPixel: from.metaPixel, googleAnalytics: from.googleAnalytics, tiktokPixel: from.tiktokPixel, utm: from.utm,
           avatarVersion: from.avatarVersion, bgVersion: from.bgVersion,
         }),

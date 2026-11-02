@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { setPageLock, setRedirect, setSeo, setTracking, type ExtrasState } from "@/app/actions/extras";
+import { setAdultGate, setPageLock, setRedirect, setSeo, setTracking, type ExtrasState } from "@/app/actions/extras";
 import { btn, input } from "./editor";
 
 function Status({ state, pending }: { state: ExtrasState; pending: boolean }) {
@@ -44,6 +44,24 @@ export function PageLockForm({ code }: { code: string | null }) {
         <button disabled={pending} className={`${btn} shrink-0`}>Save</button>
       </div>
       <Status state={state} pending={pending} />
+    </form>
+  );
+}
+
+export function AdultGateForm({ on }: { on: boolean }) {
+  const [state, action, pending] = useActionState(setAdultGate, undefined);
+  return (
+    <form action={action} className="space-y-2">
+      <h3 className={h3}>🔞 18+ page</h3>
+      <p className={sub}>Visitors confirm they&apos;re 18 or older before they see anything. Single links can have their own 18+ warning too.</p>
+      <div className="flex items-center gap-3">
+        <label className="flex items-center gap-2 text-sm">
+          <input type="checkbox" name="adultGate" defaultChecked={on} className="h-4 w-4 accent-lime-500" />
+          Ask visitors to confirm they&apos;re 18+
+        </label>
+        <button disabled={pending} className={btn}>Save</button>
+        <Status state={state} pending={pending} />
+      </div>
     </form>
   );
 }

@@ -38,6 +38,14 @@ export async function setPageLock(_prev: ExtrasState, formData: FormData): Promi
   return { ok: true };
 }
 
+/** The whole page behind an "I'm 18+" screen. */
+export async function setAdultGate(_prev: ExtrasState, formData: FormData): Promise<ExtrasState> {
+  const user = await requireUser();
+  await db.update(users).set({ adultGate: formData.get("adultGate") === "on" }).where(eq(users.id, user.id));
+  refresh(user.handle);
+  return { ok: true };
+}
+
 /** Title and description for Google and link previews. */
 export async function setSeo(_prev: ExtrasState, formData: FormData): Promise<ExtrasState> {
   const user = await requireUser();

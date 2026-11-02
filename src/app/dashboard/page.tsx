@@ -18,7 +18,7 @@ import { DomainForm } from "./DomainForm";
 import { domainsEnabled, isApex } from "@/lib/domains";
 import { DashboardHeader } from "./DashboardHeader";
 import { LinkList } from "./LinkList";
-import { PageLockForm, RedirectForm, SeoForm, TrackingForm } from "./extras";
+import { AdultGateForm, PageLockForm, RedirectForm, SeoForm, TrackingForm } from "./extras";
 import { QR_REFERRER, qrTarget } from "@/lib/qr";
 import { AccountSettings, BackupForm, ContactSettings, QASettings, AddLinkForm, AdvertiserOptIn, AvatarForm, BackgroundForm, DeleteAccountForm, DeletePageForm, Graveyard, HandleForm, LinktreeImport, SignupSettings, StealLook, TipsForm, LookForm, ProfileForm, ShareCard, SocialsForm, VerifyBanner } from "./editor";
 
@@ -301,9 +301,10 @@ export default async function Dashboard({ searchParams }: PageProps<"/dashboard"
                 </Section>
               )}
 
-              <Section title="🛠️ Power tools" toggle={{ on: Boolean(user.redirectLinkId || user.lockCode || user.seoTitle || user.seoDescription || user.metaPixel || user.googleAnalytics || user.tiktokPixel), blurb: "Redirect, page lock, Google preview, tracking pixels." }}>
+              <Section title="🛠️ Power tools" toggle={{ on: Boolean(user.redirectLinkId || user.lockCode || user.adultGate || user.seoTitle || user.seoDescription || user.metaPixel || user.googleAnalytics || user.tiktokPixel), blurb: "Redirect, 18+ page, page lock, Google preview, tracking pixels." }}>
                 <div className="space-y-6 [&>*+*]:border-t [&>*+*]:border-stone-200 [&>*+*]:pt-6">
                   <RedirectForm links={rows.filter((l) => !l.offerId && !l.heading).map((l) => ({ id: l.id, title: l.title }))} current={user.redirectLinkId} />
+                  <AdultGateForm on={user.adultGate} />
                   <PageLockForm code={user.lockCode} />
                   <SeoForm title={user.seoTitle} description={user.seoDescription} />
                   <TrackingForm metaPixel={user.metaPixel} googleAnalytics={user.googleAnalytics} tiktokPixel={user.tiktokPixel} utm={user.utm} />

@@ -1,0 +1,1 @@
+ALTER TABLE "users" ADD COLUMN "adult_gate" boolean DEFAULT false NOT NULL;

@@ -1,5 +1,6 @@
 import type { MusicLinks } from "@/lib/music";
 import type { LatestFeed } from "@/lib/feeds";
+import type { GeoRule } from "@/lib/geo";
 import {
   pgTable,
   serial,
@@ -75,6 +76,8 @@ export const users = pgTable(
     redirectLinkId: integer("redirect_link_id"),
     // Visitors type this code before they see the page (null = open)
     lockCode: text("lock_code"),
+    // Whole page behind an "I'm 18+" screen
+    adultGate: boolean("adult_gate").notNull().default(false),
     // Custom title/description for Google and link previews
     seoTitle: text("seo_title").notNull().default(""),
     seoDescription: text("seo_description").notNull().default(""),
@@ -218,6 +221,8 @@ export const links = pgTable(
     discountCode: text("discount_code"),
     // "Listen on…" buttons for every music app, looked up when the link is saved
     music: jsonb("music").$type<MusicLinks>(),
+    // Visitors from these countries go somewhere else (e.g. the UK store)
+    geo: jsonb("geo").$type<GeoRule[]>(),
     // Android visitors go here instead (e.g. Google Play when url is the App Store)
     androidUrl: text("android_url"),
     // Set when "flushed": the link moves to the graveyard and can be revived

@@ -19,7 +19,8 @@ import { AvatarCropper } from "./AvatarCropper";
 import { GENERAL_CATEGORIES } from "@/lib/creatorTypes";
 import { isMusicUrl } from "@/lib/music";
 import { isStoreUrl } from "@/lib/stores";
-import { latestKind } from "@/lib/feeds";
+import { LATEST_LABEL, latestKind } from "@/lib/feeds";
+import { countryName, GEO_COUNTRIES, MAX_GEO_RULES, type GeoRule } from "@/lib/geo";
 import { embedFor } from "@/lib/embeds";
 import { TIP_PROVIDERS } from "@/lib/tips";
 import { FONTS, parseStyle, GRADIENT_DIRS, GRADIENT_PRESETS, SHAPES, gradientCss, hasCustomColors } from "@/lib/style";
@@ -47,7 +48,7 @@ function toLocalInput(d: Date | string | null) {
 function LinkExtras({ link, url, adultDefault = false }: { link?: Link; url: string; adultDefault?: boolean }) {
   // Adult pages: new links start with the 18+ warning ticked
   const [open, setOpen] = useState(Boolean(
-    link?.startsAt || link?.endsAt || link?.lockCode || link?.androidUrl || link?.thumbVersion ||
+    link?.startsAt || link?.endsAt || link?.lockCode || link?.androidUrl || link?.geo?.length || link?.thumbVersion ||
     link?.spotlight || link?.icon || link?.discountCode || link?.price,
   ));
   const canEmbed = url.trim() !== "" && embedFor(/^https?:\/\//i.test(url.trim()) ? url.trim() : `https://${url.trim()}`) !== null;
@@ -70,7 +71,7 @@ function LinkExtras({ link, url, adultDefault = false }: { link?: Link; url: str
         <label className="mb-2 flex items-start gap-2 text-sm">
           <input type="checkbox" name="latest" defaultChecked={link ? Boolean(link.latest) : true} className="mt-0.5 h-4 w-4 accent-lime-500" />
           <span>
-            {feedKind === "youtube" ? "📺 Always show my newest video under this link" : "🎙️ Always show my newest episode under this link"}{" "}
+            {LATEST_LABEL[feedKind].checkbox}{" "}
             <span className="text-stone-400">(updates by itself)</span>
           </span>
         </label>
@@ -175,7 +176,32 @@ function LinkExtras({ link, url, adultDefault = false }: { link?: Link; url: str
               <input name="androidUrl" defaultValue={link?.androidUrl ?? ""} placeholder="play.google.com/store/apps/…" className={input} />
             </label>
           </div>
+          <GeoRules rules={link?.geo ?? []} />
         </div>
+      )}
+    </div>
+  );
+}
+
+/** Up to 3 "visitors from X go to Y" rows. Empty rows are ignored. */
+function GeoRules({ rules }: { rules: GeoRule[] }) {
+  const [count, setCount] = useState(Math.max(1, rules.length));
+  return (
+    <div className="text-sm">
+      <span className="text-stone-500">🌍 Send some countries somewhere else (optional) · e.g. UK fans to your UK store</span>
+      <div className="mt-1 space-y-2">
+        {Array.from({ length: count }, (_, i) => (
+          <div key={i} className="flex gap-2">
+            <select name="geoCountry" defaultValue={rules[i]?.c ?? ""} aria-label={`Country ${i + 1}`} className={`${input} w-36 shrink-0`}>
+              <option value="">Country…</option>
+              {GEO_COUNTRIES.map((c) => <option key={c} value={c}>{countryName(c)}</option>)}
+            </select>
+            <input name="geoUrl" defaultValue={rules[i]?.url ?? ""} aria-label={`Link for country ${i + 1}`} placeholder="their link" className={`${input} min-w-0 flex-1`} />
+          </div>
+        ))}
+      </div>
+      {count < MAX_GEO_RULES && (
+        <button type="button" onClick={() => setCount(count + 1)} className="mt-1 text-xs text-stone-500 underline">+ another country</button>
       )}
     </div>
   );
@@ -383,7 +409,7 @@ function LinkRowItem({ link, handle, sections, section }: { link: Link; handle?:
             {link.spotlight && <span className="ml-2 rounded bg-yellow-100 px-1.5 py-0.5 text-xs font-medium text-yellow-800">✨ spotlight</span>}
             {link.sensitive && <span className="ml-2 rounded bg-red-100 px-1.5 py-0.5 text-xs font-medium text-red-800">🔞 18+</span>}
             {link.music && <span className="ml-2 rounded bg-pink-100 px-1.5 py-0.5 text-xs font-medium text-pink-800">🎵 {link.music.links.length} apps</span>}
-            {link.latest?.item && <span className="ml-2 rounded bg-red-100 px-1.5 py-0.5 text-xs font-medium text-red-800">{link.latest.kind === "youtube" ? "📺" : "🎙️"} newest: {link.latest.item.title.slice(0, 30)}</span>}
+            {link.latest?.item && <span className="ml-2 rounded bg-red-100 px-1.5 py-0.5 text-xs font-medium text-red-800">{LATEST_LABEL[link.latest.kind].emoji} newest: {link.latest.item.title.slice(0, 30)}</span>}
             {link.price && <span className="ml-2 rounded bg-emerald-100 px-1.5 py-0.5 text-xs font-medium text-emerald-800">{link.price}</span>}
             {link.discountCode && <span className="ml-2 rounded bg-sky-100 px-1.5 py-0.5 text-xs font-medium text-sky-800">🏷️ {link.discountCode}</span>}
             {link.lockCode && <span className="ml-2 rounded bg-stone-200 px-1.5 py-0.5 text-xs font-medium text-stone-700">🔒 locked</span>}

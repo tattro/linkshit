@@ -5,6 +5,7 @@ import { embedFor } from "@/lib/embeds";
 import { iconForUrl, platform, PLATFORMS } from "@/lib/socials";
 import { TIP_PROVIDERS } from "@/lib/tips";
 import { SensitiveGate } from "./SensitiveGate";
+import { LATEST_LABEL } from "@/lib/feeds";
 import { DiscountLink } from "./DiscountLink";
 import { SignupBox } from "./SignupBox";
 import { ContactBox } from "./ContactBox";
@@ -79,7 +80,7 @@ export function ProfileView({ user, links, preview = false, avatarOverride, qa =
         className="tint mt-2 flex items-center gap-2 rounded-xl px-3 py-2 text-left text-sm [--tint:0.08]"
       >
         <span className="shrink-0 rounded-full bg-red-600 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
-          {l.latest!.kind === "youtube" ? "New video" : "New episode"}
+          {LATEST_LABEL[l.latest!.kind].badge}
         </span>
         <span className="min-w-0 truncate font-medium">{item.title}</span>
       </a>

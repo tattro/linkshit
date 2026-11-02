@@ -12,7 +12,7 @@ export const getPublicProfile = cache(async (by: "handle" | "domain", key: strin
       id: users.id, handle: users.handle, displayName: users.displayName, bio: users.bio, theme: users.theme,
       style: users.style, socials: users.socials, avatarVersion: users.avatarVersion, bgVersion: users.bgVersion, bannedAt: users.bannedAt,
       tips: users.tips, signupEnabled: users.signupEnabled, signupPrompt: users.signupPrompt, contactEnabled: users.contactEnabled, qaEnabled: users.qaEnabled, qaPrompt: users.qaPrompt,
-      redirectLinkId: users.redirectLinkId, lockCode: users.lockCode, seoTitle: users.seoTitle, seoDescription: users.seoDescription,
+      redirectLinkId: users.redirectLinkId, lockCode: users.lockCode, adultGate: users.adultGate, seoTitle: users.seoTitle, seoDescription: users.seoDescription,
       metaPixel: users.metaPixel, googleAnalytics: users.googleAnalytics, tiktokPixel: users.tiktokPixel,
     })
     .from(users)

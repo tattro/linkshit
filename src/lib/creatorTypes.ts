@@ -19,7 +19,7 @@ export const CREATOR_TYPES = {
   musician: {
     label: "🎸 Musician", blurb: "Songs, shows, merch", categories: ["Music", "Shows", "Merch", "Videos"],
     firstLinks: "Add your music (Spotify, Apple Music…)", grow: ["signup", "tips"],
-    tip: "Paste a Spotify or Apple Music song link. We add \"Listen on\" buttons for every app automatically.",
+    tip: "Paste a Spotify or Apple Music song link and we add \"Listen on\" buttons for every app. Paste your artist page instead and your newest release shows up by itself.",
     linkPlaceholder: "open.spotify.com/track/…",
   },
   podcaster: {
@@ -61,7 +61,7 @@ export const CREATOR_TYPES = {
   adult: {
     label: "🔞 Adult creator", blurb: "OnlyFans, Fansly, exclusives, tips", categories: ["Exclusive", "Socials", "Tip me", "Customs"],
     firstLinks: "Add your OnlyFans, Fansly or exclusive page", grow: ["tips", "qa"],
-    tip: "New links get the 🔞 18+ warning by default, so visitors confirm their age before anything opens. That also keeps Instagram and TikTok happier about your bio link.",
+    tip: "New links get the 🔞 18+ warning by default. Want the whole page behind an age check? Settings → Power tools → 18+ page. Instagram and TikTok are happier with age-gated bio links.",
     linkPlaceholder: "onlyfans.com/yourname",
   },
   other: {

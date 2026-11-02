@@ -148,6 +148,20 @@
       "when": 1793646876167,
       "tag": "0020_link_latest",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1793655222712,
+      "tag": "0021_adult_gate",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1793655329363,
+      "tag": "0022_link_geo",
+      "breakpoints": true
     }
   ]
 }

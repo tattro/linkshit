@@ -12,6 +12,11 @@ export type BackupLink = {
   lockCode?: string | null;
   discountCode?: string | null;
   androidUrl?: string | null;
+  price?: string | null;
+  /** Re-looked-up on restore */
+  music?: boolean;
+  latest?: boolean;
+  geo?: { c: string; url: string }[] | null;
   startsAt?: string | null;
   endsAt?: string | null;
   countdown?: boolean;
