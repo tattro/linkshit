@@ -3,15 +3,67 @@
  * Get started wording, which extras get a "Suggested" tag). Nothing is ever
  * hidden or locked by it.
  */
+type TypeInfo = {
+  label: string;
+  /** One line on the welcome card */
+  blurb: string;
+  categories: readonly string[];
+  firstLinks: string;
+  grow: readonly string[];
+  /** A tip above Add a link while the page has fewer than 3 links */
+  tip: string;
+  linkPlaceholder: string;
+};
+
 export const CREATOR_TYPES = {
-  musician: { label: "🎸 Musician", categories: ["Music", "Shows", "Merch", "Videos"], firstLinks: "Add your music (Spotify, Apple Music…)", grow: ["signup", "tips"] },
-  fitness: { label: "💪 Fitness", categories: ["Programs", "Book a session", "Free workouts", "Shop"], firstLinks: "Add your programs or booking link", grow: ["contact", "signup"] },
-  business: { label: "🏪 Business", categories: ["Services", "Book", "Shop", "Find us", "Reviews"], firstLinks: "Add your website, booking and location", grow: ["contact", "signup"] },
-  artist: { label: "🎨 Artist", categories: ["Portfolio", "Commissions", "Shop", "Prints"], firstLinks: "Add your portfolio and shop", grow: ["contact", "tips"] },
-  podcaster: { label: "🎙️ Podcaster", categories: ["Episodes", "Listen", "Sponsors", "Merch"], firstLinks: "Add where people can listen", grow: ["signup", "qa"] },
-  creator: { label: "📱 Content creator", categories: ["Videos", "Socials", "Shop", "Collabs"], firstLinks: "Add your latest video and socials", grow: ["qa", "tips"] },
-  other: { label: "🤷 Something else", categories: ["Projects", "Business", "Shop", "Socials"], firstLinks: "Add 3 links", grow: [] },
-} as const;
+  musician: {
+    label: "🎸 Musician", blurb: "Songs, shows, merch", categories: ["Music", "Shows", "Merch", "Videos"],
+    firstLinks: "Add your music (Spotify, Apple Music…)", grow: ["signup", "tips"],
+    tip: "Paste a Spotify or Apple Music song link. We add \"Listen on\" buttons for every app automatically.",
+    linkPlaceholder: "open.spotify.com/track/…",
+  },
+  podcaster: {
+    label: "🎙️ Podcaster", blurb: "Episodes, where to listen, sponsors", categories: ["Episodes", "Listen", "Sponsors", "Merch"],
+    firstLinks: "Add where people can listen", grow: ["signup", "qa"],
+    tip: "Paste your show on Spotify or Apple Podcasts, then tick \"Show it right on my page\" so people can play it there.",
+    linkPlaceholder: "open.spotify.com/show/…",
+  },
+  course: {
+    label: "🎓 Courses & coaching", blurb: "Courses, coaching calls, free stuff", categories: ["Courses", "Coaching", "Free stuff", "Testimonials"],
+    firstLinks: "Add your course or booking page", grow: ["signup", "contact"],
+    tip: "Paste your course page (Teachable, Kajabi, Stan, Gumroad…) and your Calendly or Cal.com link for calls. Booking links can show as a calendar right on your page.",
+    linkPlaceholder: "yourcourse.com",
+  },
+  creator: {
+    label: "📱 Content creator", blurb: "Videos, socials, brand deals", categories: ["Videos", "Socials", "Shop", "Collabs"],
+    firstLinks: "Add your latest video and socials", grow: ["qa", "tips"],
+    tip: "Paste your latest YouTube or TikTok and tick \"Show it right on my page\" so it plays there. Add your socials under Social icons.",
+    linkPlaceholder: "youtube.com/watch?v=…",
+  },
+  artist: {
+    label: "🎨 Artist", blurb: "Portfolio, commissions, prints", categories: ["Portfolio", "Commissions", "Shop", "Prints"],
+    firstLinks: "Add your portfolio and shop", grow: ["contact", "tips"],
+    tip: "Start with your portfolio and your shop. Turn on the contact form (Grow tab) so people can ask about commissions.",
+    linkPlaceholder: "yourportfolio.com",
+  },
+  fitness: {
+    label: "💪 Fitness", blurb: "Programs, sessions, discount codes", categories: ["Programs", "Book a session", "Free workouts", "Shop"],
+    firstLinks: "Add your programs or booking link", grow: ["contact", "signup"],
+    tip: "Add your programs and a booking link. Got a supplement or gear code? Put it under More options → Discount code.",
+    linkPlaceholder: "yourprogram.com",
+  },
+  business: {
+    label: "🏪 Business", blurb: "Services, bookings, location", categories: ["Services", "Book", "Shop", "Find us", "Reviews"],
+    firstLinks: "Add your website, booking and location", grow: ["contact", "signup"],
+    tip: "Add your website, a booking link and a Google Maps link so people can find you.",
+    linkPlaceholder: "yourbusiness.com",
+  },
+  other: {
+    label: "🤷 Something else", blurb: "All the normal options", categories: ["Projects", "Business", "Shop", "Socials"],
+    firstLinks: "Add 3 links", grow: [],
+    tip: "", linkPlaceholder: "yourwebsite.com",
+  },
+} as const satisfies Record<string, TypeInfo>;
 
 export type CreatorType = keyof typeof CREATOR_TYPES;
 export type GrowFeature = "signup" | "qa" | "contact" | "tips";

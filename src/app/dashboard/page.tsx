@@ -164,6 +164,7 @@ export default async function Dashboard({ searchParams }: PageProps<"/dashboard"
   const showSetup = steps.some((x) => !x.done) && (await cookies()).get("setup_hidden")?.value !== "1";
   const growBadge = waiting.length;
   const suggested = suggestedGrow(user.creatorType);
+  const niche = isCreatorType(user.creatorType) ? CREATOR_TYPES[user.creatorType] : null;
   const platforms = PLATFORMS.map(({ id, label, path, placeholder }) => ({ id, label, path, placeholder }));
 
   return (
@@ -201,7 +202,17 @@ export default async function Dashboard({ searchParams }: PageProps<"/dashboard"
               {showSetup && <SetupChecklist steps={steps} askType={user.creatorType === ""} />}
 
               <Section id="add-link" title="Add a link">
-                <AddLinkForm sections={rows.filter((l) => l.heading).map((l) => ({ id: l.id, title: l.title }))} ideas={categoryIdeas(user.creatorType)} />
+                {niche?.tip && realLinks < 3 && (
+                  <p className="-mt-1 mb-4 rounded-xl bg-sky-50 px-3 py-2 text-sm text-sky-900">
+                    <span className="font-bold">{niche.label.split(" ")[0]} Tip:</span> {niche.tip}
+                  </p>
+                )}
+                <AddLinkForm
+                  sections={rows.filter((l) => l.heading).map((l) => ({ id: l.id, title: l.title }))}
+                  ideas={categoryIdeas(user.creatorType)}
+                  linkPlaceholder={niche?.linkPlaceholder}
+                  defaultCategory={realLinks < 3 && niche && user.creatorType !== "other" ? niche.categories[0] : ""}
+                />
                 {realLinks < 3 && <LinktreeImport />}
               </Section>
 
