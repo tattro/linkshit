@@ -61,6 +61,7 @@ export const users = pgTable(
     // Anonymous "Ask me anything" box; answered questions show as a public feed
     qaEnabled: boolean("qa_enabled").notNull().default(false),
     qaPrompt: text("qa_prompt").notNull().default(""),
+    creatorType: text("creator_type").notNull().default(""),
     // e.g. "links.example.com"; serves this user's page at that domain's root
     customDomain: text("custom_domain"),
     // Stats email on/off (name is historical) and how often
