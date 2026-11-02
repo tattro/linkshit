@@ -45,11 +45,10 @@ function toLocalInput(d: Date | string | null) {
 }
 
 function LinkExtras({ link, url, adultDefault = false }: { link?: Link; url: string; adultDefault?: boolean }) {
-  // Adult pages: the 18+ warning sits up front, ticked, on new links
-  const sensitiveUp = adultDefault && !link;
+  // Adult pages: new links start with the 18+ warning ticked
   const [open, setOpen] = useState(Boolean(
     link?.startsAt || link?.endsAt || link?.lockCode || link?.androidUrl || link?.thumbVersion ||
-    link?.spotlight || link?.sensitive || link?.icon || link?.discountCode || link?.price,
+    link?.spotlight || link?.icon || link?.discountCode || link?.price,
   ));
   const canEmbed = url.trim() !== "" && embedFor(/^https?:\/\//i.test(url.trim()) ? url.trim() : `https://${url.trim()}`) !== null;
   const feedKind = latestKind(url);
@@ -63,12 +62,10 @@ function LinkExtras({ link, url, adultDefault = false }: { link?: Link; url: str
           <span>🎵 Add &quot;Listen on Spotify, Apple Music, YouTube…&quot; buttons <span className="text-stone-400">(we find it on every app for you)</span></span>
         </label>
       )}
-      {sensitiveUp && (
-        <label className="mb-2 flex items-center gap-2 text-sm">
-          <input type="checkbox" name="sensitive" defaultChecked className="h-4 w-4 accent-lime-500" />
-          🔞 Show an 18+ warning before it opens
-        </label>
-      )}
+      <label className="mb-2 flex items-center gap-2 text-sm">
+        <input type="checkbox" name="sensitive" defaultChecked={link ? link.sensitive : adultDefault} className="h-4 w-4 accent-lime-500" />
+        🔞 18+ warning before it opens
+      </label>
       {feedKind && (
         <label className="mb-2 flex items-start gap-2 text-sm">
           <input type="checkbox" name="latest" defaultChecked={link ? Boolean(link.latest) : true} className="mt-0.5 h-4 w-4 accent-lime-500" />
@@ -102,12 +99,6 @@ function LinkExtras({ link, url, adultDefault = false }: { link?: Link; url: str
               <input type="checkbox" name="spotlight" defaultChecked={link?.spotlight} className="h-4 w-4 accent-lime-500" />
               ✨ Spotlight (wiggles)
             </label>
-            {!sensitiveUp && (
-              <label className="flex items-center gap-2">
-                <input type="checkbox" name="sensitive" defaultChecked={link?.sensitive} className="h-4 w-4 accent-lime-500" />
-                🔞 Sensitive (18+ warning)
-              </label>
-            )}
             <label className="flex items-center gap-2">
               Icon
               <input
