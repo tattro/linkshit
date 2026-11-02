@@ -18,6 +18,7 @@ import { setLookDraft } from "./lookDraft";
 import { AvatarCropper } from "./AvatarCropper";
 import { GENERAL_CATEGORIES } from "@/lib/creatorTypes";
 import { isMusicUrl } from "@/lib/music";
+import { isStoreUrl } from "@/lib/stores";
 import { embedFor } from "@/lib/embeds";
 import { TIP_PROVIDERS } from "@/lib/tips";
 import { FONTS, parseStyle, GRADIENT_DIRS, GRADIENT_PRESETS, SHAPES, gradientCss, hasCustomColors } from "@/lib/style";
@@ -45,9 +46,10 @@ function toLocalInput(d: Date | string | null) {
 function LinkExtras({ link, url }: { link?: Link; url: string }) {
   const [open, setOpen] = useState(Boolean(
     link?.startsAt || link?.endsAt || link?.lockCode || link?.androidUrl || link?.thumbVersion ||
-    link?.spotlight || link?.sensitive || link?.icon || link?.discountCode,
+    link?.spotlight || link?.sensitive || link?.icon || link?.discountCode || link?.price,
   ));
   const canEmbed = url.trim() !== "" && embedFor(/^https?:\/\//i.test(url.trim()) ? url.trim() : `https://${url.trim()}`) !== null;
+  const canGrab = url.trim() !== "" && !isMusicUrl(url) && !canEmbed;
   return (
     <div className="sm:col-span-full">
       <TzInput />
@@ -55,6 +57,13 @@ function LinkExtras({ link, url }: { link?: Link; url: string }) {
         <label className="mb-2 flex items-start gap-2 text-sm">
           <input type="checkbox" name="music" defaultChecked={link ? Boolean(link.music) : true} className="mt-0.5 h-4 w-4 accent-lime-500" />
           <span>🎵 Add &quot;Listen on Spotify, Apple Music, YouTube…&quot; buttons <span className="text-stone-400">(we find it on every app for you)</span></span>
+        </label>
+      )}
+      {canGrab && (
+        <label className="mb-2 flex items-start gap-2 text-sm">
+          {/* key: re-apply the default when the link changes from/to a shop */}
+          <input key={String(isStoreUrl(url))} type="checkbox" name="grab" defaultChecked={!link && isStoreUrl(url)} className="mt-0.5 h-4 w-4 accent-lime-500" />
+          <span>🛍️ Grab the product picture and price from the page <span className="text-stone-400">(great for courses, merch and shops)</span></span>
         </label>
       )}
       {canEmbed && (
@@ -100,6 +109,17 @@ function LinkExtras({ link, url }: { link?: Link; url: string }) {
               autoComplete="off"
               placeholder="e.g. TREVOR20"
               className="mt-1 w-full rounded-lg border-2 border-stone-300 bg-white px-3 py-2 font-mono outline-none focus:border-stone-900"
+            />
+          </label>
+          <label className="block text-sm">
+            <span className="font-medium">💲 Price</span> <span className="text-xs text-stone-400">optional · shown on the button</span>
+            <input
+              name="price"
+              defaultValue={link?.price ?? ""}
+              maxLength={20}
+              autoComplete="off"
+              placeholder="e.g. $29 or Free"
+              className="mt-1 w-full rounded-lg border-2 border-stone-300 bg-white px-3 py-2 outline-none focus:border-stone-900"
             />
           </label>
           <div className="grid gap-2 sm:grid-cols-2">
@@ -351,6 +371,7 @@ function LinkRowItem({ link, handle, sections, section }: { link: Link; handle?:
             {link.spotlight && <span className="ml-2 rounded bg-yellow-100 px-1.5 py-0.5 text-xs font-medium text-yellow-800">✨ spotlight</span>}
             {link.sensitive && <span className="ml-2 rounded bg-red-100 px-1.5 py-0.5 text-xs font-medium text-red-800">🔞 18+</span>}
             {link.music && <span className="ml-2 rounded bg-pink-100 px-1.5 py-0.5 text-xs font-medium text-pink-800">🎵 {link.music.links.length} apps</span>}
+            {link.price && <span className="ml-2 rounded bg-emerald-100 px-1.5 py-0.5 text-xs font-medium text-emerald-800">{link.price}</span>}
             {link.discountCode && <span className="ml-2 rounded bg-sky-100 px-1.5 py-0.5 text-xs font-medium text-sky-800">🏷️ {link.discountCode}</span>}
             {link.lockCode && <span className="ml-2 rounded bg-stone-200 px-1.5 py-0.5 text-xs font-medium text-stone-700">🔒 locked</span>}
             {link.offerId && <span className="ml-2 rounded bg-lime-100 px-1.5 py-0.5 text-xs font-medium text-lime-800" title="Pinned to the bottom of your page with an affiliate disclaimer">💸 marketplace</span>}
