@@ -29,9 +29,9 @@ export const CREATOR_TYPES = {
     linkPlaceholder: "open.spotify.com/show/…",
   },
   course: {
-    label: "🧑‍🏫 Coach", blurb: "Coaching calls, courses, free stuff", categories: ["Coaching", "Courses", "Free stuff", "Testimonials"],
-    firstLinks: "Add your course or booking page", grow: ["signup", "contact"],
-    tip: "Paste your course page (Teachable, Kajabi, Stan, Gumroad…) and your Calendly or Cal.com link for calls. Booking links can show as a calendar right on your page.",
+    label: "🧑‍🏫 Coach", blurb: "Coaching calls, courses, free stuff", categories: ["Coaching", "Courses", "Community", "Free stuff", "Testimonials"],
+    firstLinks: "Add your course, community or booking page", grow: ["signup", "contact"],
+    tip: "Paste your course or community (Skool, Teachable, Kajabi, Stan…) and we grab its picture and price. Add your Discord under Social icons, and your Calendly link can show as a calendar right on your page.",
     linkPlaceholder: "yourcourse.com",
   },
   creator: {
@@ -77,7 +77,7 @@ export type GrowFeature = "signup" | "qa" | "contact" | "tips";
 export const isCreatorType = (v: unknown): v is CreatorType => typeof v === "string" && v in CREATOR_TYPES;
 
 /** Default category suggestions for everyone, after the type-specific ones. */
-export const GENERAL_CATEGORIES = ["Music", "Projects", "Business", "Art", "Videos", "Shop", "Podcast", "Socials", "Writing", "Events"];
+export const GENERAL_CATEGORIES = ["Music", "Projects", "Business", "Art", "Videos", "Shop", "Podcast", "Socials", "Writing", "Events", "Community"];
 
 export function categoryIdeas(type: string): string[] {
   const own = isCreatorType(type) ? CREATOR_TYPES[type].categories : [];

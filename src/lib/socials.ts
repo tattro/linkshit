@@ -1,6 +1,6 @@
 import {
   siInstagram, siTiktok, siX, siYoutube, siTwitch, siSpotify, siGithub, siFacebook,
-  siThreads, siBluesky, siDiscord, siSnapchat, siSoundcloud, siPatreon, siKofi,
+  siThreads, siBluesky, siDiscord, siSnapchat, siSoundcloud, siPatreon, siKofi, siTelegram, siWhatsapp,
 } from "simple-icons";
 
 export type Platform = {
@@ -44,6 +44,8 @@ export const PLATFORMS: Platform[] = [
   { id: "facebook", label: "Facebook", path: siFacebook.path, placeholder: "yourpage", toUrl: handleOrUrl("https://facebook.com/", /(^|\.)facebook\.com$/i) },
   { id: "snapchat", label: "Snapchat", path: siSnapchat.path, placeholder: "yourname", toUrl: handleOrUrl("https://snapchat.com/add/", /(^|\.)snapchat\.com$/i) },
   { id: "discord", label: "Discord", path: siDiscord.path, placeholder: "discord.gg/invite", toUrl: handleOrUrl("https://discord.gg/", /(^|\.)(discord\.gg|discord\.com)$/i) },
+  { id: "telegram", label: "Telegram", path: siTelegram.path, placeholder: "t.me/yourchannel", toUrl: handleOrUrl("https://t.me/", /(^|\.)(t\.me|telegram\.me)$/i) },
+  { id: "whatsapp", label: "WhatsApp", path: siWhatsapp.path, placeholder: "chat.whatsapp.com/… or wa.me/…", toUrl: handleOrUrl("https://wa.me/", /(^|\.)(wa\.me|whatsapp\.com)$/i) },
   { id: "github", label: "GitHub", path: siGithub.path, placeholder: "yourname", toUrl: handleOrUrl("https://github.com/", /(^|\.)github\.com$/i) },
   { id: "patreon", label: "Patreon", path: siPatreon.path, placeholder: "yourname", toUrl: handleOrUrl("https://patreon.com/", /(^|\.)patreon\.com$/i) },
   { id: "kofi", label: "Ko-fi", path: siKofi.path, placeholder: "yourname", toUrl: handleOrUrl("https://ko-fi.com/", /(^|\.)ko-fi\.com$/i) },
@@ -60,6 +62,7 @@ const ICON_HOSTS: [RegExp, string][] = [
   [/(^|\.)(youtube\.com|youtu\.be)$/i, "youtube"], [/(^|\.)twitch\.tv$/i, "twitch"], [/(^|\.)spotify\.com$/i, "spotify"],
   [/(^|\.)soundcloud\.com$/i, "soundcloud"], [/(^|\.)threads\.(net|com)$/i, "threads"], [/(^|\.)bsky\.app$/i, "bluesky"],
   [/(^|\.)facebook\.com$/i, "facebook"], [/(^|\.)snapchat\.com$/i, "snapchat"], [/(^|\.)(discord\.gg|discord\.com)$/i, "discord"],
+  [/(^|\.)(t\.me|telegram\.me)$/i, "telegram"], [/(^|\.)(wa\.me|whatsapp\.com)$/i, "whatsapp"],
   [/(^|\.)github\.com$/i, "github"], [/(^|\.)patreon\.com$/i, "patreon"], [/(^|\.)ko-fi\.com$/i, "kofi"],
 ];
 
