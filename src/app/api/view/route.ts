@@ -4,6 +4,7 @@ import { db, events, users } from "@/db";
 import { rateLimit } from "@/lib/ratelimit";
 import { visitorInfo } from "@/lib/request";
 import { QR_REFERRER } from "@/lib/qr";
+import { refreshStaleLatest } from "@/lib/latest";
 
 // Page-view beacon sent by public profile pages once they load in a real browser.
 export async function POST(req: Request) {
@@ -24,7 +25,9 @@ export async function POST(req: Request) {
     // Count each visitor at most once per half hour per page
     if (!(await rateLimit(`view:${userId}:${ip}${body.q === 1 ? ":qr" : ""}`, 1, 30 * 60))) return;
     const [user] = await db.select({ id: users.id }).from(users).where(eq(users.id, userId));
-    if (user) await db.insert(events).values({ userId, kind: "view", ...visitor });
+    if (!user) return;
+    await db.insert(events).values({ userId, kind: "view", ...visitor });
+    await refreshStaleLatest(userId);
   });
   return new Response(null, { status: 204 });
 }

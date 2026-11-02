@@ -1,4 +1,5 @@
 import type { MusicLinks } from "@/lib/music";
+import type { LatestFeed } from "@/lib/feeds";
 import {
   pgTable,
   serial,
@@ -225,6 +226,8 @@ export const links = pgTable(
     countdown: boolean("countdown").notNull().default(false),
     // Shown as a chip on the button ("$29", "Free"); typed in or grabbed from the product page
     price: text("price"),
+    // "Newest video / episode" shown under a YouTube channel or podcast link, refreshed every few hours
+    latest: jsonb("latest").$type<LatestFeed>(),
     // Only visible between these times when set
     startsAt: timestamp("starts_at", { withTimezone: true }),
     endsAt: timestamp("ends_at", { withTimezone: true }),
