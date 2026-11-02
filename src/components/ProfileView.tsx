@@ -1,5 +1,6 @@
 import NextLink from "next/link";
 import type { Link as LinkRow, Socials, Style, Tips, User } from "@/db";
+import { musicLabel } from "@/lib/music";
 import { embedFor } from "@/lib/embeds";
 import { iconForUrl, platform, PLATFORMS } from "@/lib/socials";
 import { TIP_PROVIDERS } from "@/lib/tips";
@@ -19,7 +20,7 @@ export type ProfileData = Pick<User, "id" | "handle" | "displayName" | "bio" | "
   tips: Tips;
 };
 
-export type ProfileLink = Pick<LinkRow, "id" | "title" | "url" | "embed" | "sensitive" | "spotlight" | "icon" | "offerId" | "thumbVersion" | "discountCode" | "heading"> & { dropsAt?: Date | null } & {
+export type ProfileLink = Pick<LinkRow, "id" | "title" | "url" | "embed" | "sensitive" | "spotlight" | "icon" | "offerId" | "thumbVersion" | "discountCode" | "heading" | "music"> & { dropsAt?: Date | null } & {
   locked?: boolean;
 };
 
@@ -50,6 +51,22 @@ export function ProfileView({ user, links, preview = false, avatarOverride, qa =
   const style = { ...user.style, text: user.style.text ?? tintText };
   const btnStyle = buttonStyle(style);
   const mutedStyle = style.text ? { color: style.text, opacity: 0.7 } : undefined;
+
+  const musicRow = (l: ProfileLink) => l.music && !l.locked && (
+    <div className="mt-2 flex flex-wrap justify-center gap-1.5" aria-label={`Listen to ${l.title} on`}>
+      {l.music.links.map((m) => (
+        <a
+          key={m.p}
+          href={preview ? m.url : `/go/${l.id}?to=${m.p}`}
+          target={preview ? "_blank" : undefined}
+          rel="noopener noreferrer nofollow"
+          className="tint rounded-full px-3 py-1 text-xs font-semibold"
+        >
+          {musicLabel(m.p)}
+        </a>
+      ))}
+    </div>
+  );
 
   return (
     <div className={`flex min-h-full flex-col items-center px-5 py-12 ${theme.page}`} style={{ ...pageStyle(style), ...backgroundImageStyle(bgUrl, style) }}>
@@ -128,6 +145,7 @@ export function ProfileView({ user, links, preview = false, avatarOverride, qa =
               return (
                 <li key={l.id}>
                   {l.sensitive ? <SensitiveGate title={l.title} className={btnClass} style={btnStyle}>{frame}</SensitiveGate> : frame}
+                  {musicRow(l)}
                 </li>
               );
             }
@@ -174,6 +192,7 @@ export function ProfileView({ user, links, preview = false, avatarOverride, qa =
                   const code = l.locked ? null : l.discountCode;
                   return code ? <DiscountLink code={code} href={preview ? l.url : `/go/${l.id}`} newTab={preview} mutedClass={theme.muted} mutedStyle={mutedStyle}>{gated}</DiscountLink> : gated;
                 })()}
+                {musicRow(l)}
                 {l.offerId && (
                   <p className={`mt-1 text-center text-[11px] ${theme.muted}`} style={mutedStyle}>
                     Affiliate link · I may earn a commission if you buy or sign up
