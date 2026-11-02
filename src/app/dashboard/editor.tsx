@@ -44,7 +44,9 @@ function toLocalInput(d: Date | string | null) {
   return local.toISOString().slice(0, 16);
 }
 
-function LinkExtras({ link, url }: { link?: Link; url: string }) {
+function LinkExtras({ link, url, adultDefault = false }: { link?: Link; url: string; adultDefault?: boolean }) {
+  // Adult pages: the 18+ warning sits up front, ticked, on new links
+  const sensitiveUp = adultDefault && !link;
   const [open, setOpen] = useState(Boolean(
     link?.startsAt || link?.endsAt || link?.lockCode || link?.androidUrl || link?.thumbVersion ||
     link?.spotlight || link?.sensitive || link?.icon || link?.discountCode || link?.price,
@@ -59,6 +61,12 @@ function LinkExtras({ link, url }: { link?: Link; url: string }) {
         <label className="mb-2 flex items-start gap-2 text-sm">
           <input type="checkbox" name="music" defaultChecked={link ? Boolean(link.music) : true} className="mt-0.5 h-4 w-4 accent-lime-500" />
           <span>🎵 Add &quot;Listen on Spotify, Apple Music, YouTube…&quot; buttons <span className="text-stone-400">(we find it on every app for you)</span></span>
+        </label>
+      )}
+      {sensitiveUp && (
+        <label className="mb-2 flex items-center gap-2 text-sm">
+          <input type="checkbox" name="sensitive" defaultChecked className="h-4 w-4 accent-lime-500" />
+          🔞 Show an 18+ warning before it opens
         </label>
       )}
       {feedKind && (
@@ -94,10 +102,12 @@ function LinkExtras({ link, url }: { link?: Link; url: string }) {
               <input type="checkbox" name="spotlight" defaultChecked={link?.spotlight} className="h-4 w-4 accent-lime-500" />
               ✨ Spotlight (wiggles)
             </label>
-            <label className="flex items-center gap-2">
-              <input type="checkbox" name="sensitive" defaultChecked={link?.sensitive} className="h-4 w-4 accent-lime-500" />
-              🔞 Sensitive (18+ warning)
-            </label>
+            {!sensitiveUp && (
+              <label className="flex items-center gap-2">
+                <input type="checkbox" name="sensitive" defaultChecked={link?.sensitive} className="h-4 w-4 accent-lime-500" />
+                🔞 Sensitive (18+ warning)
+              </label>
+            )}
             <label className="flex items-center gap-2">
               Icon
               <input
@@ -218,7 +228,7 @@ function CategoryBox({ sections, ideas = GENERAL_CATEGORIES, defaultValue = "", 
   );
 }
 
-export function AddLinkForm({ sections = [], ideas, linkPlaceholder = "yourwebsite.com", defaultCategory = "" }: { sections?: SectionOption[]; ideas?: string[]; linkPlaceholder?: string; defaultCategory?: string }) {
+export function AddLinkForm({ sections = [], ideas, linkPlaceholder = "yourwebsite.com", defaultCategory = "", adultDefault = false }: { sections?: SectionOption[]; ideas?: string[]; linkPlaceholder?: string; defaultCategory?: string; adultDefault?: boolean }) {
   const [state, action, pending] = useActionState(addLink, undefined);
   const [url, setUrl] = useState("");
   const [title, setTitle] = useState("");
@@ -242,7 +252,7 @@ export function AddLinkForm({ sections = [], ideas, linkPlaceholder = "yourwebsi
       <CategoryBox key={key} sections={sections} ideas={ideas} defaultValue={defaultCategory} className="sm:col-span-2" />
       <button disabled={pending} className={`${btn} sm:col-span-2 sm:justify-self-start`}>{pending ? "Adding…" : "Add link"}</button>
       {state?.error && <p className="text-sm font-semibold text-red-600 sm:col-span-2">{state.error}</p>}
-      <LinkExtras url={url} />
+      <LinkExtras url={url} adultDefault={adultDefault} />
     </form>
   );
 }

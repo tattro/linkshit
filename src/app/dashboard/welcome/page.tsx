@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { Logo } from "@/components/Logo";
 import { getSession } from "@/lib/auth";
 import { setCreatorType } from "@/app/actions/creator";
-import { CREATOR_TYPES } from "@/lib/creatorTypes";
+import { CREATOR_TYPES, MAIN_TYPES } from "@/lib/creatorTypes";
 
 export const metadata = { title: "Welcome" };
 
@@ -11,7 +11,7 @@ export default async function Welcome() {
   const s = await getSession();
   if (!s) redirect("/login");
   const { page } = s;
-  const types = Object.entries(CREATOR_TYPES).filter(([id]) => id !== "other");
+  const types = MAIN_TYPES.map((id) => [id, CREATOR_TYPES[id]] as const);
 
   return (
     <div className="min-h-screen bg-stone-100 text-stone-900">
@@ -38,13 +38,6 @@ export default async function Welcome() {
               </form>
             );
           })}
-          <form action={setCreatorType} className="sm:col-span-2">
-            <input type="hidden" name="creatorType" value="other" />
-            <input type="hidden" name="next" value="welcome" />
-            <button className="w-full rounded-2xl border-2 border-dashed border-stone-400 p-4 font-semibold text-stone-600 hover:border-stone-900 hover:text-stone-900">
-              🤷 Something else, just give me the normal stuff
-            </button>
-          </form>
         </div>
       </main>
     </div>

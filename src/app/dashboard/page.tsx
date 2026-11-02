@@ -212,6 +212,7 @@ export default async function Dashboard({ searchParams }: PageProps<"/dashboard"
                   ideas={categoryIdeas(user.creatorType)}
                   linkPlaceholder={niche?.linkPlaceholder}
                   defaultCategory={realLinks < 3 && niche && user.creatorType !== "other" ? niche.categories[0] : ""}
+                  adultDefault={user.creatorType === "adult"}
                 />
                 {realLinks < 3 && <LinktreeImport />}
               </Section>

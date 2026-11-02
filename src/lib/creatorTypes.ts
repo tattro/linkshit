@@ -29,7 +29,7 @@ export const CREATOR_TYPES = {
     linkPlaceholder: "open.spotify.com/show/…",
   },
   course: {
-    label: "🎓 Courses & coaching", blurb: "Courses, coaching calls, free stuff", categories: ["Courses", "Coaching", "Free stuff", "Testimonials"],
+    label: "🎓 Course seller", blurb: "Courses, coaching calls, free stuff", categories: ["Courses", "Coaching", "Free stuff", "Testimonials"],
     firstLinks: "Add your course or booking page", grow: ["signup", "contact"],
     tip: "Paste your course page (Teachable, Kajabi, Stan, Gumroad…) and your Calendly or Cal.com link for calls. Booking links can show as a calendar right on your page.",
     linkPlaceholder: "yourcourse.com",
@@ -53,13 +53,19 @@ export const CREATOR_TYPES = {
     linkPlaceholder: "yourprogram.com",
   },
   business: {
-    label: "🏪 Business", blurb: "Services, bookings, location", categories: ["Services", "Book", "Shop", "Find us", "Reviews"],
+    label: "💼 Business", blurb: "Services, bookings, location", categories: ["Services", "Book", "Shop", "Find us", "Reviews"],
     firstLinks: "Add your website, booking and location", grow: ["contact", "signup"],
     tip: "Add your website, a booking link and a Google Maps link so people can find you.",
     linkPlaceholder: "yourbusiness.com",
   },
+  adult: {
+    label: "🔞 Adult creator", blurb: "OnlyFans, Fansly, exclusives, tips", categories: ["Exclusive", "Socials", "Tip me", "Customs"],
+    firstLinks: "Add your OnlyFans, Fansly or exclusive page", grow: ["tips", "qa"],
+    tip: "New links get the 🔞 18+ warning by default, so visitors confirm their age before anything opens. That also keeps Instagram and TikTok happier about your bio link.",
+    linkPlaceholder: "onlyfans.com/yourname",
+  },
   other: {
-    label: "🤷 Something else", blurb: "All the normal options", categories: ["Projects", "Business", "Shop", "Socials"],
+    label: "🤹 I do a lot of shit", blurb: "Just give me all the features", categories: ["Projects", "Business", "Shop", "Socials"],
     firstLinks: "Add 3 links", grow: [],
     tip: "", linkPlaceholder: "yourwebsite.com",
   },
@@ -81,3 +87,6 @@ export function categoryIdeas(type: string): string[] {
 export function suggestedGrow(type: string): readonly string[] {
   return isCreatorType(type) ? CREATOR_TYPES[type].grow : [];
 }
+
+/** The cards people pick from. Older types (creator, artist, fitness) still work for pages that have them. */
+export const MAIN_TYPES = ["musician", "podcaster", "course", "business", "adult", "other"] as const;

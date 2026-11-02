@@ -1,5 +1,5 @@
 import { setCreatorType } from "@/app/actions/creator";
-import { CREATOR_TYPES } from "@/lib/creatorTypes";
+import { CREATOR_TYPES, MAIN_TYPES } from "@/lib/creatorTypes";
 
 /** One-tap "What do you do?" chips. Server-rendered forms, so no JS needed. */
 export function CreatorTypePicker({ current, compact = false }: { current?: string; compact?: boolean }) {
@@ -12,7 +12,10 @@ export function CreatorTypePicker({ current, compact = false }: { current?: stri
         </>
       )}
       <div className="flex flex-wrap gap-2">
-        {Object.entries(CREATOR_TYPES).filter(([id]) => id !== "other").map(([id, t]) => (
+        {MAIN_TYPES.filter((id) => id !== "other")
+          // Pages set up with an older type keep seeing it
+          .concat(current && current in CREATOR_TYPES && !(MAIN_TYPES as readonly string[]).includes(current) ? [current as never] : [])
+          .map((id) => [id, CREATOR_TYPES[id]] as const).map(([id, t]) => (
           <form key={id} action={setCreatorType}>
             <input type="hidden" name="creatorType" value={id} />
             <button
