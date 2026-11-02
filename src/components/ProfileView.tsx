@@ -20,7 +20,7 @@ export type ProfileData = Pick<User, "id" | "handle" | "displayName" | "bio" | "
   tips: Tips;
 };
 
-export type ProfileLink = Pick<LinkRow, "id" | "title" | "url" | "embed" | "sensitive" | "spotlight" | "icon" | "offerId" | "thumbVersion" | "discountCode" | "heading" | "music"> & { dropsAt?: Date | null } & {
+export type ProfileLink = Pick<LinkRow, "id" | "title" | "url" | "embed" | "sensitive" | "spotlight" | "icon" | "offerId" | "thumbVersion" | "discountCode" | "heading" | "music" | "price"> & { dropsAt?: Date | null } & {
   locked?: boolean;
 };
 
@@ -180,7 +180,12 @@ export function ProfileView({ user, links, preview = false, avatarOverride, qa =
                     {l.icon ? l.icon : <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d={brand!} /></svg>}
                   </span>
                 )}
-                <span className={l.thumbVersion > 0 ? "px-11" : l.icon || brand || l.locked ? "px-6" : undefined}>{l.title}</span>
+                <span className={l.price ? "block px-16" : l.thumbVersion > 0 ? "px-11" : l.icon || brand || l.locked ? "px-6" : undefined}>{l.title}</span>
+                {l.price && (
+                  <span className={`absolute top-1/2 -translate-y-1/2 ${l.locked ? "right-10" : "right-2.5"}`}>
+                    <span className="tint block max-w-[4.5rem] truncate rounded-full px-2 py-0.5 text-xs font-bold [--tint:0.12]">{l.price}</span>
+                  </span>
+                )}
                 {l.locked && <span aria-label="Needs a code" className="absolute right-4 top-1/2 -translate-y-1/2 text-base leading-none">🔒</span>}
               </a>
             );
