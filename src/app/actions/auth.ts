@@ -54,7 +54,7 @@ export async function signup(_prev: FormState, formData: FormData): Promise<Form
 
   await sendVerificationEmail(user);
   await createSession(user.id);
-  redirect("/dashboard?welcome=1");
+  redirect("/dashboard/welcome");
 }
 
 export async function login(_prev: FormState, formData: FormData): Promise<FormState> {

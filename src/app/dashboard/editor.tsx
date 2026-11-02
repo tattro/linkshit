@@ -187,7 +187,7 @@ function CategoryBox({ sections, ideas = GENERAL_CATEGORIES, defaultValue = "", 
   );
 }
 
-export function AddLinkForm({ sections = [], ideas }: { sections?: SectionOption[]; ideas?: string[] }) {
+export function AddLinkForm({ sections = [], ideas, linkPlaceholder = "yourwebsite.com", defaultCategory = "" }: { sections?: SectionOption[]; ideas?: string[]; linkPlaceholder?: string; defaultCategory?: string }) {
   const [state, action, pending] = useActionState(addLink, undefined);
   const [url, setUrl] = useState("");
   const [title, setTitle] = useState("");
@@ -206,9 +206,9 @@ export function AddLinkForm({ sections = [], ideas }: { sections?: SectionOption
       </label>
       <label className="block min-w-0">
         <span className="text-sm font-semibold">Link</span>
-        <input name="url" inputMode="url" autoCapitalize="off" autoCorrect="off" spellCheck={false} placeholder="yourwebsite.com" value={url} onChange={(e) => setUrl(e.target.value)} className={`${input} mt-1`} />
+        <input name="url" inputMode="url" autoCapitalize="off" autoCorrect="off" spellCheck={false} placeholder={linkPlaceholder} value={url} onChange={(e) => setUrl(e.target.value)} className={`${input} mt-1`} />
       </label>
-      <CategoryBox key={key} sections={sections} ideas={ideas} className="sm:col-span-2" />
+      <CategoryBox key={key} sections={sections} ideas={ideas} defaultValue={defaultCategory} className="sm:col-span-2" />
       <button disabled={pending} className={`${btn} sm:col-span-2 sm:justify-self-start`}>{pending ? "Adding…" : "Add link"}</button>
       {state?.error && <p className="text-sm font-semibold text-red-600 sm:col-span-2">{state.error}</p>}
       <LinkExtras url={url} />
