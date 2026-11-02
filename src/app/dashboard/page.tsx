@@ -7,6 +7,8 @@ import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import Link from "next/link";
 import { SetupHide } from "./SetupHide";
+import { CreatorTypePicker } from "./CreatorTypePicker";
+import { categoryIdeas, CREATOR_TYPES, isCreatorType, suggestedGrow } from "@/lib/creatorTypes";
 import { siteUrl } from "@/lib/request";
 import { PLATFORMS } from "@/lib/socials";
 import { avatarUrl, backgroundUrl, offersLast, visibleLinks } from "@/components/ProfileView";
@@ -28,7 +30,7 @@ function Section({ title, children, aside, id, toggle }: {
   aside?: React.ReactNode;
   id?: string;
   /** A feature you switch on or off: shows On/Off and folds away while it's off. */
-  toggle?: { on: boolean; blurb: string };
+  toggle?: { on: boolean; blurb: string; suggested?: boolean };
 }) {
   if (toggle) {
     return (
@@ -38,6 +40,9 @@ function Section({ title, children, aside, id, toggle }: {
             <h2 className="text-lg font-black">{title}</h2>
             <p className="text-sm text-stone-500">{toggle.blurb}</p>
           </div>
+          {toggle.suggested && !toggle.on && (
+            <span className="shrink-0 rounded-full bg-sky-100 px-2.5 py-1 text-xs font-bold text-sky-800">Suggested</span>
+          )}
           <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-bold ${toggle.on ? "bg-lime-300 text-stone-900" : "bg-stone-200 text-stone-600"}`}>
             {toggle.on ? "On" : "Off"}
           </span>
@@ -89,10 +94,15 @@ function Tabs({ active, badges }: { active: Tab; badges: Partial<Record<Tab, num
   );
 }
 
-function SetupChecklist({ steps }: { steps: { label: string; done: boolean; href: string }[] }) {
+function SetupChecklist({ steps, askType }: { steps: { label: string; done: boolean; href: string }[]; askType: boolean }) {
   const left = steps.filter((x) => !x.done).length;
   return (
     <section className="rounded-2xl border-2 border-stone-900 bg-lime-200 p-5">
+      {askType && (
+        <div className="mb-5 border-b-2 border-stone-900/10 pb-5">
+          <CreatorTypePicker />
+        </div>
+      )}
       <div className="mb-3 flex items-baseline justify-between gap-3">
         <h2 className="text-lg font-black">Get started</h2>
         <span className="text-sm font-semibold">{steps.length - left} of {steps.length} done</span>
@@ -147,12 +157,13 @@ export default async function Dashboard({ searchParams }: PageProps<"/dashboard"
   const steps = [
     { label: "Add your photo", done: user.avatarVersion > 0, href: "/dashboard#profile" },
     { label: "Write a short bio", done: user.bio.trim() !== "", href: "/dashboard#profile" },
-    { label: "Add 3 links", done: realLinks >= 3, href: "/dashboard#add-link" },
+    { label: isCreatorType(user.creatorType) ? CREATOR_TYPES[user.creatorType].firstLinks : "Add 3 links", done: realLinks >= 3, href: "/dashboard#add-link" },
     { label: "Pick a look", done: user.theme !== "classic" || Object.keys(user.style ?? {}).length > 0, href: "/dashboard?tab=look" },
     { label: "Share your page", done: views > 0, href: "/dashboard?tab=grow#share" },
   ];
   const showSetup = steps.some((x) => !x.done) && (await cookies()).get("setup_hidden")?.value !== "1";
   const growBadge = waiting.length;
+  const suggested = suggestedGrow(user.creatorType);
   const platforms = PLATFORMS.map(({ id, label, path, placeholder }) => ({ id, label, path, placeholder }));
 
   return (
@@ -187,10 +198,10 @@ export default async function Dashboard({ searchParams }: PageProps<"/dashboard"
 
           {tab === "page" && (
             <>
-              {showSetup && <SetupChecklist steps={steps} />}
+              {showSetup && <SetupChecklist steps={steps} askType={user.creatorType === ""} />}
 
               <Section id="add-link" title="Add a link">
-                <AddLinkForm sections={rows.filter((l) => l.heading).map((l) => ({ id: l.id, title: l.title }))} />
+                <AddLinkForm sections={rows.filter((l) => l.heading).map((l) => ({ id: l.id, title: l.title }))} ideas={categoryIdeas(user.creatorType)} />
                 {realLinks < 3 && <LinktreeImport />}
               </Section>
 
@@ -238,20 +249,20 @@ export default async function Dashboard({ searchParams }: PageProps<"/dashboard"
 
               <p className="px-1 text-sm text-stone-500">Extras for your page. Turn on only what you need. Tap one to open it.</p>
 
-              <Section title="💬 Anonymous Q&A" toggle={{ on: user.qaEnabled, blurb: waiting.length ? `${waiting.length} question${waiting.length === 1 ? "" : "s"} waiting for you` : "Visitors ask you anything; you pick what to answer." }}>
+              <Section title="💬 Anonymous Q&A" toggle={{ on: user.qaEnabled, suggested: suggested.includes("qa"), blurb: waiting.length ? `${waiting.length} question${waiting.length === 1 ? "" : "s"} waiting for you` : "Visitors ask you anything; you pick what to answer." }}>
                 <QASettings enabled={user.qaEnabled} prompt={user.qaPrompt} waiting={waiting} answered={answered} />
               </Section>
 
-              <Section title="📬 Email list" toggle={{ on: user.signupEnabled, blurb: subs ? `${subs} subscriber${subs === 1 ? "" : "s"} so far` : "Collect emails from visitors, download them any time." }}>
+              <Section title="📬 Email list" toggle={{ on: user.signupEnabled, suggested: suggested.includes("signup"), blurb: subs ? `${subs} subscriber${subs === 1 ? "" : "s"} so far` : "Collect emails from visitors, download them any time." }}>
                 <p className="mb-4 text-sm text-stone-500">Visitors leave their email on your page and it&apos;s saved here. Download the list and import it into Mailchimp, Substack or whatever you send from.</p>
                 <SignupSettings enabled={user.signupEnabled} prompt={user.signupPrompt} count={subs} recent={recentSubs} />
               </Section>
 
-              <Section title="✉️ Contact form" toggle={{ on: user.contactEnabled, blurb: inbox.length ? `${inbox.length} message${inbox.length === 1 ? "" : "s"} in your inbox` : "A Message me button. Your email stays private." }}>
+              <Section title="✉️ Contact form" toggle={{ on: user.contactEnabled, suggested: suggested.includes("contact"), blurb: inbox.length ? `${inbox.length} message${inbox.length === 1 ? "" : "s"} in your inbox` : "A Message me button. Your email stays private." }}>
                 <ContactSettings enabled={user.contactEnabled} messages={inbox} />
               </Section>
 
-              <Section title="💸 Tip jar" toggle={{ on: Object.values(user.tips ?? {}).some(Boolean), blurb: "Let fans tip you. Money goes straight to you." }}>
+              <Section title="💸 Tip jar" toggle={{ on: Object.values(user.tips ?? {}).some(Boolean), suggested: suggested.includes("tips"), blurb: "Let fans tip you. Money goes straight to you." }}>
                 <TipsForm tips={user.tips} />
               </Section>
 
@@ -263,6 +274,11 @@ export default async function Dashboard({ searchParams }: PageProps<"/dashboard"
 
           {tab === "settings" && (
             <>
+              <Section title="What do you do?">
+                <p className="-mt-2 mb-4 text-sm text-stone-500">Changes which categories and extras we suggest. Everything stays available whatever you pick.</p>
+                <CreatorTypePicker current={user.creatorType} compact />
+              </Section>
+
               <Section title="Page address">
                 <HandleForm handle={user.handle} />
               </Section>

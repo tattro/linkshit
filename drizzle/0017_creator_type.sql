@@ -1,0 +1,1 @@
+ALTER TABLE "users" ADD COLUMN "creator_type" text DEFAULT '' NOT NULL;

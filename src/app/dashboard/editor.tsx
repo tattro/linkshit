@@ -16,6 +16,7 @@ import { setAdvertiserOptIn } from "@/app/actions/marketplace";
 import type { Link, Socials, Style, Tips } from "@/db/schema";
 import { setLookDraft } from "./lookDraft";
 import { AvatarCropper } from "./AvatarCropper";
+import { GENERAL_CATEGORIES } from "@/lib/creatorTypes";
 import { embedFor } from "@/lib/embeds";
 import { TIP_PROVIDERS } from "@/lib/tips";
 import { FONTS, parseStyle, GRADIENT_DIRS, GRADIENT_PRESETS, SHAPES, gradientCss, hasCustomColors } from "@/lib/style";
@@ -143,14 +144,11 @@ function LinkExtras({ link, url }: { link?: Link; url: string }) {
 
 export type SectionOption = { id: number; title: string };
 
-/** Offered in the Category box alongside the categories you already have. */
-const CATEGORY_IDEAS = ["Music", "Projects", "Business", "Art", "Videos", "Shop", "Podcast", "Socials", "Writing", "Events"];
-
 /**
  * "Category": type a name like Music. An existing one is reused (suggested as
  * you type), a new one is created as a title on the page, blank means none.
  */
-function CategoryBox({ sections, defaultValue = "", className = "" }: { sections: SectionOption[]; defaultValue?: string; className?: string }) {
+function CategoryBox({ sections, ideas = GENERAL_CATEGORIES, defaultValue = "", className = "" }: { sections: SectionOption[]; ideas?: string[]; defaultValue?: string; className?: string }) {
   const [value, setValue] = useState(defaultValue);
   const listId = useId();
   const typed = value.trim().toLowerCase();
@@ -170,7 +168,7 @@ function CategoryBox({ sections, defaultValue = "", className = "" }: { sections
       />
       <datalist id={listId}>
         {sections.map((s) => <option key={s.id} value={s.title} />)}
-        {CATEGORY_IDEAS.filter((idea) => !sections.some((s) => s.title.trim().toLowerCase() === idea.toLowerCase())).map((idea) => (
+        {ideas.filter((idea) => !sections.some((s) => s.title.trim().toLowerCase() === idea.toLowerCase())).map((idea) => (
           <option key={idea} value={idea} />
         ))}
       </datalist>
@@ -182,7 +180,7 @@ function CategoryBox({ sections, defaultValue = "", className = "" }: { sections
   );
 }
 
-export function AddLinkForm({ sections = [] }: { sections?: SectionOption[] }) {
+export function AddLinkForm({ sections = [], ideas }: { sections?: SectionOption[]; ideas?: string[] }) {
   const [state, action, pending] = useActionState(addLink, undefined);
   const [url, setUrl] = useState("");
   const [title, setTitle] = useState("");
@@ -203,7 +201,7 @@ export function AddLinkForm({ sections = [] }: { sections?: SectionOption[] }) {
         <span className="text-sm font-semibold">Link</span>
         <input name="url" inputMode="url" autoCapitalize="off" autoCorrect="off" spellCheck={false} placeholder="yourwebsite.com" value={url} onChange={(e) => setUrl(e.target.value)} className={`${input} mt-1`} />
       </label>
-      <CategoryBox key={key} sections={sections} className="sm:col-span-2" />
+      <CategoryBox key={key} sections={sections} ideas={ideas} className="sm:col-span-2" />
       <button disabled={pending} className={`${btn} sm:col-span-2 sm:justify-self-start`}>{pending ? "Adding…" : "Add link"}</button>
       {state?.error && <p className="text-sm font-semibold text-red-600 sm:col-span-2">{state.error}</p>}
       <LinkExtras url={url} />
