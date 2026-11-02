@@ -17,6 +17,8 @@ import { embedFor } from "@/lib/embeds";
 import { rateLimit, TOO_MANY } from "@/lib/ratelimit";
 import { unsafeReason } from "@/lib/safety";
 import { normalizeUrl } from "@/lib/urls";
+import { isMusicUrl } from "@/lib/music";
+import { lookupMusic } from "@/lib/musicLookup";
 
 export type ActionState = { error?: string; ok?: boolean } | undefined;
 
@@ -98,8 +100,9 @@ async function readLinkForm(formData: FormData) {
   }
   const thumb = await readThumb(formData);
   if (thumb && "error" in thumb) return { error: thumb.error } as const;
+  const music = formData.get("music") === "on" && !lockCode && isMusicUrl(url) ? await lookupMusic(url) : null;
   // A locked link can't play inline, or the lock would be pointless
-  return { value: { title, url, startsAt, endsAt, embed: embed && !lockCode, sensitive, spotlight, icon, lockCode, discountCode, androidUrl, countdown }, thumb, removeThumb: formData.get("removeThumb") === "on" } as const;
+  return { value: { title, url, startsAt, endsAt, embed: embed && !lockCode, sensitive, spotlight, icon, lockCode, discountCode, androidUrl, countdown, music }, thumb, removeThumb: formData.get("removeThumb") === "on" } as const;
 }
 
 /** Which section a link sits in: the nearest heading above it, or "none". */

@@ -1,3 +1,4 @@
+import type { MusicLinks } from "@/lib/music";
 import {
   pgTable,
   serial,
@@ -214,6 +215,8 @@ export const links = pgTable(
     heading: boolean("heading").notNull().default(false),
     // Shown under the button with a copy button; tapping the link copies it too
     discountCode: text("discount_code"),
+    // "Listen on…" buttons for every music app, looked up when the link is saved
+    music: jsonb("music").$type<MusicLinks>(),
     // Android visitors go here instead (e.g. Google Play when url is the App Store)
     androidUrl: text("android_url"),
     // Set when "flushed": the link moves to the graveyard and can be revived

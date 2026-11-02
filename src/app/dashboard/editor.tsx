@@ -17,6 +17,7 @@ import type { Link, Socials, Style, Tips } from "@/db/schema";
 import { setLookDraft } from "./lookDraft";
 import { AvatarCropper } from "./AvatarCropper";
 import { GENERAL_CATEGORIES } from "@/lib/creatorTypes";
+import { isMusicUrl } from "@/lib/music";
 import { embedFor } from "@/lib/embeds";
 import { TIP_PROVIDERS } from "@/lib/tips";
 import { FONTS, parseStyle, GRADIENT_DIRS, GRADIENT_PRESETS, SHAPES, gradientCss, hasCustomColors } from "@/lib/style";
@@ -50,6 +51,12 @@ function LinkExtras({ link, url }: { link?: Link; url: string }) {
   return (
     <div className="sm:col-span-full">
       <TzInput />
+      {isMusicUrl(url) && (
+        <label className="mb-2 flex items-start gap-2 text-sm">
+          <input type="checkbox" name="music" defaultChecked={link ? Boolean(link.music) : true} className="mt-0.5 h-4 w-4 accent-lime-500" />
+          <span>🎵 Add &quot;Listen on Spotify, Apple Music, YouTube…&quot; buttons <span className="text-stone-400">(we find it on every app for you)</span></span>
+        </label>
+      )}
       {canEmbed && (
         <label className="mb-2 flex items-center gap-2 text-sm">
           <input type="checkbox" name="embed" defaultChecked={link?.embed} className="h-4 w-4 accent-lime-500" />
@@ -343,6 +350,7 @@ function LinkRowItem({ link, handle, sections, section }: { link: Link; handle?:
             {link.embed && <span className="ml-2 rounded bg-violet-100 px-1.5 py-0.5 text-xs font-medium text-violet-800">embed</span>}
             {link.spotlight && <span className="ml-2 rounded bg-yellow-100 px-1.5 py-0.5 text-xs font-medium text-yellow-800">✨ spotlight</span>}
             {link.sensitive && <span className="ml-2 rounded bg-red-100 px-1.5 py-0.5 text-xs font-medium text-red-800">🔞 18+</span>}
+            {link.music && <span className="ml-2 rounded bg-pink-100 px-1.5 py-0.5 text-xs font-medium text-pink-800">🎵 {link.music.links.length} apps</span>}
             {link.discountCode && <span className="ml-2 rounded bg-sky-100 px-1.5 py-0.5 text-xs font-medium text-sky-800">🏷️ {link.discountCode}</span>}
             {link.lockCode && <span className="ml-2 rounded bg-stone-200 px-1.5 py-0.5 text-xs font-medium text-stone-700">🔒 locked</span>}
             {link.offerId && <span className="ml-2 rounded bg-lime-100 px-1.5 py-0.5 text-xs font-medium text-lime-800" title="Pinned to the bottom of your page with an affiliate disclaimer">💸 marketplace</span>}
