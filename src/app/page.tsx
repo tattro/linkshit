@@ -66,6 +66,10 @@ export default async function Home({ searchParams }: PageProps<"/">) {
               Claim my linksh.it
             </button>
           </form>
+          <p className="mt-3 max-w-md text-sm text-stone-500">
+            Every &ldquo;premium&rdquo; feature, free. No subscriptions.{" "}
+            <Link href="/pricing" className="font-semibold text-stone-900 underline decoration-lime-400 decoration-2 underline-offset-2">See what you get</Link>
+          </p>
         </section>
 
         <section aria-hidden className="mx-auto w-full max-w-xs rotate-2 rounded-[2.5rem] border-8 border-stone-900 bg-black p-6 text-lime-300 shadow-2xl">
