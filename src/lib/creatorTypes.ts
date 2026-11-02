@@ -29,7 +29,7 @@ export const CREATOR_TYPES = {
     linkPlaceholder: "open.spotify.com/show/…",
   },
   course: {
-    label: "🎓 Course seller", blurb: "Courses, coaching calls, free stuff", categories: ["Courses", "Coaching", "Free stuff", "Testimonials"],
+    label: "🧑‍🏫 Coach", blurb: "Coaching calls, courses, free stuff", categories: ["Coaching", "Courses", "Free stuff", "Testimonials"],
     firstLinks: "Add your course or booking page", grow: ["signup", "contact"],
     tip: "Paste your course page (Teachable, Kajabi, Stan, Gumroad…) and your Calendly or Cal.com link for calls. Booking links can show as a calendar right on your page.",
     linkPlaceholder: "yourcourse.com",
