@@ -1,4 +1,5 @@
 import NextLink from "next/link";
+import { VerifiedInfo } from "./VerifiedInfo";
 import type { Link as LinkRow, Socials, Style, Tips, User } from "@/db";
 import { musicLabel } from "@/lib/music";
 import { siApplemusic, siSpotify, siYoutube, siYoutubemusic } from "simple-icons";
@@ -205,14 +206,7 @@ export function ProfileView({ user, links, preview = false, avatarOverride, qa =
               <path fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" d="M7.8 12.3l2.8 2.8 5.6-5.8" />
             </svg>
             <span>Verified by {user.verifiedBy}</span>
-            <details className="relative">
-              <summary className="flex h-6 w-6 cursor-pointer list-none items-center justify-center rounded-full text-xs opacity-70 hover:opacity-100 [&::-webkit-details-marker]:hidden" aria-label="About this badge">
-                ⓘ
-              </summary>
-              <span className="absolute right-0 top-6 z-20 w-56 rounded-xl bg-stone-900 p-3 text-left text-xs font-normal text-white shadow-lg">
-                JK, not really. No one would ever endorse me. But one can dream.
-              </span>
-            </details>
+            <VerifiedInfo />
           </div>
         )}
         {user.bio && <p className="mt-3 whitespace-pre-line text-center">{user.bio}</p>}
