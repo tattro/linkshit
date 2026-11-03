@@ -29,21 +29,34 @@ export type ProfileLink = Pick<LinkRow, "id" | "title" | "url" | "embed" | "sens
 // The three apps most fans use get logo buttons; the rest sit behind "more apps"
 const MAIN_APPS: Record<string, string> = { spotify: siSpotify.path, appleMusic: siApplemusic.path, youtube: siYoutube.path, youtubeMusic: siYoutubemusic.path };
 
-function splitApps(list: { p: string; url: string }[]) {
+function splitApps(list: { p: string; url: string }[], prefer?: string) {
   const hasYoutube = list.some((m) => m.p === "youtube");
   const main = list.filter((m) => m.p === "spotify" || m.p === "appleMusic" || m.p === "youtube" || (m.p === "youtubeMusic" && !hasYoutube));
+  // The musician's pick goes first
+  const first = (m: { p: string }) => (m.p === prefer || (prefer === "youtube" && m.p === "youtubeMusic") ? 0 : 1);
+  main.sort((a, b) => first(a) - first(b));
   return { main, rest: list.filter((m) => !main.includes(m)) };
 }
 
-/** Player for the featured song: YouTube plays the whole song for everyone, Spotify only 30 seconds unless signed in. */
+/**
+ * Player for the featured song: the musician's pick first, then YouTube (whole song for
+ * everyone), then Spotify (30 seconds unless signed in), then Apple Music.
+ */
 function featuredPlayer(l: ProfileLink) {
   const apps = l.music?.links ?? [];
   const yt = apps.find((m) => m.p === "youtube") ?? apps.find((m) => m.p === "youtubeMusic");
+  const byApp: Record<string, string | undefined> = {
+    youtube: yt?.url.replace("://music.youtube.com/", "://www.youtube.com/"),
+    spotify: apps.find((m) => m.p === "spotify")?.url,
+    appleMusic: apps.find((m) => m.p === "appleMusic")?.url,
+  };
+  const prefer = l.music?.prefer;
   const tryUrls = [
-    yt?.url.replace("://music.youtube.com/", "://www.youtube.com/"),
-    apps.find((m) => m.p === "spotify")?.url,
+    prefer ? byApp[prefer] : undefined,
+    byApp.youtube,
+    byApp.spotify,
     l.url.replace("://music.youtube.com/", "://www.youtube.com/"),
-    apps.find((m) => m.p === "appleMusic")?.url,
+    byApp.appleMusic,
   ];
   for (const u of tryUrls) {
     const e = u ? embedFor(u) : null;
@@ -98,7 +111,7 @@ export function ProfileView({ user, links, preview = false, avatarOverride, qa =
 
   const musicRow = (l: ProfileLink, big = false) => {
     if (!l.music || l.locked) return null;
-    const { main, rest } = splitApps(l.music.links);
+    const { main, rest } = splitApps(l.music.links, l.music.prefer);
     return (
       <div className="mt-2 text-center" aria-label={`Listen to ${l.title} on`}>
         <div className="flex flex-wrap justify-center gap-1.5">{main.map((m) => appLink(l, m, big))}</div>

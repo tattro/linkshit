@@ -17,7 +17,7 @@ import { embedFor } from "@/lib/embeds";
 import { rateLimit, TOO_MANY } from "@/lib/ratelimit";
 import { unsafeReason } from "@/lib/safety";
 import { normalizeUrl } from "@/lib/urls";
-import { isMusicUrl } from "@/lib/music";
+import { isMusicUrl, isPlayerApp } from "@/lib/music";
 import { lookupMusic } from "@/lib/musicLookup";
 import { pagePreview } from "@/lib/pagePreview";
 import { setUpLatest } from "@/lib/latest";
@@ -117,6 +117,8 @@ async function readLinkForm(formData: FormData) {
   const thumb = await readThumb(formData);
   if (thumb && "error" in thumb) return { error: thumb.error } as const;
   const music = formData.get("music") === "on" && !lockCode && isMusicUrl(url) ? await lookupMusic(url) : null;
+  const prefer = formData.get("prefer");
+  if (music && isPlayerApp(prefer)) music.prefer = prefer;
   // Only a song or album can be the featured song
   const featured = formData.get("featured") === "on" && !lockCode && isMusicUrl(url);
   if (embed && /^\/?$/.test(new URL(url).pathname) && new URL(url).hostname.replace(/^www\./, "") === "soundcloud.com") {
@@ -414,6 +416,7 @@ export async function restorePage(_prev: ActionState, formData: FormData): Promi
     fd.set("androidUrl", str(l.androidUrl, 2000));
     fd.set("price", str(l.price, 20));
     if (l.music) fd.set("music", "on");
+    if (l.musicPrefer) fd.set("prefer", str(l.musicPrefer, 20));
     if (l.latest) fd.set("latest", "on");
     for (const g of Array.isArray(l.geo) ? l.geo.slice(0, 3) : []) {
       fd.append("geoCountry", str(g?.c, 2));
