@@ -17,7 +17,7 @@ import type { Link, Socials, Style, Tips } from "@/db/schema";
 import { setLookDraft } from "./lookDraft";
 import { AvatarCropper } from "./AvatarCropper";
 import { GENERAL_CATEGORIES } from "@/lib/creatorTypes";
-import { isMusicUrl } from "@/lib/music";
+import { isMusicUrl, PLAYER_APPS } from "@/lib/music";
 import { isStoreUrl } from "@/lib/stores";
 import { LATEST_LABEL, latestKind } from "@/lib/feeds";
 import { countryName, GEO_COUNTRIES, MAX_GEO_RULES, type GeoRule } from "@/lib/geo";
@@ -78,6 +78,18 @@ function LinkExtras({ link, url, adultDefault = false, onSoundCloud }: { link?: 
                 <input type="checkbox" name="featured" defaultChecked={link?.featured} className="mt-0.5 h-4 w-4 accent-lime-500" />
                 <span>⭐ Feature this song at the top of my page <span className="text-stone-400">(big player with Spotify, Apple Music and YouTube buttons · one song at a time)</span></span>
               </label>
+              <fieldset>
+                <legend className="mb-1">Which app should come first on your page? <span className="text-stone-400">(it plays the song and gets the first button)</span></legend>
+                <div className="flex flex-wrap gap-2">
+                  {PLAYER_APPS.map((a) => (
+                    <label key={a.id} className="cursor-pointer rounded-full border-2 border-stone-300 bg-white px-3 py-1 has-[:checked]:border-stone-900 has-[:checked]:bg-stone-900 has-[:checked]:text-white">
+                      <input type="radio" name="prefer" value={a.id} defaultChecked={(link?.music?.prefer ?? "youtube") === a.id} className="sr-only" />
+                      {a.label}
+                    </label>
+                  ))}
+                </div>
+                <p className="mt-1 text-xs text-stone-400">Paste a link from any of them. We find the song on the others. YouTube plays the full song for everyone. Spotify plays 30 seconds unless the fan is signed in.</p>
+              </fieldset>
             </>
           ) : isSoundCloud(url) ? (
             <p className="text-stone-600">SoundCloud shows up as a player on your page.</p>

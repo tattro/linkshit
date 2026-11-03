@@ -3,7 +3,16 @@
  * music app, found through the free Odesli (song.link) API when the link is saved.
  * This file is safe for the browser; the network call lives in musicLookup.ts.
  */
-export type MusicLinks = { links: { p: string; url: string }[] };
+export type MusicLinks = { links: { p: string; url: string }[]; prefer?: PlayerApp };
+
+/** Which app plays the featured song and gets the first button. */
+export type PlayerApp = "youtube" | "spotify" | "appleMusic";
+export const PLAYER_APPS: { id: PlayerApp; label: string }[] = [
+  { id: "youtube", label: "YouTube" },
+  { id: "spotify", label: "Spotify" },
+  { id: "appleMusic", label: "Apple Music" },
+];
+export const isPlayerApp = (v: unknown): v is PlayerApp => PLAYER_APPS.some((a) => a.id === v);
 
 // Order on the page, and how each Odesli platform key is labelled
 export const MUSIC_PLATFORMS: { id: string; label: string }[] = [

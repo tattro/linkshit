@@ -16,6 +16,7 @@ export type BackupLink = {
   price?: string | null;
   /** Re-looked-up on restore */
   music?: boolean;
+  musicPrefer?: string | null;
   latest?: boolean;
   geo?: { c: string; url: string }[] | null;
   startsAt?: string | null;
