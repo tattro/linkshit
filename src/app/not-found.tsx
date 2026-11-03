@@ -2,7 +2,7 @@ import Link from "next/link";
 
 export default function NotFound() {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-stone-100 px-6 text-center text-stone-900">
+    <main className="flex min-h-screen flex-col items-center justify-center bg-stone-100 px-6 text-center text-stone-900">
       <p aria-hidden className="select-none text-[10rem] leading-none md:text-[14rem]">💩</p>
       <h1 className="mt-6 text-4xl font-black tracking-tight md:text-5xl">Sorry, but this sh.it is broken.</h1>
       <p className="mt-3 max-w-md text-stone-600">
@@ -16,6 +16,6 @@ export default function NotFound() {
           Take me home
         </Link>
       </div>
-    </div>
+    </main>
   );
 }

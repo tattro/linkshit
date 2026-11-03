@@ -91,7 +91,7 @@ export default async function MediaKitPage({ params }: { params: Promise<{ handl
               {sources.length > 0 && <div><dt className="text-stone-500">Visitors come from</dt><dd className="font-semibold">{sources.map((s) => s.label).join(", ")}</dd></div>}
             </dl>
           )}
-          <p className="mt-3 text-xs text-stone-400">✓ Counted by linksh.it, not typed in by the creator.</p>
+          <p className="mt-3 text-xs text-stone-500">✓ Counted by linksh.it, not typed in by the creator.</p>
         </section>
 
         {kit.rates && (
@@ -116,7 +116,7 @@ export default async function MediaKitPage({ params }: { params: Promise<{ handl
           {user.contactEnabled ? "Work with me: message me on my page" : "See my page"}
         </NextLink>
 
-        <p className="pt-4 text-center font-mono text-xs text-stone-400"><NextLink href="/" className="underline">made with linksh.it</NextLink></p>
+        <p className="pt-4 text-center font-mono text-xs text-stone-500"><NextLink href="/" className="underline">made with linksh.it</NextLink></p>
       </main>
     </div>
   );

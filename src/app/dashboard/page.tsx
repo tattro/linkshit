@@ -47,7 +47,7 @@ function Section({ title, children, aside, id, toggle }: {
           <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-bold ${toggle.on ? "bg-lime-300 text-stone-900" : "bg-stone-200 text-stone-600"}`}>
             {toggle.on ? "On" : "Off"}
           </span>
-          <span aria-hidden className="shrink-0 text-stone-400 transition group-open:rotate-180">▾</span>
+          <span aria-hidden className="shrink-0 text-stone-500 transition group-open:rotate-180">▾</span>
         </summary>
         <div className="border-t-2 border-stone-100 p-5">{children}</div>
       </details>
@@ -111,7 +111,7 @@ function SetupChecklist({ steps, askType }: { steps: { label: string; done: bool
       <ol className="space-y-2">
         {steps.map((x, i) => (
           <li key={x.label}>
-            <a href={x.href} className={`flex items-center gap-3 rounded-xl bg-white px-3 py-2.5 text-sm font-semibold ${x.done ? "text-stone-400" : "hover:ring-2 hover:ring-stone-900"}`}>
+            <a href={x.href} className={`flex items-center gap-3 rounded-xl bg-white px-3 py-2.5 text-sm font-semibold ${x.done ? "text-stone-500" : "hover:ring-2 hover:ring-stone-900"}`}>
               <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs ${x.done ? "bg-lime-400 text-stone-900" : "border-2 border-stone-900"}`}>
                 {x.done ? "✓" : i + 1}
               </span>
@@ -173,6 +173,7 @@ export default async function Dashboard({ searchParams }: PageProps<"/dashboard"
       <DashboardHeader active="editor" />
 
       <main className="mx-auto grid max-w-6xl gap-8 px-6 py-8 lg:grid-cols-[1fr_360px]">
+        <h1 className="sr-only">Dashboard for linksh.it/{user.handle}</h1>
         <div className="min-w-0 space-y-8">
           {welcome && (
             <div className="rounded-2xl border-2 border-stone-900 bg-lime-300 p-5">

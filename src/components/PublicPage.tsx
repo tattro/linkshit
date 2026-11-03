@@ -6,6 +6,7 @@ import { ViewBeacon } from "./ViewBeacon";
 import { LockScreen } from "./LockScreen";
 import { AdultPageGate } from "./AdultPageGate";
 import { TrackingPixels } from "./TrackingPixels";
+import { PixelConsent } from "./PixelConsent";
 import type { PublicProfile } from "@/lib/profile";
 import { lockCookie, tokenMatches } from "@/lib/locks";
 
@@ -43,11 +44,18 @@ export async function PublicPage({ profile }: { profile: PublicProfile }) {
   // Redirect mode: everyone goes straight to one link (through /go so the click counts)
   if (profile.redirectTo) redirect(`/go/${profile.redirectTo}`);
   return (
-    <div className="min-h-screen [&>div]:min-h-screen">
+    <main className="min-h-screen [&>div]:min-h-screen">
       <ViewBeacon userId={user.id} />
-      <TrackingPixels meta={user.metaPixel} ga={user.googleAnalytics} tiktok={user.tiktokPixel} />
+      {(user.metaPixel || user.googleAnalytics || user.tiktokPixel) && (
+        <PixelConsent
+          name={user.displayName || `@${user.handle}`}
+          services={[user.metaPixel && "Meta", user.googleAnalytics && "Google", user.tiktokPixel && "TikTok"].filter((x): x is string => Boolean(x))}
+        >
+          <TrackingPixels meta={user.metaPixel} ga={user.googleAnalytics} tiktok={user.tiktokPixel} />
+        </PixelConsent>
+      )}
       {user.adultGate && <AdultPageGate name={user.displayName || `@${user.handle}`} />}
       <ProfileView user={user} links={profile.links} qa={profile.qa} />
-    </div>
+    </main>
   );
 }

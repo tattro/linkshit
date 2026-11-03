@@ -28,7 +28,7 @@ function SortableLink({ link, nested, sections, section }: { link: Link; nested:
             {...attributes}
             {...listeners}
             aria-label={`Drag to reorder ${link.title}`}
-            className="flex h-10 w-7 shrink-0 cursor-grab touch-none items-center justify-center rounded-md text-xl leading-none text-stone-400 hover:bg-stone-100 hover:text-stone-900 active:cursor-grabbing"
+            className="flex h-10 w-7 shrink-0 cursor-grab touch-none items-center justify-center rounded-md text-xl leading-none text-stone-500 hover:bg-stone-100 hover:text-stone-900 active:cursor-grabbing"
           >
             ⠿
           </button>

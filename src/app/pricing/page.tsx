@@ -63,7 +63,7 @@ export default function Pricing() {
             ))}
           </ul>
         </div>
-        <p className="mt-3 text-xs text-stone-400">
+        <p className="mt-3 text-xs text-stone-500">
           &ldquo;Others&rdquo; means features that one or more big link-in-bio sites limit to paid plans, or don&apos;t offer at all. Their plans change, so check theirs.
         </p>
 

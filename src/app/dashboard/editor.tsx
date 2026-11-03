@@ -53,7 +53,7 @@ function VideoOption({ link }: { link?: Link }) {
     <div className="space-y-2">
       <label className="flex items-start gap-2">
         <input type="checkbox" name="video" checked={video} onChange={(e) => setVideo(e.target.checked)} className="mt-0.5 h-4 w-4 accent-lime-500" />
-        <span>🎬 Make my music video the main visual <span className="block text-stone-400">Leave it off and your Spotify track plays.</span></span>
+        <span>🎬 Make my music video the main visual <span className="block text-stone-500">Leave it off and your Spotify track plays.</span></span>
       </label>
       {video && (
         <input
@@ -91,7 +91,7 @@ function LinkExtras({ link, url, adultDefault = false, onSoundCloud }: { link?: 
       {spottedNote(url) && <p className="mb-2 rounded-lg bg-lime-100 px-3 py-2 text-sm font-medium text-lime-900">✨ {spottedNote(url)}</p>}
       <label className="mb-2 flex items-center gap-2 text-sm">
         <input type="checkbox" checked={musicOn} onChange={(e) => setMusicChoice(e.target.checked)} className="h-4 w-4 accent-lime-500" />
-        🎵 This is music <span className="text-stone-400">(a song, album or SoundCloud)</span>
+        🎵 This is music <span className="text-stone-500">(a song, album or SoundCloud)</span>
       </label>
       {musicOn && (
         <div className="mb-3 space-y-2 rounded-xl border-2 border-lime-200 bg-lime-50 p-3 text-sm">
@@ -127,7 +127,7 @@ function LinkExtras({ link, url, adultDefault = false, onSoundCloud }: { link?: 
           <input type="checkbox" name="latest" defaultChecked={link ? Boolean(link.latest) : true} className="mt-0.5 h-4 w-4 accent-lime-500" />
           <span>
             {LATEST_LABEL[feedKind].checkbox}{" "}
-            <span className="text-stone-400">(updates by itself)</span>
+            <span className="text-stone-500">(updates by itself)</span>
           </span>
         </label>
       )}
@@ -135,7 +135,7 @@ function LinkExtras({ link, url, adultDefault = false, onSoundCloud }: { link?: 
         <label className="mb-2 flex items-start gap-2 text-sm">
           {/* key: re-apply the default when the link changes from/to a shop */}
           <input key={String(isStoreUrl(url))} type="checkbox" name="grab" defaultChecked={!link && isStoreUrl(url)} className="mt-0.5 h-4 w-4 accent-lime-500" />
-          <span>🛍️ Grab the product picture and price from the page <span className="text-stone-400">(great for courses, merch and shops)</span></span>
+          <span>🛍️ Grab the product picture and price from the page <span className="text-stone-500">(great for courses, merch and shops)</span></span>
         </label>
       )}
       {canEmbed && !(musicOn && isSpotifySong(url)) && (
@@ -166,11 +166,11 @@ function LinkExtras({ link, url, adultDefault = false, onSoundCloud }: { link?: 
                 aria-label="Emoji icon (optional)"
                 className="w-14 rounded-lg border-2 border-stone-300 bg-white px-2 py-1 text-center outline-none focus:border-stone-900"
               />
-              <span className="text-xs text-stone-400">emoji, optional</span>
+              <span className="text-xs text-stone-500">emoji, optional</span>
             </label>
           </div>
           <label className="block text-sm">
-            <span className="font-medium">🏷️ Discount code</span> <span className="text-xs text-stone-400">optional · tapping the link copies it, then opens the link</span>
+            <span className="font-medium">🏷️ Discount code</span> <span className="text-xs text-stone-500">optional · tapping the link copies it, then opens the link</span>
             <input
               name="discountCode"
               defaultValue={link?.discountCode ?? ""}
@@ -181,7 +181,7 @@ function LinkExtras({ link, url, adultDefault = false, onSoundCloud }: { link?: 
             />
           </label>
           <label className="block text-sm">
-            <span className="font-medium">💲 Price</span> <span className="text-xs text-stone-400">optional · shown on the button</span>
+            <span className="font-medium">💲 Price</span> <span className="text-xs text-stone-500">optional · shown on the button</span>
             <input
               name="price"
               defaultValue={link?.price ?? ""}
@@ -276,7 +276,7 @@ function CategoryBox({ sections, ideas = GENERAL_CATEGORIES, defaultValue = "", 
   const isNew = typed !== "" && !sections.some((s) => s.title.trim().toLowerCase() === typed);
   return (
     <label className={`block min-w-0 ${className}`}>
-      <span className="text-sm font-semibold">➕ Category</span> <span className="text-xs text-stone-400">optional</span>
+      <span className="text-sm font-semibold">➕ Category</span> <span className="text-xs text-stone-500">optional</span>
       <input
         name="sectionName"
         list={listId}
@@ -1130,7 +1130,7 @@ export function QASettings({ enabled, prompt, waiting, answered }: {
   const del = (id: number, label: string) => (
     <form action={deleteQuestion}>
       <input type="hidden" name="id" value={id} />
-      <button className="text-xs text-stone-400 hover:text-red-600">{label}</button>
+      <button className="text-xs text-stone-500 hover:text-red-600">{label}</button>
     </form>
   );
   return (
@@ -1149,7 +1149,7 @@ export function QASettings({ enabled, prompt, waiting, answered }: {
       </form>
       <div>
         <p className="text-sm font-semibold">🕵️ Waiting for you ({waiting.length})</p>
-        {waiting.length === 0 && <p className="mt-1 text-xs text-stone-400">No new questions. Share your page and they&apos;ll roll in.</p>}
+        {waiting.length === 0 && <p className="mt-1 text-xs text-stone-500">No new questions. Share your page and they&apos;ll roll in.</p>}
         <ul className="mt-2 space-y-2">
           {waiting.map((q) => (
             <li key={q.id} className="rounded-xl border-2 border-stone-200 p-3 text-sm">
@@ -1211,12 +1211,12 @@ export function ContactSettings({ enabled, messages }: {
                 <a href={`mailto:${m.email}`} className="min-w-0 truncate font-semibold underline decoration-lime-500 decoration-2 underline-offset-2">
                   {m.name ? `${m.name} · ` : ""}{m.email}
                 </a>
-                <span className="shrink-0 text-xs text-stone-400">{new Date(m.createdAt).toLocaleDateString()}</span>
+                <span className="shrink-0 text-xs text-stone-500">{new Date(m.createdAt).toLocaleDateString()}</span>
               </div>
               <p className="mt-1 whitespace-pre-wrap break-words text-stone-700">{m.body}</p>
               <form action={deleteMessage} className="mt-1 text-right">
                 <input type="hidden" name="id" value={m.id} />
-                <button className="text-xs text-stone-400 hover:text-red-600">Delete</button>
+                <button className="text-xs text-stone-500 hover:text-red-600">Delete</button>
               </form>
             </li>
           ))}
@@ -1249,7 +1249,7 @@ export function SignupSettings({ enabled, prompt, count, recent }: {
               Download all (CSV)
             </a>
           ) : (
-            <span className="text-xs text-stone-400">The CSV download shows up here once someone signs up.</span>
+            <span className="text-xs text-stone-500">The CSV download shows up here once someone signs up.</span>
           )}
         </div>
         {recent.length > 0 && (
@@ -1257,10 +1257,10 @@ export function SignupSettings({ enabled, prompt, count, recent }: {
             {recent.map((r) => (
               <li key={r.email} className="flex justify-between gap-3">
                 <span className="truncate">{r.email}</span>
-                <span className="shrink-0 text-stone-400">{new Date(r.createdAt).toLocaleDateString()}</span>
+                <span className="shrink-0 text-stone-500">{new Date(r.createdAt).toLocaleDateString()}</span>
               </li>
             ))}
-            {count > recent.length && <li className="text-xs text-stone-400">+ {count - recent.length} more in the CSV</li>}
+            {count > recent.length && <li className="text-xs text-stone-500">+ {count - recent.length} more in the CSV</li>}
           </ul>
         )}
       </div>
@@ -1290,14 +1290,14 @@ export function Graveyard({ links }: { links: Link[] }) {
   return (
     <details className="mt-4 rounded-xl border-2 border-dashed border-stone-300 p-3">
       <summary className="cursor-pointer text-sm font-semibold text-stone-600">
-        🪦 Link graveyard ({links.length}) <span className="font-normal text-stone-400">· rest in links</span>
+        🪦 Link graveyard ({links.length}) <span className="font-normal text-stone-500">· rest in links</span>
       </summary>
       <ul className="mt-3 space-y-2">
         {links.map((l) => (
           <li key={l.id} className="flex items-center gap-3 rounded-lg bg-stone-50 p-2 text-sm">
             <div className="min-w-0 flex-1">
               <p className="truncate font-semibold text-stone-600">{l.icon && <span className="mr-1">{l.icon}</span>}{l.title}</p>
-              <p className="truncate text-xs text-stone-400">{l.url} · {l.clicks} lifetime click{l.clicks === 1 ? "" : "s"}</p>
+              <p className="truncate text-xs text-stone-500">{l.url} · {l.clicks} lifetime click{l.clicks === 1 ? "" : "s"}</p>
             </div>
             <form action={reviveLink}>
               <input type="hidden" name="id" value={l.id} />

@@ -33,7 +33,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
     <div className="min-h-screen bg-stone-100 text-stone-900">
       <header className="mx-auto flex max-w-5xl items-center justify-between p-6">
         <Logo />
-        <nav className="flex gap-3 text-sm font-medium">
+        <nav aria-label="Account" className="flex gap-3 text-sm font-medium">
           {user ? (
             <Link href="/dashboard" className="rounded-full bg-stone-900 px-4 py-2 text-white">Dashboard</Link>
           ) : (
@@ -44,13 +44,14 @@ export default async function Home({ searchParams }: PageProps<"/">) {
           )}
         </nav>
       </header>
+      <main>
 
       {bye && (
         <p role="status" className="mx-auto max-w-5xl px-6">
           <span className="inline-block rounded-full bg-stone-900 px-4 py-2 text-sm font-semibold text-white">Account flushed. Bye 👋💩</span>
         </p>
       )}
-      <main className="mx-auto grid max-w-5xl items-center gap-12 px-6 pb-24 pt-10 md:grid-cols-2">
+      <div className="mx-auto grid max-w-5xl items-center gap-12 px-6 pb-24 pt-10 md:grid-cols-2">
         <section>
           <h1 className="text-5xl font-black leading-[1.05] tracking-tight md:text-6xl">
             All your sh.it.<br />
@@ -84,11 +85,11 @@ export default async function Home({ searchParams }: PageProps<"/">) {
             ))}
           </div>
         </section>
-      </main>
+      </div>
 
       <section className="border-t border-stone-200 bg-white px-6 py-24">
         <div className="mx-auto max-w-2xl">
-          <p className="text-center text-sm font-bold uppercase tracking-widest text-lime-600">The science is in</p>
+          <p className="text-center text-sm font-bold uppercase tracking-widest text-lime-700">The science is in</p>
           <h2 className="mt-3 text-center text-4xl font-black tracking-tight md:text-5xl">
             Why you should <span className="bg-lime-300 px-2">linksh.it</span>
           </h2>
@@ -103,7 +104,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                 >
                   {yes ? "\u2713" : "\u2715"}
                 </span>
-                <span className={`text-base md:text-lg ${yes ? "font-semibold" : "font-semibold text-stone-400 line-through decoration-red-400 decoration-2"}`}>
+                <span className={`text-base md:text-lg ${yes ? "font-semibold" : "font-semibold text-stone-500 line-through decoration-red-400 decoration-2"}`}>
                   <span className="sr-only">{yes ? "Yes: " : "No: "}</span>
                   {text}
                 </span>
@@ -120,6 +121,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
           </div>
         </div>
       </section>
+      </main>
 
       <SiteFooter creator />
     </div>
