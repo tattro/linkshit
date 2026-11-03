@@ -11,9 +11,13 @@ export function VerifiedInfo() {
         type="button"
         onClick={() => ref.current?.showModal()}
         aria-label="About this badge"
-        className="flex h-6 w-6 items-center justify-center rounded-full text-xs opacity-70 hover:opacity-100"
+        className="-ml-0.5 flex h-6 w-6 items-center justify-center rounded-full opacity-60 hover:opacity-100"
       >
-        ⓘ
+        <svg viewBox="0 0 24 24" className="h-[1.05em] w-[1.05em]" aria-hidden>
+          <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="2" />
+          <circle cx="12" cy="7.6" r="1.4" fill="currentColor" />
+          <path d="M12 11v6.2" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+        </svg>
       </button>
       <dialog
         ref={ref}
