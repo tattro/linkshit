@@ -510,7 +510,7 @@ function Saved({ show }: { show: boolean }) {
   return show ? <span className="text-sm text-lime-700">Saved.</span> : null;
 }
 
-export function ProfileForm({ user }: { user: { displayName: string; bio: string; statsEmail: "week" | "month" | "off" } }) {
+export function ProfileForm({ user }: { user: { displayName: string; bio: string; statsEmail: "week" | "month" | "off"; marketing: boolean } }) {
   const [state, action, pending] = useActionState(updateProfile, undefined);
   return (
     <form action={action} className="space-y-4">
@@ -529,6 +529,10 @@ export function ProfileForm({ user }: { user: { displayName: string; bio: string
           <option value="month">Every month</option>
           <option value="off">Never</option>
         </select>
+      </label>
+      <label className="flex items-center gap-2 text-sm">
+        <input type="checkbox" name="marketing" defaultChecked={user.marketing} className="h-4 w-4 accent-stone-900" />
+        <span>Send me tips and news about linksh.it</span>
       </label>
       <div className="flex items-center gap-3">
         <button disabled={pending} className={btn}>{pending ? "Saving…" : "Save"}</button>

@@ -42,7 +42,7 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
   const [rows, [stats]] = await Promise.all([
     db.select({
       id: users.id, handle: users.handle, email: sql<string>`coalesce(${users.email}, ${owner.email} || ' (extra page)')`, displayName: users.displayName, createdAt: users.createdAt,
-      bannedAt: users.bannedAt, banReason: users.banReason, verified: users.emailVerifiedAt,
+      bannedAt: users.bannedAt, banReason: users.banReason, verified: users.emailVerifiedAt, tips: users.marketingOptInAt,
       linkCount: sql<number>`(select count(*)::int from ${links} where ${links.userId} = ${users.id})`,
     }).from(users).leftJoin(owner, eq(owner.id, users.ownerId)).where(where).orderBy(desc(users.createdAt)).limit(100),
     db.select({
@@ -50,6 +50,8 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
       banned: sql<number>`count(${users.bannedAt})::int`,
       week: sql<number>`count(*) filter (where ${users.ownerId} is null and ${users.createdAt} > now() - interval '7 days')::int`,
       marketplace: sql<number>`count(${users.marketplaceInterestAt})::int`,
+      // Double opt-in: ticked the box and confirmed the email
+      tips: sql<number>`count(*) filter (where ${users.marketingOptInAt} is not null and ${users.emailVerifiedAt} is not null and ${users.bannedAt} is null)::int`,
     }).from(users),
   ]);
 
@@ -61,7 +63,7 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
           <div>
             <h1 className="text-2xl font-black">Admin</h1>
             <p className="text-sm text-stone-500">
-              {stats.total.toLocaleString()} accounts · {stats.week.toLocaleString()} new this week · {stats.banned.toLocaleString()} banned · {stats.marketplace.toLocaleString()} open to advertisers
+              {stats.total.toLocaleString()} accounts · {stats.week.toLocaleString()} new this week · {stats.banned.toLocaleString()} banned · {stats.marketplace.toLocaleString()} open to advertisers · {stats.tips.toLocaleString()} on the tips list
             </p>
           </div>
           <form className="flex gap-2">
@@ -92,7 +94,8 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
                     <a href={`/${u.handle}`} target="_blank" className="font-mono font-semibold underline">@{u.handle}</a>
                     <div className="text-stone-500">{u.displayName}</div>
                   </td>
-                  <td className="px-4 py-3">{u.email}{u.verified && <span className="ml-1 text-lime-700" title="Email confirmed">✓</span>}</td>
+                  <td className="px-4 py-3">{u.email}{u.verified && <span className="ml-1 text-lime-700" title="Email confirmed">✓</span>}
+                    {u.tips && <span className="ml-1 rounded bg-stone-100 px-1 text-xs text-stone-600" title={u.verified ? "Wants tips and news (confirmed)" : "Ticked tips, email not confirmed yet"}>{u.verified ? "tips" : "tips?"}</span>}</td>
                   <td className="px-4 py-3 text-right tabular-nums">{u.linkCount}</td>
                   <td className="px-4 py-3 whitespace-nowrap">{u.createdAt.toISOString().slice(0, 10)}</td>
                   <td className="px-4 py-3">

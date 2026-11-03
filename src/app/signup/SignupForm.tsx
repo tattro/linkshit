@@ -14,6 +14,10 @@ export function SignupForm({ handle }: { handle: string }) {
       <input name="password" type="password" required minLength={8} placeholder="Password (8+ characters)" className={inputCls} />
       {/* Honeypot: hidden from people, irresistible to bots */}
       <input name="website" tabIndex={-1} autoComplete="off" aria-hidden className="absolute -left-[9999px] h-0 w-0 opacity-0" />
+      <label className="flex items-start gap-2 text-sm text-stone-600">
+        <input type="checkbox" name="marketing" defaultChecked={state?.fields?.marketing === "on"} className="mt-0.5 h-4 w-4 accent-stone-900" />
+        <span>Send me tips and news about linksh.it. Rarely, and never spammy. Unsubscribe anytime.</span>
+      </label>
       {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
       <button disabled={pending} className={buttonCls}>{pending ? "Claiming…" : "Create my page"}</button>
       <p className="text-center text-xs text-stone-500">

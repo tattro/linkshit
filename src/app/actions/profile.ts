@@ -30,7 +30,12 @@ export async function updateProfile(_prev: ProfileState, formData: FormData): Pr
   const every = formData.get("statsEmail");
   await db
     .update(users)
-    .set({ weeklyEmail: every === "week" || every === "month", ...(every === "month" ? { statsEvery: "month" as const } : every === "week" ? { statsEvery: "week" as const } : {}) })
+    .set({
+      weeklyEmail: every === "week" || every === "month",
+      ...(every === "month" ? { statsEvery: "month" as const } : every === "week" ? { statsEvery: "week" as const } : {}),
+      // Keep the original consent time if it was already on
+      marketingOptInAt: formData.get("marketing") === "on" ? (account.marketingOptInAt ?? new Date()) : null,
+    })
     .where(eq(users.id, account.id));
   refresh(user.handle);
   return { ok: true };

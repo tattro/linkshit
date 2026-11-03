@@ -91,6 +91,8 @@ export const users = pgTable(
     // Add utm_source=linksh.it etc. to outgoing links
     utm: boolean("utm").notNull().default(false),
     emailVerifiedAt: timestamp("email_verified_at", { withTimezone: true }),
+    // Ticked "Send me tips and news" (null = no). Only email marketing once the email is verified too (double opt-in).
+    marketingOptInAt: timestamp("marketing_opt_in_at", { withTimezone: true }),
     isAdmin: boolean("is_admin").notNull().default(false),
     bannedAt: timestamp("banned_at", { withTimezone: true }),
     banReason: text("ban_reason"),

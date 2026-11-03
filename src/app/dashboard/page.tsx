@@ -232,7 +232,7 @@ export default async function Dashboard({ searchParams }: PageProps<"/dashboard"
               <Section id="profile" title="Photo, name & bio">
                 <div className="space-y-6">
                   <AvatarForm current={avatarUrl(user)} initial={(user.displayName || user.handle).slice(0, 1)} />
-                  <ProfileForm user={{ displayName: user.displayName, bio: user.bio, statsEmail: account.weeklyEmail ? account.statsEvery : "off" }} />
+                  <ProfileForm user={{ displayName: user.displayName, bio: user.bio, statsEmail: account.weeklyEmail ? account.statsEvery : "off", marketing: !!account.marketingOptInAt }} />
                 </div>
               </Section>
 

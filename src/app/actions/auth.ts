@@ -24,7 +24,7 @@ export async function signup(_prev: FormState, formData: FormData): Promise<Form
     password: String(formData.get("password") ?? ""),
     handle: String(formData.get("handle") ?? ""),
   };
-  const fields = { email: raw.email, handle: raw.handle };
+  const fields = { email: raw.email, handle: raw.handle, marketing: formData.get("marketing") === "on" ? "on" : "" };
   if (String(formData.get("website") ?? "")) return { error: "Nice try, robot.", fields }; // honeypot
 
   const parsed = z.object({ email: emailSchema, password: passwordSchema }).safeParse(raw);
@@ -45,7 +45,10 @@ export async function signup(_prev: FormState, formData: FormData): Promise<Form
   try {
     [user] = await db
       .insert(users)
-      .values({ email: parsed.data.email, passwordHash, handle, displayName: handle })
+      .values({
+        email: parsed.data.email, passwordHash, handle, displayName: handle,
+        marketingOptInAt: formData.get("marketing") === "on" ? new Date() : null,
+      })
       .returning({ id: users.id, email: users.email, handle: users.handle });
   } catch {
     // Unique index race: someone grabbed it between the check and the insert
