@@ -1,6 +1,6 @@
 import NextLink from "next/link";
 import type { Link as LinkRow, Socials, Style, Tips, User } from "@/db";
-import { musicLabel } from "@/lib/music";
+import { DEFAULT_PLAYER, musicLabel, PLAYER_APPS } from "@/lib/music";
 import { siApplemusic, siSpotify, siYoutube, siYoutubemusic } from "simple-icons";
 import { embedFor } from "@/lib/embeds";
 import { iconForUrl, platform, PLATFORMS } from "@/lib/socials";
@@ -29,35 +29,49 @@ export type ProfileLink = Pick<LinkRow, "id" | "title" | "url" | "embed" | "sens
 // The three apps most fans use get logo buttons; the rest sit behind "more apps"
 const MAIN_APPS: Record<string, string> = { spotify: siSpotify.path, appleMusic: siApplemusic.path, youtube: siYoutube.path, youtubeMusic: siYoutubemusic.path };
 
-function splitApps(list: { p: string; url: string }[], prefer?: string) {
-  const hasYoutube = list.some((m) => m.p === "youtube");
-  const main = list.filter((m) => m.p === "spotify" || m.p === "appleMusic" || m.p === "youtube" || (m.p === "youtubeMusic" && !hasYoutube));
-  // The musician's pick goes first
-  const first = (m: { p: string }) => (m.p === prefer || (prefer === "youtube" && m.p === "youtubeMusic") ? 0 : 1);
-  main.sort((a, b) => first(a) - first(b));
-  return { main, rest: list.filter((m) => !main.includes(m)) };
+type AppLink = { p: string; url: string };
+
+/** music.youtube.com version of a YouTube link: fans land on the artist's real release, not a random upload. */
+function toYoutubeMusic(url: string): string | null {
+  try {
+    const u = new URL(url);
+    const host = u.hostname.replace(/^(www|m)\./, "");
+    if (host === "music.youtube.com") return url;
+    if (host === "youtube.com" && u.pathname === "/watch" && u.searchParams.get("v")) return `https://music.youtube.com/watch?v=${u.searchParams.get("v")}`;
+    if (host === "youtube.com" && u.pathname === "/results" && u.searchParams.get("search_query")) return `https://music.youtube.com/search?q=${encodeURIComponent(u.searchParams.get("search_query")!)}`;
+    if (host === "youtu.be") return `https://music.youtube.com/watch?v=${u.pathname.slice(1)}`;
+  } catch {}
+  return null;
 }
 
-/**
- * Player for the featured song: the musician's pick first, then YouTube (whole song for
- * everyone), then Spotify (30 seconds unless signed in), then Apple Music.
- */
+/** The three big buttons (Spotify, Apple Music, YouTube Music, the musician's pick first) and the rest. */
+function splitApps(list: AppLink[], prefer: string = DEFAULT_PLAYER) {
+  const ytSource = list.find((m) => m.p === "youtubeMusic") ?? list.find((m) => m.p === "youtube");
+  const ytMusic = ytSource ? toYoutubeMusic(ytSource.url) : null;
+  const byApp: Record<string, AppLink | undefined> = {
+    spotify: list.find((m) => m.p === "spotify"),
+    appleMusic: list.find((m) => m.p === "appleMusic"),
+    youtube: ytMusic ? { p: "youtubeMusic", url: ytMusic } : undefined,
+  };
+  const order = [prefer, ...PLAYER_APPS.map((a) => a.id).filter((id) => id !== prefer)];
+  const main = order.map((id) => byApp[id]).filter((m): m is AppLink => Boolean(m));
+  const rest = list.filter((m) => !["spotify", "appleMusic", "youtube", "youtubeMusic"].includes(m.p));
+  return { main, rest };
+}
+
+/** Player for the featured song: the musician's pick, then Spotify, Apple Music, YouTube Music. */
 function featuredPlayer(l: ProfileLink) {
   const apps = l.music?.links ?? [];
-  const yt = apps.find((m) => m.p === "youtube") ?? apps.find((m) => m.p === "youtubeMusic");
+  const yt = apps.find((m) => m.p === "youtubeMusic") ?? apps.find((m) => m.p === "youtube");
+  // YouTube Music has no player of its own; the same track plays in YouTube's player
+  const ytId = yt ? toYoutubeMusic(yt.url)?.match(/[?&]v=([\w-]{6,20})/)?.[1] : undefined;
   const byApp: Record<string, string | undefined> = {
-    youtube: yt?.url.replace("://music.youtube.com/", "://www.youtube.com/"),
     spotify: apps.find((m) => m.p === "spotify")?.url,
     appleMusic: apps.find((m) => m.p === "appleMusic")?.url,
+    youtube: ytId ? `https://www.youtube.com/watch?v=${ytId}` : undefined,
   };
-  const prefer = l.music?.prefer;
-  const tryUrls = [
-    prefer ? byApp[prefer] : undefined,
-    byApp.youtube,
-    byApp.spotify,
-    l.url.replace("://music.youtube.com/", "://www.youtube.com/"),
-    byApp.appleMusic,
-  ];
+  const prefer = l.music?.prefer ?? DEFAULT_PLAYER;
+  const tryUrls = [byApp[prefer], byApp.spotify, byApp.appleMusic, byApp.youtube, l.url.replace("://music.youtube.com/", "://www.youtube.com/")];
   for (const u of tryUrls) {
     const e = u ? embedFor(u) : null;
     if (e) return e;

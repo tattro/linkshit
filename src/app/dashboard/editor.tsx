@@ -17,7 +17,7 @@ import type { Link, Socials, Style, Tips } from "@/db/schema";
 import { setLookDraft } from "./lookDraft";
 import { AvatarCropper } from "./AvatarCropper";
 import { GENERAL_CATEGORIES } from "@/lib/creatorTypes";
-import { isMusicUrl, PLAYER_APPS } from "@/lib/music";
+import { DEFAULT_PLAYER, isMusicUrl, PLAYER_APPS } from "@/lib/music";
 import { isStoreUrl } from "@/lib/stores";
 import { LATEST_LABEL, latestKind } from "@/lib/feeds";
 import { countryName, GEO_COUNTRIES, MAX_GEO_RULES, type GeoRule } from "@/lib/geo";
@@ -83,12 +83,12 @@ function LinkExtras({ link, url, adultDefault = false, onSoundCloud }: { link?: 
                 <div className="flex flex-wrap gap-2">
                   {PLAYER_APPS.map((a) => (
                     <label key={a.id} className="cursor-pointer rounded-full border-2 border-stone-300 bg-white px-3 py-1 has-[:checked]:border-stone-900 has-[:checked]:bg-stone-900 has-[:checked]:text-white">
-                      <input type="radio" name="prefer" value={a.id} defaultChecked={(link?.music?.prefer ?? "youtube") === a.id} className="sr-only" />
+                      <input type="radio" name="prefer" value={a.id} defaultChecked={(link?.music?.prefer ?? DEFAULT_PLAYER) === a.id} className="sr-only" />
                       {a.label}
                     </label>
                   ))}
                 </div>
-                <p className="mt-1 text-xs text-stone-400">Paste a link from any of them. We find the song on the others. YouTube plays the full song for everyone. Spotify plays 30 seconds unless the fan is signed in.</p>
+                <p className="mt-1 text-xs text-stone-400">Paste a link from any of them. We find the song on the others.</p>
               </fieldset>
             </>
           ) : isSoundCloud(url) ? (
