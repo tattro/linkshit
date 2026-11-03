@@ -169,6 +169,13 @@
       "when": 1793658777118,
       "tag": "0023_media_kit",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1793669986381,
+      "tag": "0024_link_featured",
+      "breakpoints": true
     }
   ]
 }

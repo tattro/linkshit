@@ -8,6 +8,7 @@ export type BackupLink = {
   embed?: boolean;
   sensitive?: boolean;
   spotlight?: boolean;
+  featured?: boolean;
   icon?: string;
   lockCode?: string | null;
   discountCode?: string | null;

@@ -45,6 +45,8 @@ function toLocalInput(d: Date | string | null) {
   return local.toISOString().slice(0, 16);
 }
 
+const isSoundCloud = (url: string) => /^(https?:\/\/)?(www\.|m\.)?soundcloud\.com(\/|$)/i.test(url.trim());
+
 function LinkExtras({ link, url, adultDefault = false }: { link?: Link; url: string; adultDefault?: boolean }) {
   // Adult pages: new links start with the 18+ warning ticked
   const [open, setOpen] = useState(Boolean(
@@ -61,6 +63,12 @@ function LinkExtras({ link, url, adultDefault = false }: { link?: Link; url: str
         <label className="mb-2 flex items-start gap-2 text-sm">
           <input type="checkbox" name="music" defaultChecked={link ? Boolean(link.music) : true} className="mt-0.5 h-4 w-4 accent-lime-500" />
           <span>🎵 Add &quot;Listen on Spotify, Apple Music, YouTube…&quot; buttons <span className="text-stone-400">(we find it on every app for you)</span></span>
+        </label>
+      )}
+      {isMusicUrl(url) && (
+        <label className="mb-2 flex items-start gap-2 text-sm">
+          <input type="checkbox" name="featured" defaultChecked={link?.featured} className="mt-0.5 h-4 w-4 accent-lime-500" />
+          <span>⭐ Feature this song at the top of my page <span className="text-stone-400">(big player with Spotify, Apple Music and YouTube buttons · one song at a time)</span></span>
         </label>
       )}
       <label className="mb-2 flex items-center gap-2 text-sm">
@@ -85,7 +93,8 @@ function LinkExtras({ link, url, adultDefault = false }: { link?: Link; url: str
       )}
       {canEmbed && (
         <label className="mb-2 flex items-center gap-2 text-sm">
-          <input type="checkbox" name="embed" defaultChecked={link?.embed} className="h-4 w-4 accent-lime-500" />
+          {/* SoundCloud has no "listen on" lookup, so new SoundCloud links default to the player */}
+          <input key={String(isSoundCloud(url))} type="checkbox" name="embed" defaultChecked={link ? link.embed : isSoundCloud(url)} className="h-4 w-4 accent-lime-500" />
           Show it right on my page (player or booking calendar) instead of a button
         </label>
       )}
@@ -245,7 +254,7 @@ function CategoryBox({ sections, ideas = GENERAL_CATEGORIES, defaultValue = "", 
   );
 }
 
-export function AddLinkForm({ sections = [], ideas, linkPlaceholder = "yourwebsite.com", defaultCategory = "", adultDefault = false }: { sections?: SectionOption[]; ideas?: string[]; linkPlaceholder?: string; defaultCategory?: string; adultDefault?: boolean }) {
+export function AddLinkForm({ sections = [], ideas, linkPlaceholder = "yourwebsite.com", defaultCategory = "", adultDefault = false, musician = false }: { sections?: SectionOption[]; ideas?: string[]; linkPlaceholder?: string; defaultCategory?: string; adultDefault?: boolean; musician?: boolean }) {
   const [state, action, pending] = useActionState(addLink, undefined);
   const [url, setUrl] = useState("");
   const [title, setTitle] = useState("");
@@ -266,6 +275,20 @@ export function AddLinkForm({ sections = [], ideas, linkPlaceholder = "yourwebsi
         <span className="text-sm font-semibold">Link</span>
         <input name="url" inputMode="url" autoCapitalize="off" autoCorrect="off" spellCheck={false} placeholder={linkPlaceholder} value={url} onChange={(e) => setUrl(e.target.value)} className={`${input} mt-1`} />
       </label>
+      {musician && !url && (
+        <button
+          type="button"
+          onClick={() => {
+            setUrl("soundcloud.com/");
+            if (!title.trim()) setTitle("My SoundCloud");
+            const el = formRef.current?.elements.namedItem("url");
+            if (el instanceof HTMLInputElement) requestAnimationFrame(() => { el.focus(); el.setSelectionRange(el.value.length, el.value.length); });
+          }}
+          className="justify-self-start rounded-full border-2 border-dashed border-orange-300 px-3 py-1 text-sm text-orange-700 hover:border-orange-500 sm:col-span-2"
+        >
+          😔 I&apos;m lame, I&apos;m a SoundCloud rapper/DJ
+        </button>
+      )}
       <CategoryBox key={key} sections={sections} ideas={ideas} defaultValue={defaultCategory} className="sm:col-span-2" />
       <button disabled={pending} className={`${btn} sm:col-span-2 sm:justify-self-start`}>{pending ? "Adding…" : "Add link"}</button>
       {state?.error && <p className="text-sm font-semibold text-red-600 sm:col-span-2">{state.error}</p>}
@@ -406,6 +429,7 @@ function LinkRowItem({ link, handle, sections, section }: { link: Link; handle?:
             {link.icon && <span className="mr-1">{link.icon}</span>}
             {link.title}
             {link.embed && <span className="ml-2 rounded bg-violet-100 px-1.5 py-0.5 text-xs font-medium text-violet-800">embed</span>}
+            {link.featured && <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-800">⭐ featured</span>}
             {link.spotlight && <span className="ml-2 rounded bg-yellow-100 px-1.5 py-0.5 text-xs font-medium text-yellow-800">✨ spotlight</span>}
             {link.sensitive && <span className="ml-2 rounded bg-red-100 px-1.5 py-0.5 text-xs font-medium text-red-800">🔞 18+</span>}
             {link.music && <span className="ml-2 rounded bg-pink-100 px-1.5 py-0.5 text-xs font-medium text-pink-800">🎵 {link.music.links.length} apps</span>}

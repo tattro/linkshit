@@ -1,0 +1,1 @@
+ALTER TABLE "links" ADD COLUMN "featured" boolean DEFAULT false NOT NULL;

@@ -224,6 +224,8 @@ export const links = pgTable(
     discountCode: text("discount_code"),
     // "Listen on…" buttons for every music app, looked up when the link is saved
     music: jsonb("music").$type<MusicLinks>(),
+    // Musicians: one song shown big at the top of the page with a player
+    featured: boolean("featured").notNull().default(false),
     // Visitors from these countries go somewhere else (e.g. the UK store)
     geo: jsonb("geo").$type<GeoRule[]>(),
     // Android visitors go here instead (e.g. Google Play when url is the App Store)
