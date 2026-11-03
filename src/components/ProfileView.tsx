@@ -16,7 +16,7 @@ import { ChaosMode } from "./ChaosMode";
 import { backgroundImageStyle, buttonStyle, pageStyle } from "@/lib/style";
 import { getTheme } from "@/lib/themes";
 
-export type ProfileData = Pick<User, "id" | "handle" | "displayName" | "bio" | "theme" | "avatarVersion" | "bgVersion" | "signupEnabled" | "signupPrompt" | "contactEnabled" | "qaEnabled" | "qaPrompt"> & {
+export type ProfileData = Pick<User, "id" | "handle" | "displayName" | "bio" | "verifiedBy" | "theme" | "avatarVersion" | "bgVersion" | "signupEnabled" | "signupPrompt" | "contactEnabled" | "qaEnabled" | "qaPrompt"> & {
   style: Style;
   socials: Socials;
   tips: Tips;
@@ -198,6 +198,15 @@ export function ProfileView({ user, links, preview = false, avatarOverride, qa =
         <p className={`text-sm ${theme.muted}`} style={mutedStyle}>
           @{user.handle}
         </p>
+        {user.verifiedBy && (
+          <p className="mt-1 flex items-center gap-1 text-sm font-semibold">
+            <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0" aria-hidden>
+              <path fill="#1d9bf0" d="M12 1.5l2.6 1.9 3.2-.2 1 3.1 2.6 1.9-1 3.1 1 3.1-2.6 1.9-1 3.1-3.2-.2L12 22.5l-2.6-1.9-3.2.2-1-3.1-2.6-1.9 1-3.1-1-3.1 2.6-1.9 1-3.1 3.2.2z" />
+              <path fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" d="M7.8 12.3l2.8 2.8 5.6-5.8" />
+            </svg>
+            <span>Verified by {user.verifiedBy}</span>
+          </p>
+        )}
         {user.bio && <p className="mt-3 whitespace-pre-line text-center">{user.bio}</p>}
 
         {socials.length > 0 && (

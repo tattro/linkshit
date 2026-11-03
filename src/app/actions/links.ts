@@ -1,6 +1,7 @@
 "use server";
 
 import { and, asc, eq, isNotNull, isNull, sql } from "drizzle-orm";
+import { verifiedByProblem } from "@/lib/verifiedBy";
 import { revalidatePath } from "next/cache";
 import { avatars, backgrounds, db, linkThumbs, links, users, type Socials, type Style, type Tips } from "@/db";
 import { MAX_BACKUP_BYTES, type Backup, type BackupImage } from "@/lib/backup";
@@ -452,6 +453,7 @@ export async function restorePage(_prev: ActionState, formData: FormData): Promi
       .where(and(eq(links.userId, user.id), isNull(links.deletedAt), isNull(links.offerId)));
     await tx.update(users).set({
       displayName: str(p.displayName, 60), bio: str(p.bio, 160),
+      verifiedBy: verifiedByProblem(str(p.verifiedBy, 40)) ? "" : str(p.verifiedBy, 40),
       theme: THEMES.some((t) => t.id === p.theme) ? p.theme : user.theme,
       style, socials: pick(PLATFORMS, p.socials) as Socials, tips: pick(TIP_PROVIDERS, p.tips) as Tips,
       openInApp: p.openInApp !== false, signupEnabled: p.signupEnabled === true, signupPrompt: str(p.signupPrompt, 80), contactEnabled: p.contactEnabled === true, qaEnabled: p.qaEnabled === true, qaPrompt: str(p.qaPrompt, 60),

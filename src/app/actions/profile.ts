@@ -12,6 +12,7 @@ import { rateLimit, TOO_MANY } from "@/lib/ratelimit";
 import { PLATFORMS } from "@/lib/socials";
 import { parseStyle } from "@/lib/style";
 import { THEMES } from "@/lib/themes";
+import { verifiedByProblem } from "@/lib/verifiedBy";
 
 export type ProfileState = { error?: string; ok?: boolean } | undefined;
 
@@ -24,7 +25,12 @@ export async function updateProfile(_prev: ProfileState, formData: FormData): Pr
   const user = await requireUser();
   const displayName = String(formData.get("displayName") ?? "").trim().slice(0, 60);
   const bio = String(formData.get("bio") ?? "").trim().slice(0, 160);
-  await db.update(users).set({ displayName, bio }).where(eq(users.id, user.id));
+  const verifiedBy = formData.get("verified") === "on" ? String(formData.get("verifiedBy") ?? "").trim().replace(/\s+/g, " ") : "";
+  if (formData.get("verified") === "on") {
+    const problem = verifiedByProblem(verifiedBy);
+    if (problem) return { error: problem };
+  }
+  await db.update(users).set({ displayName, bio, verifiedBy }).where(eq(users.id, user.id));
   // The weekly email setting lives on the account, whichever page is being edited
   const account = await requireAccount();
   const every = formData.get("statsEmail");

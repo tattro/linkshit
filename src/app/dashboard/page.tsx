@@ -234,7 +234,7 @@ export default async function Dashboard({ searchParams }: PageProps<"/dashboard"
               <Section id="profile" title="Photo, name & bio">
                 <div className="space-y-6">
                   <AvatarForm current={avatarUrl(user)} initial={(user.displayName || user.handle).slice(0, 1)} />
-                  <ProfileForm user={{ displayName: user.displayName, bio: user.bio, statsEmail: account.weeklyEmail ? account.statsEvery : "off", marketing: !!account.marketingOptInAt }} />
+                  <ProfileForm user={{ displayName: user.displayName, bio: user.bio, verifiedBy: user.verifiedBy, statsEmail: account.weeklyEmail ? account.statsEvery : "off", marketing: !!account.marketingOptInAt }} />
                 </div>
               </Section>
 
@@ -340,7 +340,7 @@ export default async function Dashboard({ searchParams }: PageProps<"/dashboard"
           <div data-chaos-bounds data-keep-colors className="mx-auto h-[640px] w-full max-w-[340px] overflow-y-auto rounded-[2.5rem] border-8 border-stone-900 shadow-xl [&>div]:min-h-full">
             <LivePreview
               user={{
-                id: user.id, handle: user.handle, displayName: user.displayName, bio: user.bio, theme: user.theme,
+                id: user.id, handle: user.handle, displayName: user.displayName, bio: user.bio, verifiedBy: user.verifiedBy, theme: user.theme,
                 avatarVersion: user.avatarVersion, bgVersion: user.bgVersion, style: user.style, socials: user.socials,
                 tips: user.tips, signupEnabled: user.signupEnabled, signupPrompt: user.signupPrompt, contactEnabled: user.contactEnabled, qaEnabled: user.qaEnabled, qaPrompt: user.qaPrompt,
               }}

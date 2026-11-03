@@ -33,6 +33,7 @@ export type Backup = {
     handle: string;
     displayName: string;
     bio: string;
+    verifiedBy?: string;
     theme: string;
     style: Record<string, unknown>;
     socials: Record<string, string>;
