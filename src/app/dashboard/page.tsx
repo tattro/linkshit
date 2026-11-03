@@ -1,3 +1,5 @@
+import { RoastBox } from "./RoastBox";
+import { NOTHING_TO_ROAST, roastPage } from "@/lib/roast";
 import { CONFIRM_REQUIRED_FROM } from "@/lib/live";
 import { and, asc, desc, eq, isNull } from "drizzle-orm";
 import { db, events, links, messages, questions, subscribers } from "@/db";
@@ -220,6 +222,7 @@ export default async function Dashboard({ searchParams }: PageProps<"/dashboard"
               </Section>
 
               <Section
+                id="links"
                 title="Your links"
                 aside={<span className="text-sm text-stone-500">{totalClicks} total click{totalClicks === 1 ? "" : "s"}</span>}
               >
@@ -238,7 +241,7 @@ export default async function Dashboard({ searchParams }: PageProps<"/dashboard"
                 </div>
               </Section>
 
-              <Section title="Social icons">
+              <Section id="socials" title="Social icons">
                 <p className="-mt-2 mb-4 text-sm text-stone-500">These show as a row of icons under your bio. Usernames or links both work.</p>
                 <SocialsForm socials={user.socials} platforms={platforms} />
               </Section>
@@ -246,8 +249,9 @@ export default async function Dashboard({ searchParams }: PageProps<"/dashboard"
           )}
 
           {tab === "look" && (
-            <Section title="Look & feel">
+            <Section id="look" title="Look & feel">
               <div className="space-y-6">
+                <RoastBox roasts={await roastPage(user, rows, graves, account.createdAt)} nothing={NOTHING_TO_ROAST} />
                 <StealLook />
                 <BackgroundForm current={backgroundUrl(user)} />
                 <LookForm key={JSON.stringify([user.theme, user.style])} user={{ theme: user.theme, style: user.style, openInApp: user.openInApp }} avatar={avatarUrl(user)} background={backgroundUrl(user)} />
@@ -272,7 +276,7 @@ export default async function Dashboard({ searchParams }: PageProps<"/dashboard"
                 <SignupSettings enabled={user.signupEnabled} prompt={user.signupPrompt} count={subs} recent={recentSubs} />
               </Section>
 
-              <Section title="✉️ Contact form" toggle={{ on: user.contactEnabled, suggested: suggested.includes("contact"), blurb: inbox.length ? `${inbox.length} message${inbox.length === 1 ? "" : "s"} in your inbox` : "A Message me button. Your email stays private." }}>
+              <Section id="contact" title="✉️ Contact form" toggle={{ on: user.contactEnabled, suggested: suggested.includes("contact"), blurb: inbox.length ? `${inbox.length} message${inbox.length === 1 ? "" : "s"} in your inbox` : "A Message me button. Your email stays private." }}>
                 <ContactSettings enabled={user.contactEnabled} messages={inbox} />
               </Section>
 
@@ -297,7 +301,7 @@ export default async function Dashboard({ searchParams }: PageProps<"/dashboard"
                 <CreatorTypePicker current={user.creatorType} compact />
               </Section>
 
-              <Section title="Page address">
+              <Section id="address" title="Page address">
                 <HandleForm handle={user.handle} />
               </Section>
 
@@ -307,7 +311,7 @@ export default async function Dashboard({ searchParams }: PageProps<"/dashboard"
                 </Section>
               )}
 
-              <Section title="🛠️ Power tools" toggle={{ on: Boolean(user.redirectLinkId || user.lockCode || user.adultGate || user.seoTitle || user.seoDescription || user.metaPixel || user.googleAnalytics || user.tiktokPixel), blurb: "Redirect, 18+ page, page lock, Google preview, tracking pixels." }}>
+              <Section id="power" title="🛠️ Power tools" toggle={{ on: Boolean(user.redirectLinkId || user.lockCode || user.adultGate || user.seoTitle || user.seoDescription || user.metaPixel || user.googleAnalytics || user.tiktokPixel), blurb: "Redirect, 18+ page, page lock, Google preview, tracking pixels." }}>
                 <div className="space-y-6 [&>*+*]:border-t [&>*+*]:border-stone-200 [&>*+*]:pt-6">
                   <RedirectForm links={rows.filter((l) => !l.offerId && !l.heading).map((l) => ({ id: l.id, title: l.title }))} current={user.redirectLinkId} />
                   <AdultGateForm on={user.adultGate} />
