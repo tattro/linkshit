@@ -21,6 +21,7 @@ import { isMusicUrl } from "@/lib/music";
 import { lookupMusic } from "@/lib/musicLookup";
 import { pagePreview } from "@/lib/pagePreview";
 import { setUpLatest } from "@/lib/latest";
+import { countryName, GEO_COUNTRIES, MAX_GEO_RULES, type GeoRule } from "@/lib/geo";
 
 export type ActionState = { error?: string; ok?: boolean } | undefined;
 
@@ -100,9 +101,27 @@ async function readLinkForm(formData: FormData) {
     const bad = await unsafeReason(androidUrl);
     if (bad) return { error: bad } as const;
   }
+  const geo: GeoRule[] = [];
+  const countries = formData.getAll("geoCountry").map(String);
+  const geoUrls = formData.getAll("geoUrl").map((v) => String(v).trim());
+  for (const [i, c] of countries.slice(0, MAX_GEO_RULES).entries()) {
+    const raw = geoUrls[i] ?? "";
+    if (!c || !raw) continue;
+    if (!GEO_COUNTRIES.includes(c)) return { error: "Pick a country from the list." } as const;
+    const target = normalizeUrl(raw);
+    if (!target) return { error: `The link for ${countryName(c)} doesn't look like a valid web address.` } as const;
+    const bad = await unsafeReason(target);
+    if (bad) return { error: bad } as const;
+    if (!geo.some((g) => g.c === c)) geo.push({ c, url: target });
+  }
   const thumb = await readThumb(formData);
   if (thumb && "error" in thumb) return { error: thumb.error } as const;
   const music = formData.get("music") === "on" && !lockCode && isMusicUrl(url) ? await lookupMusic(url) : null;
+  // Only a song or album can be the featured song
+  const featured = formData.get("featured") === "on" && !lockCode && isMusicUrl(url);
+  if (embed && /^\/?$/.test(new URL(url).pathname) && new URL(url).hostname.replace(/^www\./, "") === "soundcloud.com") {
+    return { error: "Finish your SoundCloud link: add your name after soundcloud.com/ (e.g. soundcloud.com/yourname)." } as const;
+  }
   const latest = formData.get("latest") === "on" && !lockCode ? await setUpLatest(url) : null;
   let price: string | null = String(formData.get("price") ?? "").trim().slice(0, 20) || null;
   let image: { data: Buffer; contentType: string } | null = thumb;
@@ -113,7 +132,12 @@ async function readLinkForm(formData: FormData) {
     image ??= preview.image;
   }
   // A locked link can't play inline, or the lock would be pointless
-  return { value: { title, url, startsAt, endsAt, embed: embed && !lockCode, sensitive, spotlight, icon, lockCode, discountCode, androidUrl, countdown, music, price, latest }, thumb: image, removeThumb: formData.get("removeThumb") === "on" && !image } as const;
+  return { value: { title, url, startsAt, endsAt, embed: embed && !lockCode, sensitive, spotlight, icon, lockCode, discountCode, androidUrl, countdown, music, featured, price, latest, geo: geo.length ? geo : null }, thumb: image, removeThumb: formData.get("removeThumb") === "on" && !image } as const;
+}
+
+/** Only one featured song per page: clears the old one before a new one is set. */
+async function unfeatureAll(userId: number) {
+  await db.update(links).set({ featured: false }).where(and(eq(links.userId, userId), eq(links.featured, true)));
 }
 
 /** Which section a link sits in: the nearest heading above it, or "none". */
@@ -197,6 +221,7 @@ export async function addLink(_prev: ActionState, formData: FormData): Promise<A
 
   // Bottom of the list (below a section that was just made, if any)
   const position = section?.created ? max + 2 : max + 1;
+  if (form.value.featured) await unfeatureAll(user.id);
   const [row] = await db.insert(links).values({ userId: user.id, position, ...form.value }).returning({ id: links.id });
   await saveThumb(row.id, form.thumb, false);
   if (section) await placeInSection(user.id, row.id, section.target);
@@ -213,6 +238,7 @@ export async function updateLink(_prev: ActionState, formData: FormData): Promis
   const owned = await db.select({ id: links.id }).from(links).where(and(eq(links.id, id), eq(links.userId, user.id), eq(links.heading, false), isNull(links.deletedAt)));
   if (!owned.length) return { error: "That link is gone. Refresh the page." };
   const section = await resolveSection(user.id, formData);
+  if (form.value.featured) await unfeatureAll(user.id);
   const [row] = await db.update(links).set(form.value).where(and(eq(links.id, id), eq(links.userId, user.id), eq(links.heading, false))).returning({ id: links.id });
   if (row) {
     await saveThumb(row.id, form.thumb, form.removeThumb);
@@ -381,10 +407,18 @@ export async function restorePage(_prev: ActionState, formData: FormData): Promi
     if (l.countdown) fd.set("countdown", "on");
     if (l.sensitive) fd.set("sensitive", "on");
     if (l.spotlight) fd.set("spotlight", "on");
+    if (l.featured) fd.set("featured", "on");
     fd.set("icon", str(l.icon, 16));
     fd.set("lockCode", str(l.lockCode, 40));
     fd.set("discountCode", str(l.discountCode, 40));
     fd.set("androidUrl", str(l.androidUrl, 2000));
+    fd.set("price", str(l.price, 20));
+    if (l.music) fd.set("music", "on");
+    if (l.latest) fd.set("latest", "on");
+    for (const g of Array.isArray(l.geo) ? l.geo.slice(0, 3) : []) {
+      fd.append("geoCountry", str(g?.c, 2));
+      fd.append("geoUrl", str(g?.url, 2000));
+    }
     fd.set("startsAt", whenField(l.startsAt));
     fd.set("endsAt", whenField(l.endsAt));
     fd.set("tz", "0");

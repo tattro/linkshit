@@ -5,9 +5,9 @@ import { useState, useSyncExternalStore } from "react";
 // Once a visitor confirms they're 18+, stop asking for the rest of their visit.
 const KEY = "linksh:18plus";
 const listeners = new Set<() => void>();
-const subscribe = (l: () => void) => { listeners.add(l); return () => { listeners.delete(l); }; };
-const confirmed = () => { try { return sessionStorage.getItem(KEY) === "1"; } catch { return false; } };
-function confirmAdult() {
+export const subscribeAdult = (l: () => void) => { listeners.add(l); return () => { listeners.delete(l); }; };
+export const adultConfirmed = () => { try { return sessionStorage.getItem(KEY) === "1"; } catch { return false; } };
+export function confirmAdult() {
   try { sessionStorage.setItem(KEY, "1"); } catch {}
   listeners.forEach((l) => l());
 }
@@ -20,7 +20,7 @@ export function SensitiveGate({ title, className, style, children }: {
   children: React.ReactNode;
 }) {
   const [state, setState] = useState<"closed" | "asking">("closed");
-  const adult = useSyncExternalStore(subscribe, confirmed, () => false);
+  const adult = useSyncExternalStore(subscribeAdult, adultConfirmed, () => false);
   if (adult) return <>{children}</>;
   if (state === "asking") {
     return (

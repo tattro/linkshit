@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { setPageLock, setRedirect, setSeo, setTracking, type ExtrasState } from "@/app/actions/extras";
+import { setAdultGate, setMediaKit, setPageLock, setRedirect, setSeo, setTracking, type ExtrasState } from "@/app/actions/extras";
 import { btn, input } from "./editor";
 
 function Status({ state, pending }: { state: ExtrasState; pending: boolean }) {
@@ -44,6 +44,53 @@ export function PageLockForm({ code }: { code: string | null }) {
         <button disabled={pending} className={`${btn} shrink-0`}>Save</button>
       </div>
       <Status state={state} pending={pending} />
+    </form>
+  );
+}
+
+export function MediaKitForm({ kit, url }: { kit: { reach: string; rates: string } | null; url: string }) {
+  const [state, action, pending] = useActionState(setMediaKit, undefined);
+  return (
+    <form action={action} className="space-y-3">
+      <p className="-mt-2 text-sm text-stone-500">
+        A page for brands at <span className="font-mono">{url.replace(/^https?:\/\//, "")}</span>: your photo, bio, reach and rates, plus your real linksh.it stats
+        (views, clicks, top countries) so they know the numbers are real.
+      </p>
+      <label className="flex items-center gap-2 text-sm font-semibold">
+        <input type="checkbox" name="kitEnabled" defaultChecked={Boolean(kit)} className="h-4 w-4 accent-lime-500" />
+        Turn on my media kit
+      </label>
+      <label className="block text-sm">
+        <span className="font-medium">Your reach</span> <span className="text-xs text-stone-400">followers, who they are</span>
+        <textarea name="reach" defaultValue={kit?.reach ?? ""} maxLength={300} rows={2} placeholder="120K on TikTok, 40K on Instagram, mostly 18-34 in the US" className={input} />
+      </label>
+      <label className="block text-sm">
+        <span className="font-medium">Your rates</span> <span className="text-xs text-stone-400">optional</span>
+        <textarea name="rates" defaultValue={kit?.rates ?? ""} maxLength={500} rows={2} placeholder="TikTok video $400 · Story $150 · Bundles welcome" className={input} />
+      </label>
+      <div className="flex flex-wrap items-center gap-3">
+        <button disabled={pending} className={btn}>Save</button>
+        {kit && <a href={url} target="_blank" rel="noopener" className="text-sm font-semibold underline">View my media kit ↗</a>}
+        <Status state={state} pending={pending} />
+      </div>
+    </form>
+  );
+}
+
+export function AdultGateForm({ on }: { on: boolean }) {
+  const [state, action, pending] = useActionState(setAdultGate, undefined);
+  return (
+    <form action={action} className="space-y-2">
+      <h3 className={h3}>🔞 18+ page</h3>
+      <p className={sub}>Visitors confirm they&apos;re 18 or older before they see anything. Single links can have their own 18+ warning too.</p>
+      <div className="flex items-center gap-3">
+        <label className="flex items-center gap-2 text-sm">
+          <input type="checkbox" name="adultGate" defaultChecked={on} className="h-4 w-4 accent-lime-500" />
+          Ask visitors to confirm they&apos;re 18+
+        </label>
+        <button disabled={pending} className={btn}>Save</button>
+        <Status state={state} pending={pending} />
+      </div>
     </form>
   );
 }

@@ -12,7 +12,7 @@ export const getPublicProfile = cache(async (by: "handle" | "domain", key: strin
       id: users.id, handle: users.handle, displayName: users.displayName, bio: users.bio, theme: users.theme,
       style: users.style, socials: users.socials, avatarVersion: users.avatarVersion, bgVersion: users.bgVersion, bannedAt: users.bannedAt,
       tips: users.tips, signupEnabled: users.signupEnabled, signupPrompt: users.signupPrompt, contactEnabled: users.contactEnabled, qaEnabled: users.qaEnabled, qaPrompt: users.qaPrompt,
-      redirectLinkId: users.redirectLinkId, lockCode: users.lockCode, seoTitle: users.seoTitle, seoDescription: users.seoDescription,
+      redirectLinkId: users.redirectLinkId, lockCode: users.lockCode, adultGate: users.adultGate, seoTitle: users.seoTitle, seoDescription: users.seoDescription,
       metaPixel: users.metaPixel, googleAnalytics: users.googleAnalytics, tiktokPixel: users.tiktokPixel,
     })
     .from(users)
@@ -22,7 +22,7 @@ export const getPublicProfile = cache(async (by: "handle" | "domain", key: strin
     .select({
       id: links.id, title: links.title, url: links.url, embed: links.embed, startsAt: links.startsAt, endsAt: links.endsAt,
       sensitive: links.sensitive, spotlight: links.spotlight, icon: links.icon, offerId: links.offerId,
-      thumbVersion: links.thumbVersion, lockCode: links.lockCode, countdown: links.countdown, discountCode: links.discountCode, heading: links.heading, music: links.music, price: links.price, latest: links.latest,
+      thumbVersion: links.thumbVersion, lockCode: links.lockCode, countdown: links.countdown, discountCode: links.discountCode, heading: links.heading, music: links.music, featured: links.featured, price: links.price, latest: links.latest,
     })
     .from(links)
     // Offers the advertiser has paused drop off every page

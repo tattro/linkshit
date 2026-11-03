@@ -1,5 +1,7 @@
 import type { MusicLinks } from "@/lib/music";
 import type { LatestFeed } from "@/lib/feeds";
+import type { GeoRule } from "@/lib/geo";
+import type { MediaKit } from "@/lib/mediaKit";
 import {
   pgTable,
   serial,
@@ -64,6 +66,8 @@ export const users = pgTable(
     qaEnabled: boolean("qa_enabled").notNull().default(false),
     qaPrompt: text("qa_prompt").notNull().default(""),
     creatorType: text("creator_type").notNull().default(""),
+    // Media kit for brands at /<handle>/kit (null = off)
+    mediaKit: jsonb("media_kit").$type<MediaKit>(),
     // e.g. "links.example.com"; serves this user's page at that domain's root
     customDomain: text("custom_domain"),
     // Stats email on/off (name is historical) and how often
@@ -75,6 +79,8 @@ export const users = pgTable(
     redirectLinkId: integer("redirect_link_id"),
     // Visitors type this code before they see the page (null = open)
     lockCode: text("lock_code"),
+    // Whole page behind an "I'm 18+" screen
+    adultGate: boolean("adult_gate").notNull().default(false),
     // Custom title/description for Google and link previews
     seoTitle: text("seo_title").notNull().default(""),
     seoDescription: text("seo_description").notNull().default(""),
@@ -218,6 +224,10 @@ export const links = pgTable(
     discountCode: text("discount_code"),
     // "Listen on…" buttons for every music app, looked up when the link is saved
     music: jsonb("music").$type<MusicLinks>(),
+    // Musicians: one song shown big at the top of the page with a player
+    featured: boolean("featured").notNull().default(false),
+    // Visitors from these countries go somewhere else (e.g. the UK store)
+    geo: jsonb("geo").$type<GeoRule[]>(),
     // Android visitors go here instead (e.g. Google Play when url is the App Store)
     androidUrl: text("android_url"),
     // Set when "flushed": the link moves to the graveyard and can be revived

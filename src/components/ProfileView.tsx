@@ -1,10 +1,12 @@
 import NextLink from "next/link";
 import type { Link as LinkRow, Socials, Style, Tips, User } from "@/db";
 import { musicLabel } from "@/lib/music";
+import { siApplemusic, siSpotify, siYoutube, siYoutubemusic } from "simple-icons";
 import { embedFor } from "@/lib/embeds";
 import { iconForUrl, platform, PLATFORMS } from "@/lib/socials";
 import { TIP_PROVIDERS } from "@/lib/tips";
 import { SensitiveGate } from "./SensitiveGate";
+import { LATEST_LABEL } from "@/lib/feeds";
 import { DiscountLink } from "./DiscountLink";
 import { SignupBox } from "./SignupBox";
 import { ContactBox } from "./ContactBox";
@@ -20,9 +22,35 @@ export type ProfileData = Pick<User, "id" | "handle" | "displayName" | "bio" | "
   tips: Tips;
 };
 
-export type ProfileLink = Pick<LinkRow, "id" | "title" | "url" | "embed" | "sensitive" | "spotlight" | "icon" | "offerId" | "thumbVersion" | "discountCode" | "heading" | "music" | "price" | "latest"> & { dropsAt?: Date | null } & {
+export type ProfileLink = Pick<LinkRow, "id" | "title" | "url" | "embed" | "sensitive" | "spotlight" | "icon" | "offerId" | "thumbVersion" | "discountCode" | "heading" | "music" | "featured" | "price" | "latest"> & { dropsAt?: Date | null } & {
   locked?: boolean;
 };
+
+// The three apps most fans use get logo buttons; the rest sit behind "more apps"
+const MAIN_APPS: Record<string, string> = { spotify: siSpotify.path, appleMusic: siApplemusic.path, youtube: siYoutube.path, youtubeMusic: siYoutubemusic.path };
+
+function splitApps(list: { p: string; url: string }[]) {
+  const hasYoutube = list.some((m) => m.p === "youtube");
+  const main = list.filter((m) => m.p === "spotify" || m.p === "appleMusic" || m.p === "youtube" || (m.p === "youtubeMusic" && !hasYoutube));
+  return { main, rest: list.filter((m) => !main.includes(m)) };
+}
+
+/** Player for the featured song: YouTube plays the whole song for everyone, Spotify only 30 seconds unless signed in. */
+function featuredPlayer(l: ProfileLink) {
+  const apps = l.music?.links ?? [];
+  const yt = apps.find((m) => m.p === "youtube") ?? apps.find((m) => m.p === "youtubeMusic");
+  const tryUrls = [
+    yt?.url.replace("://music.youtube.com/", "://www.youtube.com/"),
+    apps.find((m) => m.p === "spotify")?.url,
+    l.url.replace("://music.youtube.com/", "://www.youtube.com/"),
+    apps.find((m) => m.p === "appleMusic")?.url,
+  ];
+  for (const u of tryUrls) {
+    const e = u ? embedFor(u) : null;
+    if (e) return e;
+  }
+  return null;
+}
 
 export function avatarUrl(u: Pick<User, "id" | "avatarVersion">) {
   return u.avatarVersion > 0 ? `/avatar/${u.id}?v=${u.avatarVersion}` : null;
@@ -52,21 +80,67 @@ export function ProfileView({ user, links, preview = false, avatarOverride, qa =
   const btnStyle = buttonStyle(style);
   const mutedStyle = style.text ? { color: style.text, opacity: 0.7 } : undefined;
 
-  const musicRow = (l: ProfileLink) => l.music && !l.locked && (
-    <div className="mt-2 flex flex-wrap justify-center gap-1.5" aria-label={`Listen to ${l.title} on`}>
-      {l.music.links.map((m) => (
-        <a
-          key={m.p}
-          href={preview ? m.url : `/go/${l.id}?to=${m.p}`}
-          target={preview ? "_blank" : undefined}
-          rel="noopener noreferrer nofollow"
-          className="tint rounded-full px-3 py-1 text-xs font-semibold"
-        >
-          {musicLabel(m.p)}
-        </a>
-      ))}
-    </div>
+  const appLink = (l: ProfileLink, m: { p: string; url: string }, big = false) => (
+    <a
+      key={m.p}
+      href={preview ? m.url : `/go/${l.id}?to=${m.p}`}
+      target={preview ? "_blank" : undefined}
+      rel="noopener noreferrer nofollow"
+      className={`tint inline-flex items-center gap-1.5 rounded-full font-semibold ${big ? "px-3.5 py-2 text-sm [--tint:0.12]" : "px-3 py-1 text-xs"}`}
+    >
+      {MAIN_APPS[m.p] && <svg viewBox="0 0 24 24" width={big ? 16 : 13} height={big ? 16 : 13} fill="currentColor" aria-hidden><path d={MAIN_APPS[m.p]} /></svg>}
+      {musicLabel(m.p)}
+    </a>
   );
+
+  const musicRow = (l: ProfileLink, big = false) => {
+    if (!l.music || l.locked) return null;
+    const { main, rest } = splitApps(l.music.links);
+    return (
+      <div className="mt-2 text-center" aria-label={`Listen to ${l.title} on`}>
+        <div className="flex flex-wrap justify-center gap-1.5">{main.map((m) => appLink(l, m, big))}</div>
+        {rest.length > 0 && (
+          <details className="mt-1.5">
+            <summary className="cursor-pointer list-none text-xs font-medium underline opacity-70 [&::-webkit-details-marker]:hidden">
+              + {rest.length} more {rest.length === 1 ? "app" : "apps"}
+            </summary>
+            <div className="mt-1.5 flex flex-wrap justify-center gap-1.5">{rest.map((m) => appLink(l, m))}</div>
+          </details>
+        )}
+      </div>
+    );
+  };
+
+  const featured = links.find((l) => l.featured && !l.locked && !l.dropsAt && !l.heading);
+  const featuredBlock = featured && (() => {
+    const player = featuredPlayer(featured);
+    const body = (
+      <div className="tint rounded-2xl p-3 [--tint:0.06]">
+        <p className="mb-2 text-center text-xs font-bold uppercase tracking-widest opacity-70">⭐ New music</p>
+        <p className="mb-2 text-center font-bold">{featured.title}</p>
+        {player ? (
+          <iframe
+            src={player.src}
+            title={featured.title}
+            loading="lazy"
+            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+            allowFullScreen
+            className="block w-full overflow-hidden rounded-xl border-0 shadow"
+            style={player.aspect ? { aspectRatio: player.aspect } : { height: player.height }}
+          />
+        ) : (
+          <a href={preview ? featured.url : `/go/${featured.id}`} target={preview ? "_blank" : undefined} rel="noopener noreferrer nofollow" className={btnClass} style={btnStyle}>▶️ Play</a>
+        )}
+        {featured.music ? musicRow(featured, true) : null}
+      </div>
+    );
+    return (
+      <div className="mt-8 w-full">
+        {featured.sensitive ? <SensitiveGate title={featured.title} className={btnClass} style={btnStyle}>{body}</SensitiveGate> : body}
+      </div>
+    );
+  })();
+  const listLinks = featured ? links.filter((l) => l !== featured) : links;
 
   const latestRow = (l: ProfileLink) => {
     const item = l.locked ? null : l.latest?.item;
@@ -79,7 +153,7 @@ export function ProfileView({ user, links, preview = false, avatarOverride, qa =
         className="tint mt-2 flex items-center gap-2 rounded-xl px-3 py-2 text-left text-sm [--tint:0.08]"
       >
         <span className="shrink-0 rounded-full bg-red-600 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
-          {l.latest!.kind === "youtube" ? "New video" : "New episode"}
+          {LATEST_LABEL[l.latest!.kind].badge}
         </span>
         <span className="min-w-0 truncate font-medium">{item.title}</span>
       </a>
@@ -145,8 +219,10 @@ export function ProfileView({ user, links, preview = false, avatarOverride, qa =
           </details>
         )}
 
-        <ul className="mt-8 w-full space-y-3">
-          {links.map((l) => {
+        {featuredBlock}
+
+        <ul className={`${featured ? "mt-5" : "mt-8"} w-full space-y-3`}>
+          {listLinks.map((l) => {
             const embed = l.embed && !l.locked ? embedFor(l.url) : null;
             if (embed) {
               const frame = (
@@ -225,7 +301,7 @@ export function ProfileView({ user, links, preview = false, avatarOverride, qa =
               </li>
             );
           })}
-          {links.length === 0 && <li className={`text-center text-sm ${theme.muted}`} style={mutedStyle}>Nothing here yet. Check back soon.</li>}
+          {listLinks.length === 0 && !featured && <li className={`text-center text-sm ${theme.muted}`} style={mutedStyle}>Nothing here yet. Check back soon.</li>}
         </ul>
 
         {user.qaEnabled && (

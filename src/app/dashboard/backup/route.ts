@@ -37,8 +37,9 @@ export async function GET() {
     avatar: img(avatar),
     background: img(background),
     links: rows.map((l) => ({
-      title: l.title, url: l.url, heading: l.heading, embed: l.embed, sensitive: l.sensitive, spotlight: l.spotlight,
+      title: l.title, url: l.url, heading: l.heading, embed: l.embed, sensitive: l.sensitive, spotlight: l.spotlight, featured: l.featured,
       icon: l.icon, lockCode: l.lockCode, discountCode: l.discountCode, androidUrl: l.androidUrl,
+      price: l.price, music: Boolean(l.music), latest: Boolean(l.latest), geo: l.geo,
       startsAt: l.startsAt?.toISOString() ?? null, countdown: l.countdown, endsAt: l.endsAt?.toISOString() ?? null,
       thumb: thumbs.get(l.id) ?? null,
     })),

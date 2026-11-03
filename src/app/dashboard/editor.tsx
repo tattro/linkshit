@@ -19,7 +19,8 @@ import { AvatarCropper } from "./AvatarCropper";
 import { GENERAL_CATEGORIES } from "@/lib/creatorTypes";
 import { isMusicUrl } from "@/lib/music";
 import { isStoreUrl } from "@/lib/stores";
-import { latestKind } from "@/lib/feeds";
+import { LATEST_LABEL, latestKind } from "@/lib/feeds";
+import { countryName, GEO_COUNTRIES, MAX_GEO_RULES, type GeoRule } from "@/lib/geo";
 import { embedFor } from "@/lib/embeds";
 import { TIP_PROVIDERS } from "@/lib/tips";
 import { FONTS, parseStyle, GRADIENT_DIRS, GRADIENT_PRESETS, SHAPES, gradientCss, hasCustomColors } from "@/lib/style";
@@ -44,10 +45,12 @@ function toLocalInput(d: Date | string | null) {
   return local.toISOString().slice(0, 16);
 }
 
+const isSoundCloud = (url: string) => /^(https?:\/\/)?(www\.|m\.)?soundcloud\.com(\/|$)/i.test(url.trim());
+
 function LinkExtras({ link, url, adultDefault = false }: { link?: Link; url: string; adultDefault?: boolean }) {
   // Adult pages: new links start with the 18+ warning ticked
   const [open, setOpen] = useState(Boolean(
-    link?.startsAt || link?.endsAt || link?.lockCode || link?.androidUrl || link?.thumbVersion ||
+    link?.startsAt || link?.endsAt || link?.lockCode || link?.androidUrl || link?.geo?.length || link?.thumbVersion ||
     link?.spotlight || link?.icon || link?.discountCode || link?.price,
   ));
   const canEmbed = url.trim() !== "" && embedFor(/^https?:\/\//i.test(url.trim()) ? url.trim() : `https://${url.trim()}`) !== null;
@@ -62,6 +65,12 @@ function LinkExtras({ link, url, adultDefault = false }: { link?: Link; url: str
           <span>🎵 Add &quot;Listen on Spotify, Apple Music, YouTube…&quot; buttons <span className="text-stone-400">(we find it on every app for you)</span></span>
         </label>
       )}
+      {isMusicUrl(url) && (
+        <label className="mb-2 flex items-start gap-2 text-sm">
+          <input type="checkbox" name="featured" defaultChecked={link?.featured} className="mt-0.5 h-4 w-4 accent-lime-500" />
+          <span>⭐ Feature this song at the top of my page <span className="text-stone-400">(big player with Spotify, Apple Music and YouTube buttons · one song at a time)</span></span>
+        </label>
+      )}
       <label className="mb-2 flex items-center gap-2 text-sm">
         <input type="checkbox" name="sensitive" defaultChecked={link ? link.sensitive : adultDefault} className="h-4 w-4 accent-lime-500" />
         🔞 18+ warning before it opens
@@ -70,7 +79,7 @@ function LinkExtras({ link, url, adultDefault = false }: { link?: Link; url: str
         <label className="mb-2 flex items-start gap-2 text-sm">
           <input type="checkbox" name="latest" defaultChecked={link ? Boolean(link.latest) : true} className="mt-0.5 h-4 w-4 accent-lime-500" />
           <span>
-            {feedKind === "youtube" ? "📺 Always show my newest video under this link" : "🎙️ Always show my newest episode under this link"}{" "}
+            {LATEST_LABEL[feedKind].checkbox}{" "}
             <span className="text-stone-400">(updates by itself)</span>
           </span>
         </label>
@@ -84,7 +93,8 @@ function LinkExtras({ link, url, adultDefault = false }: { link?: Link; url: str
       )}
       {canEmbed && (
         <label className="mb-2 flex items-center gap-2 text-sm">
-          <input type="checkbox" name="embed" defaultChecked={link?.embed} className="h-4 w-4 accent-lime-500" />
+          {/* SoundCloud has no "listen on" lookup, so new SoundCloud links default to the player */}
+          <input key={String(isSoundCloud(url))} type="checkbox" name="embed" defaultChecked={link ? link.embed : isSoundCloud(url)} className="h-4 w-4 accent-lime-500" />
           Show it right on my page (player or booking calendar) instead of a button
         </label>
       )}
@@ -175,7 +185,32 @@ function LinkExtras({ link, url, adultDefault = false }: { link?: Link; url: str
               <input name="androidUrl" defaultValue={link?.androidUrl ?? ""} placeholder="play.google.com/store/apps/…" className={input} />
             </label>
           </div>
+          <GeoRules rules={link?.geo ?? []} />
         </div>
+      )}
+    </div>
+  );
+}
+
+/** Up to 3 "visitors from X go to Y" rows. Empty rows are ignored. */
+function GeoRules({ rules }: { rules: GeoRule[] }) {
+  const [count, setCount] = useState(Math.max(1, rules.length));
+  return (
+    <div className="text-sm">
+      <span className="text-stone-500">🌍 Send some countries somewhere else (optional) · e.g. UK fans to your UK store</span>
+      <div className="mt-1 space-y-2">
+        {Array.from({ length: count }, (_, i) => (
+          <div key={i} className="grid gap-1 sm:grid-cols-[10rem_1fr] sm:gap-2">
+            <select name="geoCountry" defaultValue={rules[i]?.c ?? ""} aria-label={`Country ${i + 1}`} className={input}>
+              <option value="">Country…</option>
+              {GEO_COUNTRIES.map((c) => <option key={c} value={c}>{countryName(c)}</option>)}
+            </select>
+            <input name="geoUrl" defaultValue={rules[i]?.url ?? ""} aria-label={`Link for country ${i + 1}`} placeholder="where they go instead" className={input} />
+          </div>
+        ))}
+      </div>
+      {count < MAX_GEO_RULES && (
+        <button type="button" onClick={() => setCount(count + 1)} className="mt-1 text-xs text-stone-500 underline">+ another country</button>
       )}
     </div>
   );
@@ -219,7 +254,7 @@ function CategoryBox({ sections, ideas = GENERAL_CATEGORIES, defaultValue = "", 
   );
 }
 
-export function AddLinkForm({ sections = [], ideas, linkPlaceholder = "yourwebsite.com", defaultCategory = "", adultDefault = false }: { sections?: SectionOption[]; ideas?: string[]; linkPlaceholder?: string; defaultCategory?: string; adultDefault?: boolean }) {
+export function AddLinkForm({ sections = [], ideas, linkPlaceholder = "yourwebsite.com", defaultCategory = "", adultDefault = false, musician = false }: { sections?: SectionOption[]; ideas?: string[]; linkPlaceholder?: string; defaultCategory?: string; adultDefault?: boolean; musician?: boolean }) {
   const [state, action, pending] = useActionState(addLink, undefined);
   const [url, setUrl] = useState("");
   const [title, setTitle] = useState("");
@@ -240,6 +275,20 @@ export function AddLinkForm({ sections = [], ideas, linkPlaceholder = "yourwebsi
         <span className="text-sm font-semibold">Link</span>
         <input name="url" inputMode="url" autoCapitalize="off" autoCorrect="off" spellCheck={false} placeholder={linkPlaceholder} value={url} onChange={(e) => setUrl(e.target.value)} className={`${input} mt-1`} />
       </label>
+      {musician && !url && (
+        <button
+          type="button"
+          onClick={() => {
+            setUrl("soundcloud.com/");
+            if (!title.trim()) setTitle("My SoundCloud");
+            const el = formRef.current?.elements.namedItem("url");
+            if (el instanceof HTMLInputElement) requestAnimationFrame(() => { el.focus(); el.setSelectionRange(el.value.length, el.value.length); });
+          }}
+          className="justify-self-start rounded-full border-2 border-dashed border-orange-300 px-3 py-1 text-sm text-orange-700 hover:border-orange-500 sm:col-span-2"
+        >
+          😔 I&apos;m lame, I&apos;m a SoundCloud rapper/DJ
+        </button>
+      )}
       <CategoryBox key={key} sections={sections} ideas={ideas} defaultValue={defaultCategory} className="sm:col-span-2" />
       <button disabled={pending} className={`${btn} sm:col-span-2 sm:justify-self-start`}>{pending ? "Adding…" : "Add link"}</button>
       {state?.error && <p className="text-sm font-semibold text-red-600 sm:col-span-2">{state.error}</p>}
@@ -380,10 +429,11 @@ function LinkRowItem({ link, handle, sections, section }: { link: Link; handle?:
             {link.icon && <span className="mr-1">{link.icon}</span>}
             {link.title}
             {link.embed && <span className="ml-2 rounded bg-violet-100 px-1.5 py-0.5 text-xs font-medium text-violet-800">embed</span>}
+            {link.featured && <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-800">⭐ featured</span>}
             {link.spotlight && <span className="ml-2 rounded bg-yellow-100 px-1.5 py-0.5 text-xs font-medium text-yellow-800">✨ spotlight</span>}
             {link.sensitive && <span className="ml-2 rounded bg-red-100 px-1.5 py-0.5 text-xs font-medium text-red-800">🔞 18+</span>}
             {link.music && <span className="ml-2 rounded bg-pink-100 px-1.5 py-0.5 text-xs font-medium text-pink-800">🎵 {link.music.links.length} apps</span>}
-            {link.latest?.item && <span className="ml-2 rounded bg-red-100 px-1.5 py-0.5 text-xs font-medium text-red-800">{link.latest.kind === "youtube" ? "📺" : "🎙️"} newest: {link.latest.item.title.slice(0, 30)}</span>}
+            {link.latest?.item && <span className="ml-2 rounded bg-red-100 px-1.5 py-0.5 text-xs font-medium text-red-800">{LATEST_LABEL[link.latest.kind].emoji} newest: {link.latest.item.title.slice(0, 30)}</span>}
             {link.price && <span className="ml-2 rounded bg-emerald-100 px-1.5 py-0.5 text-xs font-medium text-emerald-800">{link.price}</span>}
             {link.discountCode && <span className="ml-2 rounded bg-sky-100 px-1.5 py-0.5 text-xs font-medium text-sky-800">🏷️ {link.discountCode}</span>}
             {link.lockCode && <span className="ml-2 rounded bg-stone-200 px-1.5 py-0.5 text-xs font-medium text-stone-700">🔒 locked</span>}
@@ -852,9 +902,11 @@ export function LookForm({ user, avatar, background }: { user: { theme: string; 
           <button disabled={pending} className={btn}>{pending ? "Saving…" : "Save look"}</button>
           <Saved show={!!state?.ok && !pending} />
         </div>
-        <label className="flex cursor-pointer items-center gap-2 text-sm font-black text-red-600">
-          <input type="checkbox" name="chaos" defaultChecked={s.chaos} className="h-5 w-5 accent-red-600" />
-          Chaos mode (don&apos;t press this)
+        {/* Always warning red: a plain hex colour (older iPhones skip Tailwind's newer colour format)
+            and data-keep-colors so dashboard dark mode doesn't flip it */}
+        <label data-keep-colors className="flex cursor-pointer items-center gap-2 text-sm font-black uppercase tracking-wide" style={{ color: "#dc2626" }}>
+          <input type="checkbox" name="chaos" defaultChecked={s.chaos} className="h-5 w-5" style={{ accentColor: "#dc2626" }} />
+          ⚠️ Chaos mode (don&apos;t press this)
         </label>
       </div>
     </form>

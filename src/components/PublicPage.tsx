@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { avatarUrl, ProfileView } from "./ProfileView";
 import { ViewBeacon } from "./ViewBeacon";
 import { LockScreen } from "./LockScreen";
+import { AdultPageGate } from "./AdultPageGate";
 import { TrackingPixels } from "./TrackingPixels";
 import type { PublicProfile } from "@/lib/profile";
 import { lockCookie, tokenMatches } from "@/lib/locks";
@@ -45,6 +46,7 @@ export async function PublicPage({ profile }: { profile: PublicProfile }) {
     <div className="min-h-screen [&>div]:min-h-screen">
       <ViewBeacon userId={user.id} />
       <TrackingPixels meta={user.metaPixel} ga={user.googleAnalytics} tiktok={user.tiktokPixel} />
+      {user.adultGate && <AdultPageGate name={user.displayName || `@${user.handle}`} />}
       <ProfileView user={user} links={profile.links} qa={profile.qa} />
     </div>
   );
