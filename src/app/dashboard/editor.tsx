@@ -47,7 +47,7 @@ function toLocalInput(d: Date | string | null) {
 
 const isSoundCloud = (url: string) => /^(https?:\/\/)?(www\.|m\.)?soundcloud\.com(\/|$)/i.test(url.trim());
 
-function LinkExtras({ link, url, adultDefault = false }: { link?: Link; url: string; adultDefault?: boolean }) {
+function LinkExtras({ link, url, adultDefault = false, onSoundCloud }: { link?: Link; url: string; adultDefault?: boolean; onSoundCloud?: () => void }) {
   // Adult pages: new links start with the 18+ warning ticked
   const [open, setOpen] = useState(Boolean(
     link?.startsAt || link?.endsAt || link?.lockCode || link?.androidUrl || link?.geo?.length || link?.thumbVersion ||
@@ -56,20 +56,44 @@ function LinkExtras({ link, url, adultDefault = false }: { link?: Link; url: str
   const canEmbed = url.trim() !== "" && embedFor(/^https?:\/\//i.test(url.trim()) ? url.trim() : `https://${url.trim()}`) !== null;
   const feedKind = latestKind(url);
   const canGrab = url.trim() !== "" && !isMusicUrl(url) && !canEmbed && !feedKind;
+  // "This is music" ticks itself for song links and SoundCloud; people can still tick or untick it
+  const [musicChoice, setMusicChoice] = useState<boolean | null>(link ? Boolean(link.music || link.featured) || null : null);
+  const musicOn = musicChoice ?? (isMusicUrl(url) || isSoundCloud(url));
   return (
     <div className="sm:col-span-full">
       <TzInput />
-      {isMusicUrl(url) && (
-        <label className="mb-2 flex items-start gap-2 text-sm">
-          <input type="checkbox" name="music" defaultChecked={link ? Boolean(link.music) : true} className="mt-0.5 h-4 w-4 accent-lime-500" />
-          <span>🎵 Add &quot;Listen on Spotify, Apple Music, YouTube…&quot; buttons <span className="text-stone-400">(we find it on every app for you)</span></span>
-        </label>
-      )}
-      {isMusicUrl(url) && (
-        <label className="mb-2 flex items-start gap-2 text-sm">
-          <input type="checkbox" name="featured" defaultChecked={link?.featured} className="mt-0.5 h-4 w-4 accent-lime-500" />
-          <span>⭐ Feature this song at the top of my page <span className="text-stone-400">(big player with Spotify, Apple Music and YouTube buttons · one song at a time)</span></span>
-        </label>
+      <label className="mb-2 flex items-center gap-2 text-sm">
+        <input type="checkbox" checked={musicOn} onChange={(e) => setMusicChoice(e.target.checked)} className="h-4 w-4 accent-lime-500" />
+        🎵 This is music <span className="text-stone-400">(a song, album or SoundCloud)</span>
+      </label>
+      {musicOn && (
+        <div className="mb-3 space-y-2 rounded-xl border-2 border-lime-200 bg-lime-50 p-3 text-sm">
+          {isMusicUrl(url) ? (
+            <>
+              <label className="flex items-start gap-2">
+                <input type="checkbox" name="music" defaultChecked={link ? Boolean(link.music) : true} className="mt-0.5 h-4 w-4 accent-lime-500" />
+                <span>Add &quot;Listen on Spotify, Apple Music, YouTube&quot; buttons <span className="text-stone-400">(we find it on every app for you)</span></span>
+              </label>
+              <label className="flex items-start gap-2">
+                <input type="checkbox" name="featured" defaultChecked={link?.featured} className="mt-0.5 h-4 w-4 accent-lime-500" />
+                <span>⭐ Feature this song at the top of my page <span className="text-stone-400">(big player with Spotify, Apple Music and YouTube buttons · one song at a time)</span></span>
+              </label>
+            </>
+          ) : isSoundCloud(url) ? (
+            <p className="text-stone-600">SoundCloud shows up as a player on your page.</p>
+          ) : (
+            <p className="text-stone-600">Paste a song or album link from Spotify, Apple Music or YouTube Music in the Link box. We&apos;ll find it on every app and can put a player at the top of your page.</p>
+          )}
+          {onSoundCloud && !isSoundCloud(url) && !isMusicUrl(url) && (
+            <button
+              type="button"
+              onClick={onSoundCloud}
+              className="rounded-full border-2 border-dashed border-orange-300 bg-white px-3 py-1 text-orange-700 hover:border-orange-500"
+            >
+              😔 I&apos;m lame, I&apos;m a SoundCloud rapper/DJ
+            </button>
+          )}
+        </div>
       )}
       <label className="mb-2 flex items-center gap-2 text-sm">
         <input type="checkbox" name="sensitive" defaultChecked={link ? link.sensitive : adultDefault} className="h-4 w-4 accent-lime-500" />
@@ -254,7 +278,7 @@ function CategoryBox({ sections, ideas = GENERAL_CATEGORIES, defaultValue = "", 
   );
 }
 
-export function AddLinkForm({ sections = [], ideas, linkPlaceholder = "yourwebsite.com", defaultCategory = "", adultDefault = false, musician = false }: { sections?: SectionOption[]; ideas?: string[]; linkPlaceholder?: string; defaultCategory?: string; adultDefault?: boolean; musician?: boolean }) {
+export function AddLinkForm({ sections = [], ideas, linkPlaceholder = "yourwebsite.com", defaultCategory = "", adultDefault = false }: { sections?: SectionOption[]; ideas?: string[]; linkPlaceholder?: string; defaultCategory?: string; adultDefault?: boolean }) {
   const [state, action, pending] = useActionState(addLink, undefined);
   const [url, setUrl] = useState("");
   const [title, setTitle] = useState("");
@@ -275,24 +299,19 @@ export function AddLinkForm({ sections = [], ideas, linkPlaceholder = "yourwebsi
         <span className="text-sm font-semibold">Link</span>
         <input name="url" inputMode="url" autoCapitalize="off" autoCorrect="off" spellCheck={false} placeholder={linkPlaceholder} value={url} onChange={(e) => setUrl(e.target.value)} className={`${input} mt-1`} />
       </label>
-      {musician && !url && (
-        <button
-          type="button"
-          onClick={() => {
-            setUrl("soundcloud.com/");
-            if (!title.trim()) setTitle("My SoundCloud");
-            const el = formRef.current?.elements.namedItem("url");
-            if (el instanceof HTMLInputElement) requestAnimationFrame(() => { el.focus(); el.setSelectionRange(el.value.length, el.value.length); });
-          }}
-          className="justify-self-start rounded-full border-2 border-dashed border-orange-300 px-3 py-1 text-sm text-orange-700 hover:border-orange-500 sm:col-span-2"
-        >
-          😔 I&apos;m lame, I&apos;m a SoundCloud rapper/DJ
-        </button>
-      )}
       <CategoryBox key={key} sections={sections} ideas={ideas} defaultValue={defaultCategory} className="sm:col-span-2" />
       <button disabled={pending} className={`${btn} sm:col-span-2 sm:justify-self-start`}>{pending ? "Adding…" : "Add link"}</button>
       {state?.error && <p className="text-sm font-semibold text-red-600 sm:col-span-2">{state.error}</p>}
-      <LinkExtras url={url} adultDefault={adultDefault} />
+      <LinkExtras
+        url={url}
+        adultDefault={adultDefault}
+        onSoundCloud={() => {
+          setUrl("soundcloud.com/");
+          if (!title.trim()) setTitle("My SoundCloud");
+          const el = formRef.current?.elements.namedItem("url");
+          if (el instanceof HTMLInputElement) requestAnimationFrame(() => { el.focus(); el.setSelectionRange(el.value.length, el.value.length); });
+        }}
+      />
     </form>
   );
 }
