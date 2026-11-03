@@ -1,6 +1,6 @@
 import NextLink from "next/link";
 import type { Link as LinkRow, Socials, Style, Tips, User } from "@/db";
-import { DEFAULT_PLAYER, musicLabel, PLAYER_APPS } from "@/lib/music";
+import { musicLabel } from "@/lib/music";
 import { siApplemusic, siSpotify, siYoutube, siYoutubemusic } from "simple-icons";
 import { embedFor } from "@/lib/embeds";
 import { iconForUrl, platform, PLATFORMS } from "@/lib/socials";
@@ -22,7 +22,7 @@ export type ProfileData = Pick<User, "id" | "handle" | "displayName" | "bio" | "
   tips: Tips;
 };
 
-export type ProfileLink = Pick<LinkRow, "id" | "title" | "url" | "embed" | "sensitive" | "spotlight" | "icon" | "offerId" | "thumbVersion" | "discountCode" | "heading" | "music" | "featured" | "videoUrl" | "price" | "latest"> & { dropsAt?: Date | null } & {
+export type ProfileLink = Pick<LinkRow, "id" | "title" | "url" | "embed" | "sensitive" | "spotlight" | "icon" | "offerId" | "thumbVersion" | "discountCode" | "heading" | "music" | "videoUrl" | "price" | "latest"> & { dropsAt?: Date | null } & {
   locked?: boolean;
 };
 
@@ -44,8 +44,8 @@ function toYoutubeMusic(url: string): string | null {
   return null;
 }
 
-/** The three big buttons (Spotify, Apple Music, YouTube Music, the musician's pick first) and the rest. */
-function splitApps(list: AppLink[], prefer: string = DEFAULT_PLAYER) {
+/** The three big buttons (Spotify, Apple Music, YouTube Music) and the rest. */
+function splitApps(list: AppLink[]) {
   const ytSource = list.find((m) => m.p === "youtubeMusic") ?? list.find((m) => m.p === "youtube");
   const ytMusic = ytSource ? toYoutubeMusic(ytSource.url) : null;
   const byApp: Record<string, AppLink | undefined> = {
@@ -53,14 +53,13 @@ function splitApps(list: AppLink[], prefer: string = DEFAULT_PLAYER) {
     appleMusic: list.find((m) => m.p === "appleMusic"),
     youtube: ytMusic ? { p: "youtubeMusic", url: ytMusic } : undefined,
   };
-  const order = [prefer, ...PLAYER_APPS.map((a) => a.id).filter((id) => id !== prefer)];
-  const main = order.map((id) => byApp[id]).filter((m): m is AppLink => Boolean(m));
+  const main = ["spotify", "appleMusic", "youtube"].map((id) => byApp[id]).filter((m): m is AppLink => Boolean(m));
   const rest = list.filter((m) => !["spotify", "appleMusic", "youtube", "youtubeMusic"].includes(m.p));
   return { main, rest };
 }
 
-/** Player for the featured song: their music video if they added one, else the app they pasted from, then Spotify, Apple Music, YouTube Music. */
-function featuredPlayer(l: ProfileLink) {
+/** Player for a song: their music video if they added one, else Spotify, then Apple Music, YouTube Music. */
+function songPlayer(l: ProfileLink) {
   const apps = l.music?.links ?? [];
   const yt = apps.find((m) => m.p === "youtubeMusic") ?? apps.find((m) => m.p === "youtube");
   // YouTube Music has no player of its own; the same track plays in YouTube's player
@@ -70,8 +69,7 @@ function featuredPlayer(l: ProfileLink) {
     appleMusic: apps.find((m) => m.p === "appleMusic")?.url,
     youtube: ytId ? `https://www.youtube.com/watch?v=${ytId}` : undefined,
   };
-  const prefer = l.music?.prefer ?? DEFAULT_PLAYER;
-  const tryUrls = [l.videoUrl ?? undefined, byApp[prefer], byApp.spotify, byApp.appleMusic, byApp.youtube, l.url.replace("://music.youtube.com/", "://www.youtube.com/")];
+  const tryUrls = [l.videoUrl ?? undefined, byApp.spotify, byApp.appleMusic, byApp.youtube, l.url.replace("://music.youtube.com/", "://www.youtube.com/")];
   for (const u of tryUrls) {
     const e = u ? embedFor(u) : null;
     if (e) return e;
@@ -125,7 +123,7 @@ export function ProfileView({ user, links, preview = false, avatarOverride, qa =
 
   const musicRow = (l: ProfileLink, big = false) => {
     if (!l.music || l.locked) return null;
-    const { main, rest } = splitApps(l.music.links, l.music.prefer);
+    const { main, rest } = splitApps(l.music.links);
     return (
       <div className="mt-2 text-center" aria-label={`Listen to ${l.title} on`}>
         <div className="flex flex-wrap justify-center gap-1.5">{main.map((m) => appLink(l, m, big))}</div>
@@ -141,17 +139,16 @@ export function ProfileView({ user, links, preview = false, avatarOverride, qa =
     );
   };
 
-  const featured = links.find((l) => l.featured && !l.locked && !l.dropsAt && !l.heading);
-  const featuredBlock = featured && (() => {
-    const player = featuredPlayer(featured);
+  // A song (Spotify link): its player, or their music video, plus the listen buttons, right where it sits in the list
+  const musicCard = (l: ProfileLink) => {
+    const player = songPlayer(l);
     const body = (
       <div className="tint rounded-2xl p-3 [--tint:0.06]">
-        <p className="mb-2 text-center text-xs font-bold uppercase tracking-widest opacity-70">⭐ New music</p>
-        <p className="mb-2 text-center font-bold">{featured.title}</p>
+        <p className="mb-2 text-center font-bold">{l.title}</p>
         {player ? (
           <iframe
             src={player.src}
-            title={featured.title}
+            title={l.title}
             loading="lazy"
             allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
             allowFullScreen
@@ -159,18 +156,13 @@ export function ProfileView({ user, links, preview = false, avatarOverride, qa =
             style={player.aspect ? { aspectRatio: player.aspect } : { height: player.height }}
           />
         ) : (
-          <a href={preview ? featured.url : `/go/${featured.id}`} target={preview ? "_blank" : undefined} rel="noopener noreferrer nofollow" className={btnClass} style={btnStyle}>▶️ Play</a>
+          <a href={preview ? l.url : `/go/${l.id}`} target={preview ? "_blank" : undefined} rel="noopener noreferrer nofollow" className={btnClass} style={btnStyle}>▶️ Play</a>
         )}
-        {featured.music ? musicRow(featured, true) : null}
+        {musicRow(l, true)}
       </div>
     );
-    return (
-      <div className="mt-8 w-full">
-        {featured.sensitive ? <SensitiveGate title={featured.title} className={btnClass} style={btnStyle}>{body}</SensitiveGate> : body}
-      </div>
-    );
-  })();
-  const listLinks = featured ? links.filter((l) => l !== featured) : links;
+    return l.sensitive ? <SensitiveGate title={l.title} className={btnClass} style={btnStyle}>{body}</SensitiveGate> : body;
+  };
 
   const latestRow = (l: ProfileLink) => {
     const item = l.locked ? null : l.latest?.item;
@@ -249,10 +241,9 @@ export function ProfileView({ user, links, preview = false, avatarOverride, qa =
           </details>
         )}
 
-        {featuredBlock}
-
-        <ul className={`${featured ? "mt-5" : "mt-8"} w-full space-y-3`}>
-          {listLinks.map((l) => {
+        <ul className="mt-8 w-full space-y-3">
+          {links.map((l) => {
+            if (l.music && !l.locked && !l.dropsAt && !l.heading) return <li key={l.id}>{musicCard(l)}</li>;
             const embed = l.embed && !l.locked ? embedFor(l.url) : null;
             if (embed) {
               const frame = (
@@ -331,7 +322,7 @@ export function ProfileView({ user, links, preview = false, avatarOverride, qa =
               </li>
             );
           })}
-          {listLinks.length === 0 && !featured && <li className={`text-center text-sm ${theme.muted}`} style={mutedStyle}>Nothing here yet. Check back soon.</li>}
+          {links.length === 0 && <li className={`text-center text-sm ${theme.muted}`} style={mutedStyle}>Nothing here yet. Check back soon.</li>}
         </ul>
 
         {user.qaEnabled && (

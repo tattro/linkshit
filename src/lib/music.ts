@@ -3,25 +3,8 @@
  * music app, found through the free Odesli (song.link) API when the link is saved.
  * This file is safe for the browser; the network call lives in musicLookup.ts.
  */
-export type MusicLinks = { links: { p: string; url: string }[]; prefer?: PlayerApp };
-
-/** Which app plays the featured song and gets the first button. */
-// "youtube" means YouTube Music (the id is kept so older pages keep their choice)
-export type PlayerApp = "spotify" | "appleMusic" | "youtube";
-export const PLAYER_APPS: { id: PlayerApp; label: string }[] = [
-  { id: "spotify", label: "Spotify" },
-  { id: "appleMusic", label: "Apple Music" },
-  { id: "youtube", label: "YouTube Music" },
-];
-export const DEFAULT_PLAYER: PlayerApp = "spotify";
-
-/** The app a pasted song link is from: it plays the song and gets the first button. */
-export function sourceApp(url: string): PlayerApp | undefined {
-  if (/^https?:\/\/open\.spotify\.com\//i.test(url)) return "spotify";
-  if (/^https?:\/\/music\.apple\.com\//i.test(url)) return "appleMusic";
-  if (/^https?:\/\/(music\.|www\.)?youtube\.com\//i.test(url)) return "youtube";
-  return undefined;
-}
+// prefer: no longer used (pages from before Spotify-first may still carry it)
+export type MusicLinks = { links: { p: string; url: string }[]; prefer?: string };
 
 // Order on the page, and how each Odesli platform key is labelled
 export const MUSIC_PLATFORMS: { id: string; label: string }[] = [
@@ -37,6 +20,11 @@ export const MUSIC_PLATFORMS: { id: string; label: string }[] = [
 ];
 
 export const musicLabel = (id: string) => MUSIC_PLATFORMS.find((p) => p.id === id)?.label ?? id;
+
+/** A Spotify song or album: pasting one sets up the music card (player plus listen buttons). */
+export function isSpotifySong(raw: string): boolean {
+  return /^(https?:\/\/)?open\.spotify\.com\/(intl-\w+\/)?(track|album)\/\w+/i.test(raw.trim());
+}
 
 /** Song, album or EP pages on the big music apps (not artist pages or playlists). */
 export function isMusicUrl(raw: string): boolean {

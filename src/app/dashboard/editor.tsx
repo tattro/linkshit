@@ -17,7 +17,7 @@ import type { Link, Socials, Style, Tips } from "@/db/schema";
 import { setLookDraft } from "./lookDraft";
 import { AvatarCropper } from "./AvatarCropper";
 import { GENERAL_CATEGORIES } from "@/lib/creatorTypes";
-import { isMusicUrl } from "@/lib/music";
+import { isMusicUrl, isSpotifySong } from "@/lib/music";
 import { isStoreUrl } from "@/lib/stores";
 import { LATEST_LABEL, latestKind } from "@/lib/feeds";
 import { countryName, GEO_COUNTRIES, MAX_GEO_RULES, type GeoRule } from "@/lib/geo";
@@ -45,38 +45,29 @@ function toLocalInput(d: Date | string | null) {
   return local.toISOString().slice(0, 16);
 }
 
-/** "Feature this song" and, under it, an optional music video that plays instead of the audio player. */
-function FeaturedOptions({ link }: { link?: Link }) {
-  const [featured, setFeatured] = useState(Boolean(link?.featured));
+/** "Make my music video the main visual": a video link that plays instead of the Spotify player. */
+function VideoOption({ link }: { link?: Link }) {
   const [video, setVideo] = useState(Boolean(link?.videoUrl));
   return (
-    <>
+    <div className="space-y-2">
       <label className="flex items-start gap-2">
-        <input type="checkbox" name="featured" checked={featured} onChange={(e) => setFeatured(e.target.checked)} className="mt-0.5 h-4 w-4 accent-lime-500" />
-        <span>⭐ Feature this song at the top of my page <span className="text-stone-400">(a player plus Spotify, Apple Music and YouTube Music buttons · one song at a time)</span></span>
+        <input type="checkbox" name="video" checked={video} onChange={(e) => setVideo(e.target.checked)} className="mt-0.5 h-4 w-4 accent-lime-500" />
+        <span>🎬 Make my music video the main visual <span className="block text-stone-400">Leave it off and your Spotify track plays.</span></span>
       </label>
-      {featured && (
-        <div className="ml-6 space-y-2">
-          <label className="flex items-start gap-2">
-            <input type="checkbox" name="video" checked={video} onChange={(e) => setVideo(e.target.checked)} className="mt-0.5 h-4 w-4 accent-lime-500" />
-            <span>🎬 Put a music video above it <span className="text-stone-400">(plays instead of the audio player)</span></span>
-          </label>
-          {video && (
-            <input
-              name="videoUrl"
-              defaultValue={link?.videoUrl ?? ""}
-              inputMode="url"
-              autoCapitalize="off"
-              autoCorrect="off"
-              spellCheck={false}
-              placeholder="youtube.com/watch?v=…"
-              aria-label="Music video link"
-              className="w-full rounded-lg border-2 border-stone-300 bg-white px-3 py-2 outline-none focus:border-stone-900"
-            />
-          )}
-        </div>
+      {video && (
+        <input
+          name="videoUrl"
+          defaultValue={link?.videoUrl ?? ""}
+          inputMode="url"
+          autoCapitalize="off"
+          autoCorrect="off"
+          spellCheck={false}
+          placeholder="youtube.com/watch?v=…"
+          aria-label="Music video link"
+          className="w-full rounded-lg border-2 border-stone-300 bg-white px-3 py-2 outline-none focus:border-stone-900"
+        />
       )}
-    </>
+    </div>
   );
 }
 
@@ -92,8 +83,8 @@ function LinkExtras({ link, url, adultDefault = false, onSoundCloud }: { link?: 
   const feedKind = latestKind(url);
   const canGrab = url.trim() !== "" && !isMusicUrl(url) && !canEmbed && !feedKind;
   // "This is music" ticks itself for song links and SoundCloud; people can still tick or untick it
-  const [musicChoice, setMusicChoice] = useState<boolean | null>(link ? Boolean(link.music || link.featured) || null : null);
-  const musicOn = musicChoice ?? (isMusicUrl(url) || isSoundCloud(url));
+  const [musicChoice, setMusicChoice] = useState<boolean | null>(link ? Boolean(link.music) || null : null);
+  const musicOn = musicChoice ?? (isSpotifySong(url) || isSoundCloud(url));
   return (
     <div className="sm:col-span-full">
       <TzInput />
@@ -103,18 +94,16 @@ function LinkExtras({ link, url, adultDefault = false, onSoundCloud }: { link?: 
       </label>
       {musicOn && (
         <div className="mb-3 space-y-2 rounded-xl border-2 border-lime-200 bg-lime-50 p-3 text-sm">
-          {isMusicUrl(url) ? (
+          {isSpotifySong(url) ? (
             <>
-              <label className="flex items-start gap-2">
-                <input type="checkbox" name="music" defaultChecked={link ? Boolean(link.music) : true} className="mt-0.5 h-4 w-4 accent-lime-500" />
-                <span>Add &quot;Listen on Spotify, Apple Music, YouTube Music&quot; buttons <span className="text-stone-400">(we find it on every app for you)</span></span>
-              </label>
-              <FeaturedOptions link={link} />
+              <input type="hidden" name="music" value="on" />
+              <p className="text-stone-600">🎵 Your page gets a Spotify player plus Spotify, Apple Music and YouTube Music buttons. We find the other apps for you.</p>
+              <VideoOption link={link} />
             </>
           ) : isSoundCloud(url) ? (
             <p className="text-stone-600">SoundCloud shows up as a player on your page.</p>
           ) : (
-            <p className="text-stone-600">Paste a song or album link from Spotify, Apple Music or YouTube Music in the Link box. We&apos;ll find it on every app and can put a player at the top of your page.</p>
+            <p className="text-stone-600">Paste your Spotify song link in the Link box. We&apos;ll add a player and find it on Apple Music and YouTube Music too.</p>
           )}
           {onSoundCloud && !isSoundCloud(url) && (
             <button
@@ -147,7 +136,7 @@ function LinkExtras({ link, url, adultDefault = false, onSoundCloud }: { link?: 
           <span>🛍️ Grab the product picture and price from the page <span className="text-stone-400">(great for courses, merch and shops)</span></span>
         </label>
       )}
-      {canEmbed && (
+      {canEmbed && !(musicOn && isSpotifySong(url)) && (
         <label className="mb-2 flex items-center gap-2 text-sm">
           {/* SoundCloud has no "listen on" lookup, so new SoundCloud links default to the player */}
           <input key={String(isSoundCloud(url))} type="checkbox" name="embed" defaultChecked={link ? link.embed : isSoundCloud(url)} className="h-4 w-4 accent-lime-500" />
@@ -480,7 +469,7 @@ function LinkRowItem({ link, handle, sections, section }: { link: Link; handle?:
             {link.icon && <span className="mr-1">{link.icon}</span>}
             {link.title}
             {link.embed && <span className="ml-2 rounded bg-violet-100 px-1.5 py-0.5 text-xs font-medium text-violet-800">embed</span>}
-            {link.featured && <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-800">⭐ featured</span>}
+            {link.music && <span className="ml-2 rounded bg-lime-100 px-1.5 py-0.5 text-xs font-medium text-lime-800">🎵 song player</span>}
             {link.spotlight && <span className="ml-2 rounded bg-yellow-100 px-1.5 py-0.5 text-xs font-medium text-yellow-800">✨ spotlight</span>}
             {link.sensitive && <span className="ml-2 rounded bg-red-100 px-1.5 py-0.5 text-xs font-medium text-red-800">🔞 18+</span>}
             {link.music && <span className="ml-2 rounded bg-pink-100 px-1.5 py-0.5 text-xs font-medium text-pink-800">🎵 {link.music.links.length} apps</span>}
