@@ -179,7 +179,7 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
                       <td className="py-2 pr-4">
                         <div className="font-semibold">{o.title}</div>
                         <div className="text-xs text-stone-500">{o.advertiser}{o.category ? ` · ${o.category}` : ""}</div>
-                        <div className="max-w-md truncate font-mono text-xs text-stone-400">{o.url}</div>
+                        <div className="max-w-md truncate font-mono text-xs text-stone-500">{o.url}</div>
                       </td>
                       <td className="py-2 pr-4">{o.payout || "–"}</td>
                       <td className="py-2 pr-4 text-right tabular-nums">{o.added}</td>

@@ -54,7 +54,7 @@ export function DomainForm({ current, enabled, apex }: { current: string | null;
         {status?.state === "live" && <span className="rounded bg-lime-100 px-2 py-0.5 text-xs font-semibold text-lime-800">● Live</span>}
         {status?.state === "pending" && <span className="rounded bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">● Waiting for DNS</span>}
         {status?.state === "error" && <span className="rounded bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-800">● Problem</span>}
-        {!status && <span className="text-xs text-stone-400">Checking…</span>}
+        {!status && <span className="text-xs text-stone-500">Checking…</span>}
       </div>
       {status?.state !== "live" && (
         <>

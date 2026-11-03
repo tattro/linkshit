@@ -5,6 +5,8 @@
   --font-mono: var(--font-geist-mono);
   --color-brand: #84cc16;
   --color-ink: #1c1917;
+  /* A hair darker than Tailwind's stone-500 so small grey text passes WCAG AA contrast (4.5:1) on our light backgrounds */
+  --color-stone-500: #716963;
 }
 
 body {

@@ -35,6 +35,9 @@ export function SignupBox({ userId, prompt, buttonClass, buttonStyle, preview }:
         </button>
       </div>
       {state?.error && <p className="mt-2 text-center text-sm">{state.error}</p>}
+      <p className="mt-2 text-center text-xs opacity-80">
+        Only this page&apos;s owner gets your email, to send you updates. <a href="https://linksh.it/privacy" className="underline">Privacy</a>
+      </p>
     </form>
   );
 }

@@ -21,7 +21,7 @@ export function RedirectForm({ links, current }: { links: { id: number; title: s
       <h3 className={h3}>↪️ Redirect mode</h3>
       <p className={sub}>Skip your page and send everyone straight to one link. Handy for a drop or a launch. Clicks still count.</p>
       <div className="flex flex-wrap items-center gap-2">
-        <select name="linkId" defaultValue={current ?? ""} className={`${input} w-auto min-w-0 max-w-full flex-1`}>
+        <select name="linkId" aria-label="Link to send everyone to" defaultValue={current ?? ""} className={`${input} w-auto min-w-0 max-w-full flex-1`}>
           <option value="">Off: show my page</option>
           {links.map((l) => <option key={l.id} value={l.id}>Send everyone to: {l.title}</option>)}
         </select>
@@ -61,11 +61,11 @@ export function MediaKitForm({ kit, url }: { kit: { reach: string; rates: string
         Turn on my media kit
       </label>
       <label className="block text-sm">
-        <span className="font-medium">Your reach</span> <span className="text-xs text-stone-400">followers, who they are</span>
+        <span className="font-medium">Your reach</span> <span className="text-xs text-stone-500">followers, who they are</span>
         <textarea name="reach" defaultValue={kit?.reach ?? ""} maxLength={300} rows={2} placeholder="120K on TikTok, 40K on Instagram, mostly 18-34 in the US" className={input} />
       </label>
       <label className="block text-sm">
-        <span className="font-medium">Your rates</span> <span className="text-xs text-stone-400">optional</span>
+        <span className="font-medium">Your rates</span> <span className="text-xs text-stone-500">optional</span>
         <textarea name="rates" defaultValue={kit?.rates ?? ""} maxLength={500} rows={2} placeholder="TikTok video $400 · Story $150 · Bundles welcome" className={input} />
       </label>
       <div className="flex flex-wrap items-center gap-3">
