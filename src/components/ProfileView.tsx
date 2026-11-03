@@ -83,7 +83,10 @@ export function ProfileView({ user, links, preview = false, avatarOverride, qa =
   const appLink = (l: ProfileLink, m: { p: string; url: string }, big = false) => (
     <a
       key={m.p}
-      href={preview ? m.url : `/go/${l.id}?to=${m.p}`}
+      // Straight to the app's own link so iPhones open the app instead of a "Get Spotify" page;
+      // the click is counted by a ping instead of a redirect
+      href={m.url}
+      ping={preview ? undefined : `/go/${l.id}?to=${m.p}`}
       target={preview ? "_blank" : undefined}
       rel="noopener noreferrer nofollow"
       className={`tint inline-flex items-center gap-1.5 rounded-full font-semibold ${big ? "px-3.5 py-2 text-sm [--tint:0.12]" : "px-3 py-1 text-xs"}`}
