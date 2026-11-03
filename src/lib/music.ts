@@ -14,7 +14,14 @@ export const PLAYER_APPS: { id: PlayerApp; label: string }[] = [
   { id: "youtube", label: "YouTube Music" },
 ];
 export const DEFAULT_PLAYER: PlayerApp = "spotify";
-export const isPlayerApp = (v: unknown): v is PlayerApp => PLAYER_APPS.some((a) => a.id === v);
+
+/** The app a pasted song link is from: it plays the song and gets the first button. */
+export function sourceApp(url: string): PlayerApp | undefined {
+  if (/^https?:\/\/open\.spotify\.com\//i.test(url)) return "spotify";
+  if (/^https?:\/\/music\.apple\.com\//i.test(url)) return "appleMusic";
+  if (/^https?:\/\/(music\.|www\.)?youtube\.com\//i.test(url)) return "youtube";
+  return undefined;
+}
 
 // Order on the page, and how each Odesli platform key is labelled
 export const MUSIC_PLATFORMS: { id: string; label: string }[] = [

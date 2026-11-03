@@ -22,7 +22,7 @@ export type ProfileData = Pick<User, "id" | "handle" | "displayName" | "bio" | "
   tips: Tips;
 };
 
-export type ProfileLink = Pick<LinkRow, "id" | "title" | "url" | "embed" | "sensitive" | "spotlight" | "icon" | "offerId" | "thumbVersion" | "discountCode" | "heading" | "music" | "featured" | "price" | "latest"> & { dropsAt?: Date | null } & {
+export type ProfileLink = Pick<LinkRow, "id" | "title" | "url" | "embed" | "sensitive" | "spotlight" | "icon" | "offerId" | "thumbVersion" | "discountCode" | "heading" | "music" | "featured" | "videoUrl" | "price" | "latest"> & { dropsAt?: Date | null } & {
   locked?: boolean;
 };
 
@@ -59,7 +59,7 @@ function splitApps(list: AppLink[], prefer: string = DEFAULT_PLAYER) {
   return { main, rest };
 }
 
-/** Player for the featured song: the musician's pick, then Spotify, Apple Music, YouTube Music. */
+/** Player for the featured song: their music video if they added one, else the app they pasted from, then Spotify, Apple Music, YouTube Music. */
 function featuredPlayer(l: ProfileLink) {
   const apps = l.music?.links ?? [];
   const yt = apps.find((m) => m.p === "youtubeMusic") ?? apps.find((m) => m.p === "youtube");
@@ -71,7 +71,7 @@ function featuredPlayer(l: ProfileLink) {
     youtube: ytId ? `https://www.youtube.com/watch?v=${ytId}` : undefined,
   };
   const prefer = l.music?.prefer ?? DEFAULT_PLAYER;
-  const tryUrls = [byApp[prefer], byApp.spotify, byApp.appleMusic, byApp.youtube, l.url.replace("://music.youtube.com/", "://www.youtube.com/")];
+  const tryUrls = [l.videoUrl ?? undefined, byApp[prefer], byApp.spotify, byApp.appleMusic, byApp.youtube, l.url.replace("://music.youtube.com/", "://www.youtube.com/")];
   for (const u of tryUrls) {
     const e = u ? embedFor(u) : null;
     if (e) return e;

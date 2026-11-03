@@ -17,7 +17,7 @@ import type { Link, Socials, Style, Tips } from "@/db/schema";
 import { setLookDraft } from "./lookDraft";
 import { AvatarCropper } from "./AvatarCropper";
 import { GENERAL_CATEGORIES } from "@/lib/creatorTypes";
-import { DEFAULT_PLAYER, isMusicUrl, PLAYER_APPS } from "@/lib/music";
+import { isMusicUrl } from "@/lib/music";
 import { isStoreUrl } from "@/lib/stores";
 import { LATEST_LABEL, latestKind } from "@/lib/feeds";
 import { countryName, GEO_COUNTRIES, MAX_GEO_RULES, type GeoRule } from "@/lib/geo";
@@ -43,6 +43,41 @@ function toLocalInput(d: Date | string | null) {
   const date = new Date(d);
   const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
   return local.toISOString().slice(0, 16);
+}
+
+/** "Feature this song" and, under it, an optional music video that plays instead of the audio player. */
+function FeaturedOptions({ link }: { link?: Link }) {
+  const [featured, setFeatured] = useState(Boolean(link?.featured));
+  const [video, setVideo] = useState(Boolean(link?.videoUrl));
+  return (
+    <>
+      <label className="flex items-start gap-2">
+        <input type="checkbox" name="featured" checked={featured} onChange={(e) => setFeatured(e.target.checked)} className="mt-0.5 h-4 w-4 accent-lime-500" />
+        <span>⭐ Feature this song at the top of my page <span className="text-stone-400">(a player plus Spotify, Apple Music and YouTube Music buttons · one song at a time)</span></span>
+      </label>
+      {featured && (
+        <div className="ml-6 space-y-2">
+          <label className="flex items-start gap-2">
+            <input type="checkbox" name="video" checked={video} onChange={(e) => setVideo(e.target.checked)} className="mt-0.5 h-4 w-4 accent-lime-500" />
+            <span>🎬 Put a music video above it <span className="text-stone-400">(plays instead of the audio player)</span></span>
+          </label>
+          {video && (
+            <input
+              name="videoUrl"
+              defaultValue={link?.videoUrl ?? ""}
+              inputMode="url"
+              autoCapitalize="off"
+              autoCorrect="off"
+              spellCheck={false}
+              placeholder="youtube.com/watch?v=…"
+              aria-label="Music video link"
+              className="w-full rounded-lg border-2 border-stone-300 bg-white px-3 py-2 outline-none focus:border-stone-900"
+            />
+          )}
+        </div>
+      )}
+    </>
+  );
 }
 
 const isSoundCloud = (url: string) => /^(https?:\/\/)?(www\.|m\.)?soundcloud\.com(\/|$)/i.test(url.trim());
@@ -72,24 +107,9 @@ function LinkExtras({ link, url, adultDefault = false, onSoundCloud }: { link?: 
             <>
               <label className="flex items-start gap-2">
                 <input type="checkbox" name="music" defaultChecked={link ? Boolean(link.music) : true} className="mt-0.5 h-4 w-4 accent-lime-500" />
-                <span>Add &quot;Listen on Spotify, Apple Music, YouTube&quot; buttons <span className="text-stone-400">(we find it on every app for you)</span></span>
+                <span>Add &quot;Listen on Spotify, Apple Music, YouTube Music&quot; buttons <span className="text-stone-400">(we find it on every app for you)</span></span>
               </label>
-              <label className="flex items-start gap-2">
-                <input type="checkbox" name="featured" defaultChecked={link?.featured} className="mt-0.5 h-4 w-4 accent-lime-500" />
-                <span>⭐ Feature this song at the top of my page <span className="text-stone-400">(big player with Spotify, Apple Music and YouTube buttons · one song at a time)</span></span>
-              </label>
-              <fieldset>
-                <legend className="mb-1">Which app should come first on your page? <span className="text-stone-400">(it plays the song and gets the first button)</span></legend>
-                <div className="flex flex-wrap gap-2">
-                  {PLAYER_APPS.map((a) => (
-                    <label key={a.id} className="cursor-pointer rounded-full border-2 border-stone-300 bg-white px-3 py-1 has-[:checked]:border-stone-900 has-[:checked]:bg-stone-900 has-[:checked]:text-white">
-                      <input type="radio" name="prefer" value={a.id} defaultChecked={(link?.music?.prefer ?? DEFAULT_PLAYER) === a.id} className="sr-only" />
-                      {a.label}
-                    </label>
-                  ))}
-                </div>
-                <p className="mt-1 text-xs text-stone-400">Paste a link from any of them. We find the song on the others.</p>
-              </fieldset>
+              <FeaturedOptions link={link} />
             </>
           ) : isSoundCloud(url) ? (
             <p className="text-stone-600">SoundCloud shows up as a player on your page.</p>

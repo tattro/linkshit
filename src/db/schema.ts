@@ -226,6 +226,8 @@ export const links = pgTable(
     music: jsonb("music").$type<MusicLinks>(),
     // Musicians: one song shown big at the top of the page with a player
     featured: boolean("featured").notNull().default(false),
+    // Optional music video that plays at the top instead of the audio player (featured song only)
+    videoUrl: text("video_url"),
     // Visitors from these countries go somewhere else (e.g. the UK store)
     geo: jsonb("geo").$type<GeoRule[]>(),
     // Android visitors go here instead (e.g. Google Play when url is the App Store)
