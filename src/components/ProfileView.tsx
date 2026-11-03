@@ -201,11 +201,13 @@ export function ProfileView({ user, links, preview = false, avatarOverride, qa =
         </p>
         {user.verifiedBy && (
           <div className="mt-1 flex items-center gap-1 text-sm font-semibold">
-            <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0" aria-hidden>
-              <path fill="#1d9bf0" d="M12 1.5l2.6 1.9 3.2-.2 1 3.1 2.6 1.9-1 3.1 1 3.1-2.6 1.9-1 3.1-3.2-.2L12 22.5l-2.6-1.9-3.2.2-1-3.1-2.6-1.9 1-3.1-1-3.1 2.6-1.9 1-3.1 3.2.2z" />
-              <path fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" d="M7.8 12.3l2.8 2.8 5.6-5.8" />
-            </svg>
-            <span>Verified by {user.verifiedBy}</span>
+            <span>
+              <svg viewBox="0 0 24 24" className="mr-1 inline h-[1.15em] w-[1.15em] align-[-0.2em]" aria-hidden>
+                <path fill="#1d9bf0" d="M12 1.5l2.6 1.9 3.2-.2 1 3.1 2.6 1.9-1 3.1 1 3.1-2.6 1.9-1 3.1-3.2-.2L12 22.5l-2.6-1.9-3.2.2-1-3.1-2.6-1.9 1-3.1-1-3.1 2.6-1.9 1-3.1 3.2.2z" />
+                <path fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" d="M7.8 12.3l2.8 2.8 5.6-5.8" />
+              </svg>
+              Verified by {user.verifiedBy}
+            </span>
             <VerifiedInfo />
           </div>
         )}
