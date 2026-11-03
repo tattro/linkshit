@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import { ImageResponse } from "next/og";
 import { db, users } from "@/db";
+import { notLiveYet } from "@/lib/live";
 import { getTheme } from "@/lib/themes";
 
 export const alt = "linksh.it profile";
@@ -19,10 +20,10 @@ const PALETTE: Record<string, { bg: string; fg: string; accent: string }> = {
 export default async function Image({ params }: { params: Promise<{ handle: string }> }) {
   const handle = decodeURIComponent((await params).handle).toLowerCase();
   const [user] = await db
-    .select({ handle: users.handle, displayName: users.displayName, bio: users.bio, theme: users.theme, style: users.style, bannedAt: users.bannedAt })
+    .select({ handle: users.handle, displayName: users.displayName, bio: users.bio, theme: users.theme, style: users.style, bannedAt: users.bannedAt, notLive: notLiveYet })
     .from(users)
     .where(eq(users.handle, handle));
-  const ok = user && !user.bannedAt;
+  const ok = user && !user.bannedAt && !user.notLive;
   const p = PALETTE[getTheme(user?.theme).id] ?? PALETTE.classic;
   const bg = (ok && user.style.bg) || p.bg;
   const fg = (ok && user.style.text) || p.fg;

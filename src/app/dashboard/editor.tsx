@@ -959,12 +959,16 @@ export function LookForm({ user, avatar, background }: { user: { theme: string; 
   );
 }
 
-export function VerifyBanner({ email }: { email: string }) {
+export function VerifyBanner({ email, gated }: { email: string; gated: boolean }) {
   const [state, action, pending] = useActionState(resendVerification, undefined);
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border-2 border-amber-500 bg-amber-50 p-4 text-sm">
       <p>
-        <span className="font-bold">Confirm your email.</span> We sent a link to {email}. It lets you reset your password if you ever forget it.
+        {gated ? (
+          <><span className="font-bold">Your page isn&apos;t live yet.</span> Click the link we sent to {email} and it goes public. Keep building in the meantime.</>
+        ) : (
+          <><span className="font-bold">Confirm your email.</span> We sent a link to {email}. It lets you reset your password if you ever forget it.</>
+        )}
       </p>
       <form action={action} className="flex items-center gap-2">
         {state?.ok && <span className="text-lime-700">{state.ok}</span>}

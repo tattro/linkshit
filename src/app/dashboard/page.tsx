@@ -1,3 +1,4 @@
+import { CONFIRM_REQUIRED_FROM } from "@/lib/live";
 import { and, asc, desc, eq, isNull } from "drizzle-orm";
 import { db, events, links, messages, questions, subscribers } from "@/db";
 import { answeredQuestions } from "@/lib/profile";
@@ -193,7 +194,7 @@ export default async function Dashboard({ searchParams }: PageProps<"/dashboard"
               Editing <span className="font-mono font-semibold text-stone-900">linksh.it/{user.handle}</span>, one of your extra pages.
             </div>
           )}
-          {!account.emailVerifiedAt && !verified && <VerifyBanner email={account.email ?? ""} />}
+          {!account.emailVerifiedAt && !verified && <VerifyBanner email={account.email ?? ""} gated={account.createdAt >= new Date(CONFIRM_REQUIRED_FROM)} />}
 
           <Tabs active={tab} badges={{ grow: growBadge }} />
 

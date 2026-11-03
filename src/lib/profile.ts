@@ -3,6 +3,7 @@ import { and, asc, desc, eq, gt, isNotNull, isNull, or } from "drizzle-orm";
 import { cache } from "react";
 import { db, handleRedirects, links, offers, questions, users } from "@/db";
 import { redirectCutoff } from "@/lib/handleTaken";
+import { notLiveYet } from "@/lib/live";
 import { offersLast, visibleLinks } from "@/components/ProfileView";
 
 /** Everything a public page needs, by handle or by custom domain. Null if missing or banned. */
@@ -14,10 +15,11 @@ export const getPublicProfile = cache(async (by: "handle" | "domain", key: strin
       tips: users.tips, signupEnabled: users.signupEnabled, signupPrompt: users.signupPrompt, contactEnabled: users.contactEnabled, qaEnabled: users.qaEnabled, qaPrompt: users.qaPrompt,
       redirectLinkId: users.redirectLinkId, lockCode: users.lockCode, adultGate: users.adultGate, seoTitle: users.seoTitle, seoDescription: users.seoDescription,
       metaPixel: users.metaPixel, googleAnalytics: users.googleAnalytics, tiktokPixel: users.tiktokPixel,
+      notLive: notLiveYet,
     })
     .from(users)
     .where(by === "handle" ? eq(users.handle, key) : eq(users.customDomain, key));
-  if (!user || user.bannedAt) return null;
+  if (!user || user.bannedAt || user.notLive) return null;
   const rows = await db
     .select({
       id: links.id, title: links.title, url: links.url, embed: links.embed, startsAt: links.startsAt, endsAt: links.endsAt,
@@ -37,6 +39,12 @@ export const getPublicProfile = cache(async (by: "handle" | "domain", key: strin
 });
 
 export type PublicProfile = NonNullable<Awaited<ReturnType<typeof getPublicProfile>>>;
+
+/** True when the handle exists but its owner hasn't confirmed their email yet. */
+export async function waitingForConfirm(handle: string): Promise<boolean> {
+  const [row] = await db.select({ notLive: notLiveYet, bannedAt: users.bannedAt }).from(users).where(eq(users.handle, handle));
+  return Boolean(row?.notLive && !row.bannedAt);
+}
 
 /** Where an old (renamed) handle points now, if it was renamed recently. */
 export async function renamedTo(oldHandle: string): Promise<string | null> {

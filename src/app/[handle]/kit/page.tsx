@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import NextLink from "next/link";
 import { notFound } from "next/navigation";
 import { db, events, users } from "@/db";
+import { notLiveYet } from "@/lib/live";
 import { avatarUrl } from "@/components/ProfileView";
 import { CREATOR_TYPES, isCreatorType } from "@/lib/creatorTypes";
 import { countryName } from "@/lib/geo";
@@ -17,7 +18,7 @@ async function getKit(raw: string) {
     })
     .from(users)
     // Locked or banned pages don't get a public kit
-    .where(and(eq(users.handle, handle), isNull(users.bannedAt), isNull(users.lockCode), isNotNull(users.mediaKit)));
+    .where(and(eq(users.handle, handle), isNull(users.bannedAt), isNull(users.lockCode), isNotNull(users.mediaKit), sql`not ${notLiveYet}`));
   return user ?? null;
 }
 
