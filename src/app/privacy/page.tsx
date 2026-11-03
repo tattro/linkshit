@@ -14,7 +14,7 @@ export default function Privacy() {
         advertising, and you can take your data or delete it whenever you want.
       </p>
       <p>
-        linksh.it is responsible for (the &ldquo;controller&rdquo; of) the personal data described here. You can reach us at {mail}.
+        linksh.it is a brand of Vyamp, operated by Rainbow SEO LLC, Tucson, Arizona, USA, which is responsible for (the &ldquo;controller&rdquo; of) the personal data described here. You can reach us at {mail}.
       </p>
 
       <h2>What we collect</h2>

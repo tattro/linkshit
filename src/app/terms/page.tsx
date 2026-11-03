@@ -8,7 +8,7 @@ export default function Terms() {
   return (
     <LegalShell title="Terms of Service" updated="November 1, 2026">
       <p>
-        These terms are the deal between you and linksh.it (&ldquo;we&rdquo;, &ldquo;us&rdquo;) when you use the site.
+        These terms are the deal between you and linksh.it (&ldquo;we&rdquo;, &ldquo;us&rdquo;), a brand of Vyamp, operated by Rainbow SEO LLC of Tucson, Arizona, when you use the site.
         By creating an account or using linksh.it, you agree to them. If you don&apos;t agree, please don&apos;t use it.
       </p>
 
