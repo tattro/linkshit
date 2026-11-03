@@ -210,7 +210,7 @@ export function ProfileView({ user, links, preview = false, avatarOverride, qa =
                 ⓘ
               </summary>
               <span className="absolute right-0 top-6 z-20 w-56 rounded-xl bg-stone-900 p-3 text-left text-xs font-normal text-white shadow-lg">
-                JK, not really. It&apos;s a joke badge: nobody checked anything, and whoever&apos;s named here didn&apos;t verify or endorse this page.
+                JK, not really. No one would ever endorse me. But one can dream.
               </span>
             </details>
           </div>
