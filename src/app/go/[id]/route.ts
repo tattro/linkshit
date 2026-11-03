@@ -78,3 +78,23 @@ export async function GET(req: Request, ctx: RouteContext<"/go/[id]">) {
   }
   return NextResponse.redirect(dest, 302);
 }
+
+// <a ping> from the "Listen on…" buttons: those link straight to the app, so this only counts the click.
+export async function POST(req: Request, ctx: RouteContext<"/go/[id]">) {
+  const { id } = await ctx.params;
+  const linkId = Number(id);
+  const done = new Response(null, { status: 204 });
+  if (!Number.isInteger(linkId)) return done;
+  const [link] = await db
+    .select({ userId: links.userId, deletedAt: links.deletedAt, bannedAt: users.bannedAt, heading: links.heading })
+    .from(links)
+    .innerJoin(users, eq(users.id, links.userId))
+    .where(eq(links.id, linkId));
+  if (!link || link.heading || link.deletedAt || link.bannedAt) return done;
+  const visitor = visitorInfo(req.headers, new URL(req.url).host);
+  after(async () => {
+    await db.update(links).set({ clicks: sql`${links.clicks} + 1` }).where(eq(links.id, linkId));
+    if (visitor) await db.insert(events).values({ userId: link.userId, linkId, kind: "click", ...visitor });
+  });
+  return done;
+}
