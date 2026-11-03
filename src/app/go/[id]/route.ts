@@ -2,6 +2,7 @@ import { eq, sql } from "drizzle-orm";
 import { geoTarget } from "@/lib/geo";
 import { NextResponse, after } from "next/server";
 import { db, events, links, offers, users } from "@/db";
+import { notLiveYet } from "@/lib/live";
 import { androidIntent, appTarget, detectDevice } from "@/lib/deeplinks";
 import { visitorInfo } from "@/lib/request";
 import { lockCookie, tokenMatches } from "@/lib/locks";
@@ -37,14 +38,14 @@ export async function GET(req: Request, ctx: RouteContext<"/go/[id]">) {
       url: links.url, userId: links.userId, bannedAt: users.bannedAt, startsAt: links.startsAt, endsAt: links.endsAt,
       openInApp: users.openInApp, deletedAt: links.deletedAt, offerId: links.offerId, offerActive: offers.active,
       lockCode: links.lockCode, androidUrl: links.androidUrl, geo: links.geo, music: links.music, latest: links.latest, heading: links.heading, utm: users.utm, handle: users.handle,
-      pageLock: users.lockCode,
+      pageLock: users.lockCode, notLive: notLiveYet,
     })
     .from(links)
     .innerJoin(users, eq(users.id, links.userId))
     .leftJoin(offers, eq(offers.id, links.offerId))
     .where(eq(links.id, linkId));
   const now = new Date();
-  if (!link || link.heading || link.bannedAt || link.deletedAt || (link.offerId && !link.offerActive) || (link.startsAt && link.startsAt > now) || (link.endsAt && link.endsAt <= now)) return home;
+  if (!link || link.heading || link.bannedAt || link.notLive || link.deletedAt || (link.offerId && !link.offerActive) || (link.startsAt && link.startsAt > now) || (link.endsAt && link.endsAt <= now)) return home;
 
   // Locked link (or a link on a locked page): visitors type the code first
   const jar = req.headers.get("cookie") ?? "";
@@ -86,11 +87,11 @@ export async function POST(req: Request, ctx: RouteContext<"/go/[id]">) {
   const done = new Response(null, { status: 204 });
   if (!Number.isInteger(linkId)) return done;
   const [link] = await db
-    .select({ userId: links.userId, deletedAt: links.deletedAt, bannedAt: users.bannedAt, heading: links.heading })
+    .select({ userId: links.userId, deletedAt: links.deletedAt, bannedAt: users.bannedAt, heading: links.heading, notLive: notLiveYet })
     .from(links)
     .innerJoin(users, eq(users.id, links.userId))
     .where(eq(links.id, linkId));
-  if (!link || link.heading || link.deletedAt || link.bannedAt) return done;
+  if (!link || link.heading || link.deletedAt || link.bannedAt || link.notLive) return done;
   const visitor = visitorInfo(req.headers, new URL(req.url).host);
   after(async () => {
     await db.update(links).set({ clicks: sql`${links.clicks} + 1` }).where(eq(links.id, linkId));
