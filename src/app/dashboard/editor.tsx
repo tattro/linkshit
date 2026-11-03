@@ -96,7 +96,7 @@ function LinkExtras({ link, url, adultDefault = false, onSoundCloud }: { link?: 
           ) : (
             <p className="text-stone-600">Paste a song or album link from Spotify, Apple Music or YouTube Music in the Link box. We&apos;ll find it on every app and can put a player at the top of your page.</p>
           )}
-          {onSoundCloud && !isSoundCloud(url) && !isMusicUrl(url) && (
+          {onSoundCloud && !isSoundCloud(url) && (
             <button
               type="button"
               onClick={onSoundCloud}
