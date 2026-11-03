@@ -18,7 +18,7 @@ export function PageSwitcher({ pages, activeId, to }: { pages: P[]; activeId: nu
       <summary className="flex cursor-pointer list-none items-center gap-1 whitespace-nowrap rounded-full border-2 border-stone-300 px-3 py-1 font-semibold hover:border-stone-900">
         📄 {pages.length > 1 ? `${pages.length} pages` : "Pages"} <span className="text-xs group-open:rotate-180">▾</span>
       </summary>
-      <div className="absolute left-0 z-50 mt-2 w-72 sm:left-auto sm:right-0 rounded-2xl border-2 border-stone-900 bg-white p-2 shadow-xl">
+      <div className="absolute left-0 z-50 mt-2 w-72 max-sm:fixed max-sm:inset-x-4 max-sm:w-auto sm:left-auto sm:right-0 rounded-2xl border-2 border-stone-900 bg-white p-2 shadow-xl">
         <ul>
           {pages.map((p) => (
             <li key={p.id}>
