@@ -6,7 +6,6 @@ import { safeFetch } from "@/lib/safeFetch";
 // Overridable for local tests only
 const API = process.env.SONGLINK_API || "https://api.song.link/v1-alpha.1/links";
 const ITUNES = process.env.ITUNES_API_BASE || "https://itunes.apple.com";
-const YOUTUBE = process.env.YOUTUBE_FEED_BASE || "https://www.youtube.com";
 const SPOTIFY = process.env.SPOTIFY_OEMBED_BASE || "https://open.spotify.com";
 
 type Song = { title: string; artist: string };
@@ -62,24 +61,14 @@ async function appleFor(song: Song): Promise<string | null> {
   return u && /^https:\/\/music\.apple\.com\//.test(u) ? u : null;
 }
 
-/** First YouTube search result, kept only if its title names the song; otherwise a search link. */
-async function youtubeFor(song: Song): Promise<string> {
-  const query = `${song.artist} ${song.title}`;
-  const search = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
-  const page = await safeFetch(`${YOUTUBE}/results?search_query=${encodeURIComponent(query)}&hl=en&gl=US`, { maxBytes: 1_500_000, accept: "text/html", truncate: true });
-  const html = page?.body.toString("utf8") ?? "";
-  const ids = [...new Set([...html.matchAll(/"videoId":"([\w-]{11})"/g)].map((m) => m[1]))].slice(0, 3);
-  for (const id of ids) {
-    const info = await getJson<{ title?: string; author_name?: string }>(`${YOUTUBE}/oembed?url=${encodeURIComponent(`https://www.youtube.com/watch?v=${id}`)}&format=json`);
-    const text = norm(`${info?.title ?? ""} ${info?.author_name ?? ""}`);
-    if (text.includes(norm(song.title)) && text.includes(norm(song.artist))) return `https://www.youtube.com/watch?v=${id}`;
-  }
-  return search;
+/** No guessing at videos (re-uploads are everywhere): a YouTube Music search for the song instead. */
+function youtubeMusicSearch(song: Song): string {
+  return `https://music.youtube.com/search?q=${encodeURIComponent(`${song.artist} ${song.title}`)}`;
 }
 
 /**
- * Looks a song or album up on every music app. Odesli first; Spotify, Apple Music
- * and YouTube are then filled in by our own search if Odesli missed them.
+ * Looks a song or album up on every music app. Odesli first; Apple Music is then
+ * filled in by our own search, and YouTube Music by a search link, if Odesli missed them.
  * Null if nothing beyond the original link was found (the link still saves).
  */
 export async function lookupMusic(url: string): Promise<MusicLinks | null> {
@@ -94,7 +83,7 @@ export async function lookupMusic(url: string): Promise<MusicLinks | null> {
     if (!has("spotify") && /open\.spotify\.com\//.test(url)) found.push({ p: "spotify", url });
     if (!has("appleMusic") && /music\.apple\.com\//.test(url)) found.push({ p: "appleMusic", url });
 
-    if (!has("appleMusic") || !has("youtube")) {
+    if (!has("appleMusic") || !(has("youtube") || has("youtubeMusic"))) {
       const entity = data?.entityUniqueId ? data.entitiesByUniqueId?.[data.entityUniqueId] : undefined;
       const song: Song | null = typeof entity?.title === "string" && typeof entity.artistName === "string"
         ? { title: entity.title, artist: entity.artistName }
@@ -102,10 +91,10 @@ export async function lookupMusic(url: string): Promise<MusicLinks | null> {
       if (song) {
         const [apple, yt] = await Promise.all([
           has("appleMusic") ? null : appleFor(song).catch(() => null),
-          has("youtube") || has("youtubeMusic") ? null : youtubeFor(song).catch(() => null),
+          has("youtube") || has("youtubeMusic") ? null : youtubeMusicSearch(song),
         ]);
         if (apple) found.push({ p: "appleMusic", url: apple });
-        if (yt) found.push({ p: "youtube", url: yt });
+        if (yt) found.push({ p: "youtubeMusic", url: yt });
       }
     }
     const order = MUSIC_PLATFORMS.map((p) => p.id);
