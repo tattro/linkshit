@@ -17,7 +17,7 @@ import { embedFor } from "@/lib/embeds";
 import { rateLimit, TOO_MANY } from "@/lib/ratelimit";
 import { unsafeReason } from "@/lib/safety";
 import { normalizeUrl } from "@/lib/urls";
-import { isMusicUrl, sourceApp } from "@/lib/music";
+import { isSpotifySong } from "@/lib/music";
 import { lookupMusic } from "@/lib/musicLookup";
 import { pagePreview } from "@/lib/pagePreview";
 import { setUpLatest } from "@/lib/latest";
@@ -116,15 +116,14 @@ async function readLinkForm(formData: FormData) {
   }
   const thumb = await readThumb(formData);
   if (thumb && "error" in thumb) return { error: thumb.error } as const;
-  const music = formData.get("music") === "on" && !lockCode && isMusicUrl(url) ? await lookupMusic(url) : null;
-  // The app they pasted from plays the song and goes first
-  if (music) music.prefer = sourceApp(url);
-  // Only a song or album can be the featured song
-  const featured = formData.get("featured") === "on" && !lockCode && isMusicUrl(url);
-  // "Put a music video above it": a YouTube (or Vimeo) link that plays instead of the audio player
+  // A Spotify song becomes a music card: player plus Spotify, Apple Music and YouTube Music buttons
+  const music = formData.get("music") === "on" && !lockCode && isSpotifySong(url)
+    ? (await lookupMusic(url)) ?? { links: [{ p: "spotify", url }] } // lookup down: still a Spotify card
+    : null;
+  // "Make my music video the main visual": a YouTube (or Vimeo) video instead of the Spotify player
   const rawVideo = String(formData.get("videoUrl") ?? "").trim();
   let videoUrl: string | null = null;
-  if (featured && formData.get("video") === "on" && rawVideo) {
+  if (music && formData.get("video") === "on" && rawVideo) {
     videoUrl = normalizeUrl(rawVideo);
     const player = videoUrl ? embedFor(videoUrl) : null;
     if (!videoUrl || !player || !/youtube|vimeo/.test(player.src)) {
@@ -144,12 +143,7 @@ async function readLinkForm(formData: FormData) {
     image ??= preview.image;
   }
   // A locked link can't play inline, or the lock would be pointless
-  return { value: { title, url, startsAt, endsAt, embed: embed && !lockCode, sensitive, spotlight, icon, lockCode, discountCode, androidUrl, countdown, music, featured, videoUrl, price, latest, geo: geo.length ? geo : null }, thumb: image, removeThumb: formData.get("removeThumb") === "on" && !image } as const;
-}
-
-/** Only one featured song per page: clears the old one before a new one is set. */
-async function unfeatureAll(userId: number) {
-  await db.update(links).set({ featured: false }).where(and(eq(links.userId, userId), eq(links.featured, true)));
+  return { value: { title, url, startsAt, endsAt, embed: embed && !lockCode, sensitive, spotlight, icon, lockCode, discountCode, androidUrl, countdown, music, featured: false, videoUrl, price, latest, geo: geo.length ? geo : null }, thumb: image, removeThumb: formData.get("removeThumb") === "on" && !image } as const;
 }
 
 /** Which section a link sits in: the nearest heading above it, or "none". */
@@ -233,7 +227,6 @@ export async function addLink(_prev: ActionState, formData: FormData): Promise<A
 
   // Bottom of the list (below a section that was just made, if any)
   const position = section?.created ? max + 2 : max + 1;
-  if (form.value.featured) await unfeatureAll(user.id);
   const [row] = await db.insert(links).values({ userId: user.id, position, ...form.value }).returning({ id: links.id });
   await saveThumb(row.id, form.thumb, false);
   if (section) await placeInSection(user.id, row.id, section.target);
@@ -250,7 +243,6 @@ export async function updateLink(_prev: ActionState, formData: FormData): Promis
   const owned = await db.select({ id: links.id }).from(links).where(and(eq(links.id, id), eq(links.userId, user.id), eq(links.heading, false), isNull(links.deletedAt)));
   if (!owned.length) return { error: "That link is gone. Refresh the page." };
   const section = await resolveSection(user.id, formData);
-  if (form.value.featured) await unfeatureAll(user.id);
   const [row] = await db.update(links).set(form.value).where(and(eq(links.id, id), eq(links.userId, user.id), eq(links.heading, false))).returning({ id: links.id });
   if (row) {
     await saveThumb(row.id, form.thumb, form.removeThumb);
@@ -419,7 +411,6 @@ export async function restorePage(_prev: ActionState, formData: FormData): Promi
     if (l.countdown) fd.set("countdown", "on");
     if (l.sensitive) fd.set("sensitive", "on");
     if (l.spotlight) fd.set("spotlight", "on");
-    if (l.featured) fd.set("featured", "on");
     fd.set("icon", str(l.icon, 16));
     fd.set("lockCode", str(l.lockCode, 40));
     fd.set("discountCode", str(l.discountCode, 40));
