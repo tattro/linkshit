@@ -17,7 +17,7 @@ import { embedFor } from "@/lib/embeds";
 import { rateLimit, TOO_MANY } from "@/lib/ratelimit";
 import { unsafeReason } from "@/lib/safety";
 import { normalizeUrl } from "@/lib/urls";
-import { isMusicUrl, isPlayerApp } from "@/lib/music";
+import { isMusicUrl, sourceApp } from "@/lib/music";
 import { lookupMusic } from "@/lib/musicLookup";
 import { pagePreview } from "@/lib/pagePreview";
 import { setUpLatest } from "@/lib/latest";
@@ -117,10 +117,20 @@ async function readLinkForm(formData: FormData) {
   const thumb = await readThumb(formData);
   if (thumb && "error" in thumb) return { error: thumb.error } as const;
   const music = formData.get("music") === "on" && !lockCode && isMusicUrl(url) ? await lookupMusic(url) : null;
-  const prefer = formData.get("prefer");
-  if (music && isPlayerApp(prefer)) music.prefer = prefer;
+  // The app they pasted from plays the song and goes first
+  if (music) music.prefer = sourceApp(url);
   // Only a song or album can be the featured song
   const featured = formData.get("featured") === "on" && !lockCode && isMusicUrl(url);
+  // "Put a music video above it": a YouTube (or Vimeo) link that plays instead of the audio player
+  const rawVideo = String(formData.get("videoUrl") ?? "").trim();
+  let videoUrl: string | null = null;
+  if (featured && formData.get("video") === "on" && rawVideo) {
+    videoUrl = normalizeUrl(rawVideo);
+    const player = videoUrl ? embedFor(videoUrl) : null;
+    if (!videoUrl || !player || !/youtube|vimeo/.test(player.src)) {
+      return { error: "The music video needs to be a YouTube or Vimeo video link (e.g. youtube.com/watch?v=…)." } as const;
+    }
+  }
   if (embed && /^\/?$/.test(new URL(url).pathname) && new URL(url).hostname.replace(/^www\./, "") === "soundcloud.com") {
     return { error: "Finish your SoundCloud link: add your name after soundcloud.com/ (e.g. soundcloud.com/yourname)." } as const;
   }
@@ -134,7 +144,7 @@ async function readLinkForm(formData: FormData) {
     image ??= preview.image;
   }
   // A locked link can't play inline, or the lock would be pointless
-  return { value: { title, url, startsAt, endsAt, embed: embed && !lockCode, sensitive, spotlight, icon, lockCode, discountCode, androidUrl, countdown, music, featured, price, latest, geo: geo.length ? geo : null }, thumb: image, removeThumb: formData.get("removeThumb") === "on" && !image } as const;
+  return { value: { title, url, startsAt, endsAt, embed: embed && !lockCode, sensitive, spotlight, icon, lockCode, discountCode, androidUrl, countdown, music, featured, videoUrl, price, latest, geo: geo.length ? geo : null }, thumb: image, removeThumb: formData.get("removeThumb") === "on" && !image } as const;
 }
 
 /** Only one featured song per page: clears the old one before a new one is set. */
@@ -416,7 +426,7 @@ export async function restorePage(_prev: ActionState, formData: FormData): Promi
     fd.set("androidUrl", str(l.androidUrl, 2000));
     fd.set("price", str(l.price, 20));
     if (l.music) fd.set("music", "on");
-    if (l.musicPrefer) fd.set("prefer", str(l.musicPrefer, 20));
+    if (l.videoUrl) { fd.set("video", "on"); fd.set("videoUrl", str(l.videoUrl, 2000)); }
     if (l.latest) fd.set("latest", "on");
     for (const g of Array.isArray(l.geo) ? l.geo.slice(0, 3) : []) {
       fd.append("geoCountry", str(g?.c, 2));

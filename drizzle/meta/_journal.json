@@ -176,6 +176,13 @@
       "when": 1793669986381,
       "tag": "0024_link_featured",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1793674034477,
+      "tag": "0025_link_video",
+      "breakpoints": true
     }
   ]
 }
