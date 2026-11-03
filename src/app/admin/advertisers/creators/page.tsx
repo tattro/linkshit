@@ -95,7 +95,7 @@ function CreatorCard({ c }: { c: Creator }) {
         {c.sample
           ? <span className="flex-1 rounded-full border-2 border-stone-300 py-2 text-center text-sm font-bold text-stone-500">View page</span>
           : <a href={`/${c.handle}`} target="_blank" className="flex-1 rounded-full border-2 border-stone-900 py-2 text-center text-sm font-bold">View page ↗</a>}
-        <span className="flex-1 rounded-full bg-stone-200 py-2 text-center text-sm font-bold text-stone-500" title="Pro access, later">Invite · Pro</span>
+        <span className="flex-1 rounded-full bg-stone-200 py-2 text-center text-sm font-bold text-stone-500" title="Vyamp access, later">Invite · Vyamp access</span>
       </div>
     </article>
   );

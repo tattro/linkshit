@@ -17,8 +17,8 @@ export default async function HowItWorks() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-black">Advertisers only pay for sales.</h1>
-        <p className="mt-1 text-stone-600">No sponsored-link fees. The advertiser pays when someone buys. The creator just adds one more button.</p>
+        <h1 className="text-3xl font-black">Like hiring an influencer, but you only pay per sale.</h1>
+        <p className="mt-1 text-stone-600">Advertisers sign up once with Vyamp. Their offers can run on linksh.it creator pages here, and later on Cash Claps and Vyamp influencers. linksh.it pages stay fully linksh.it-branded.</p>
       </div>
 
       <ol className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -50,12 +50,12 @@ export default async function HowItWorks() {
         </div>
         <div className={`${card} relative opacity-80`}>
           <span className="absolute right-4 top-4 rounded-full bg-stone-900 px-2 py-0.5 text-xs font-bold text-white">Later · off</span>
-          <p className="text-sm font-bold uppercase tracking-wide text-stone-500">Pro access</p>
-          <p className="mt-1 text-2xl font-black">$50/month</p>
+          <p className="text-sm font-bold uppercase tracking-wide text-stone-500">Vyamp access</p>
+          <p className="mt-1 text-2xl font-black">~$100/month</p>
           <ul className="mt-3 space-y-1 text-sm">
-            <li>✓ Everything in Free</li><li>✓ All filters and full creator stats</li><li>✓ Invite creators directly</li><li>✓ Still pay per sale on top</li>
+            <li>✓ Everything in Free</li><li>✓ Every Vyamp property: linksh.it, Cash Claps</li><li>✓ Influencers, AI influencers and clippers</li><li>✓ Invite creators directly, full stats</li><li>✓ Still pay per sale on top</li>
           </ul>
-          <p className="mt-3 text-xs text-stone-500">Turn on once advertisers have seen real sales.</p>
+          <p className="mt-3 text-xs text-stone-500">Charged by Vyamp, not per property. Turn on once Vyamp is big enough.</p>
         </div>
       </section>
 

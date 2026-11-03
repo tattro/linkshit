@@ -65,6 +65,11 @@ export function OfferBuilder({ creators, niches }: { creators: C[]; niches: [str
           </label>
           <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={noAdult} onChange={(e) => setNoAdult(e.target.checked)} /> Skip pages with 18+ links</label>
           <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={review} onChange={(e) => setReview(e.target.checked)} /> Let me approve each creator first</label>
+          <fieldset className="border-t border-stone-200 pt-3"><legend className="text-sm font-semibold">Where it can run</legend>
+            <label className="mt-1 flex items-center gap-2 text-sm"><input type="checkbox" defaultChecked /> linksh.it creator pages</label>
+            <label className="flex items-center gap-2 text-sm text-stone-500"><input type="checkbox" disabled /> Cash Claps (people earn a reward for signing up). Coming later</label>
+            <label className="flex items-center gap-2 text-sm text-stone-500"><input type="checkbox" disabled /> Vyamp influencers, AI influencers and clippers. Coming later</label>
+          </fieldset>
           <label className="flex items-center gap-2 text-sm text-stone-500"><input type="checkbox" checked disabled /> Show &ldquo;Ad&rdquo; on the button (always on, required by law)</label>
         </section>
       </div>
