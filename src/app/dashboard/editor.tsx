@@ -878,9 +878,11 @@ export function LookForm({ user, avatar, background }: { user: { theme: string; 
           <button disabled={pending} className={btn}>{pending ? "Saving…" : "Save look"}</button>
           <Saved show={!!state?.ok && !pending} />
         </div>
-        <label className="flex cursor-pointer items-center gap-2 text-sm font-black text-red-600">
-          <input type="checkbox" name="chaos" defaultChecked={s.chaos} className="h-5 w-5 accent-red-600" />
-          Chaos mode (don&apos;t press this)
+        {/* Always warning red: a plain hex colour (older iPhones skip Tailwind's newer colour format)
+            and data-keep-colors so dashboard dark mode doesn't flip it */}
+        <label data-keep-colors className="flex cursor-pointer items-center gap-2 text-sm font-black uppercase tracking-wide" style={{ color: "#dc2626" }}>
+          <input type="checkbox" name="chaos" defaultChecked={s.chaos} className="h-5 w-5" style={{ accentColor: "#dc2626" }} />
+          ⚠️ Chaos mode (don&apos;t press this)
         </label>
       </div>
     </form>
