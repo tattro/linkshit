@@ -62,6 +62,7 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <h1 className="text-2xl font-black">Admin</h1>
+            <Link href="/admin/advertisers" className="text-sm font-semibold underline decoration-amber-400 decoration-2 underline-offset-4">🚧 Advertiser side (preview) →</Link>
             <p className="text-sm text-stone-500">
               {stats.total.toLocaleString()} accounts · {stats.week.toLocaleString()} new this week · {stats.banned.toLocaleString()} banned · {stats.marketplace.toLocaleString()} open to advertisers · {stats.tips.toLocaleString()} on the tips list
             </p>
