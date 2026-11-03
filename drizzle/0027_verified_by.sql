@@ -1,0 +1,1 @@
+ALTER TABLE "users" ADD COLUMN "verified_by" text DEFAULT '' NOT NULL;

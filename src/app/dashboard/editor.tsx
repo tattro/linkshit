@@ -2,6 +2,7 @@
 
 import NextLink from "next/link";
 import { startTransition, useActionState, useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
+import { VERIFIED_BY_MAX, VERIFIED_BY_SUGGESTIONS } from "@/lib/verifiedBy";
 import { deleteMessage, updateContact } from "@/app/actions/contact";
 import { answerQuestion, deleteQuestion, updateQA } from "@/app/actions/qa";
 import { addLink, deleteLink, deleteLinkForever, importLinktree, restorePage, reviveLink, updateHeading, updateLink, type ActionState } from "@/app/actions/links";
@@ -510,7 +511,7 @@ function Saved({ show }: { show: boolean }) {
   return show ? <span className="text-sm text-lime-700">Saved.</span> : null;
 }
 
-export function ProfileForm({ user }: { user: { displayName: string; bio: string; statsEmail: "week" | "month" | "off"; marketing: boolean } }) {
+export function ProfileForm({ user }: { user: { displayName: string; bio: string; verifiedBy: string; statsEmail: "week" | "month" | "off"; marketing: boolean } }) {
   const [state, action, pending] = useActionState(updateProfile, undefined);
   return (
     <form action={action} className="space-y-4">
@@ -522,6 +523,7 @@ export function ProfileForm({ user }: { user: { displayName: string; bio: string
         <span className="text-sm font-semibold">Bio</span>
         <textarea name="bio" defaultValue={user.bio} maxLength={160} rows={2} className={input} placeholder="Say something. Or don't." />
       </label>
+      <VerifiedByField current={user.verifiedBy} />
       <label className="flex items-center gap-2 text-sm">
         <span>Email me my stats</span>
         <select name="statsEmail" defaultValue={user.statsEmail} className="rounded-lg border-2 border-stone-300 bg-white px-2 py-1 outline-none focus:border-stone-900">
@@ -540,6 +542,40 @@ export function ProfileForm({ user }: { user: { displayName: string; bio: string
         {state?.error && <span className="text-sm text-red-600">{state.error}</span>}
       </div>
     </form>
+  );
+}
+
+/** The joke blue check: tick it, then say who "verified" you. */
+function VerifiedByField({ current }: { current: string }) {
+  const [on, setOn] = useState(Boolean(current));
+  const [i, setI] = useState(0);
+  useEffect(() => {
+    if (!on) return;
+    const t = setInterval(() => setI((n) => (n + 1) % VERIFIED_BY_SUGGESTIONS.length), 1800);
+    return () => clearInterval(t);
+  }, [on]);
+  return (
+    <div className="space-y-2">
+      <label className="flex items-start gap-2">
+        <input type="checkbox" name="verified" checked={on} onChange={(e) => setOn(e.target.checked)} className="mt-1 h-4 w-4 accent-stone-900" />
+        <span>
+          <span className="text-sm font-semibold">Get your profile verified</span>
+          <span className="block text-sm text-stone-500">And get a fancy blue check mark.</span>
+        </span>
+      </label>
+      {on && (
+        <label className="block pl-6">
+          <span className="text-sm font-semibold">Verified by</span>
+          <input
+            name="verifiedBy" defaultValue={current} maxLength={VERIFIED_BY_MAX} required className={input}
+            placeholder={VERIFIED_BY_SUGGESTIONS[i]}
+          />
+          <span className="mt-1 block text-xs text-stone-500">
+            Type anything: your mom, your dad, your gay best friend, God himself. Whoever vouches for you.
+          </span>
+        </label>
+      )}
+    </div>
   );
 }
 

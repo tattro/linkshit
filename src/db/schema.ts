@@ -49,6 +49,8 @@ export const users = pgTable(
     handle: text("handle").notNull(),
     displayName: text("display_name").notNull().default(""),
     bio: text("bio").notNull().default(""),
+    // Joke "Verified by ___" badge under the handle ("" = off)
+    verifiedBy: text("verified_by").notNull().default(""),
     theme: text("theme").notNull().default("classic"),
     style: jsonb("style").$type<Style>().notNull().default({}),
     socials: jsonb("socials").$type<Socials>().notNull().default({}),

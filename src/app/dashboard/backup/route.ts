@@ -28,7 +28,7 @@ export async function GET() {
     version: 1,
     exportedAt: new Date().toISOString(),
     page: {
-      handle: user.handle, displayName: user.displayName, bio: user.bio, theme: user.theme,
+      handle: user.handle, displayName: user.displayName, bio: user.bio, verifiedBy: user.verifiedBy, theme: user.theme,
       style: user.style, socials: user.socials as Record<string, string>, tips: user.tips as Record<string, string>,
       openInApp: user.openInApp, signupEnabled: user.signupEnabled, signupPrompt: user.signupPrompt, contactEnabled: user.contactEnabled, qaEnabled: user.qaEnabled, qaPrompt: user.qaPrompt,
       lockCode: user.lockCode, seoTitle: user.seoTitle, seoDescription: user.seoDescription,
