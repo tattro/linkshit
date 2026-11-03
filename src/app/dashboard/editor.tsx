@@ -18,6 +18,7 @@ import { setLookDraft } from "./lookDraft";
 import { AvatarCropper } from "./AvatarCropper";
 import { GENERAL_CATEGORIES } from "@/lib/creatorTypes";
 import { isMusicUrl, isSpotifySong } from "@/lib/music";
+import { isAdultUrl, isSoundCloud, spottedNote } from "@/lib/spotted";
 import { isStoreUrl } from "@/lib/stores";
 import { LATEST_LABEL, latestKind } from "@/lib/feeds";
 import { countryName, GEO_COUNTRIES, MAX_GEO_RULES, type GeoRule } from "@/lib/geo";
@@ -71,7 +72,6 @@ function VideoOption({ link }: { link?: Link }) {
   );
 }
 
-const isSoundCloud = (url: string) => /^(https?:\/\/)?(www\.|m\.)?soundcloud\.com(\/|$)/i.test(url.trim());
 
 function LinkExtras({ link, url, adultDefault = false, onSoundCloud }: { link?: Link; url: string; adultDefault?: boolean; onSoundCloud?: () => void }) {
   // Adult pages: new links start with the 18+ warning ticked
@@ -88,6 +88,7 @@ function LinkExtras({ link, url, adultDefault = false, onSoundCloud }: { link?: 
   return (
     <div className="sm:col-span-full">
       <TzInput />
+      {spottedNote(url) && <p className="mb-2 rounded-lg bg-lime-100 px-3 py-2 text-sm font-medium text-lime-900">✨ {spottedNote(url)}</p>}
       <label className="mb-2 flex items-center gap-2 text-sm">
         <input type="checkbox" checked={musicOn} onChange={(e) => setMusicChoice(e.target.checked)} className="h-4 w-4 accent-lime-500" />
         🎵 This is music <span className="text-stone-400">(a song, album or SoundCloud)</span>
@@ -117,7 +118,8 @@ function LinkExtras({ link, url, adultDefault = false, onSoundCloud }: { link?: 
         </div>
       )}
       <label className="mb-2 flex items-center gap-2 text-sm">
-        <input type="checkbox" name="sensitive" defaultChecked={link ? link.sensitive : adultDefault} className="h-4 w-4 accent-lime-500" />
+        {/* key: re-apply the default when an OnlyFans-style link is pasted */}
+        <input key={String(isAdultUrl(url))} type="checkbox" name="sensitive" defaultChecked={link ? link.sensitive || (isAdultUrl(url) && !isAdultUrl(link.url)) : adultDefault || isAdultUrl(url)} className="h-4 w-4 accent-lime-500" />
         🔞 18+ warning before it opens
       </label>
       {feedKind && (
