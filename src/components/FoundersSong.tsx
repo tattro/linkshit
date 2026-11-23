@@ -70,7 +70,7 @@ export function FoundersSong() {
             Listen to the founders explain what Linksh.it is about
           </h2>
           <p className="mt-1 text-sm text-stone-500">
-            We hired a world-class pitch team. They were busy, so we made a song instead. Linktree has a $1.3B valuation and zero songs. Think about that.
+            We hired a world-class pitch team. They were busy, so we made a song instead. Linktree is worth $1.3 billion and still wants your money every month. Linksh.it is free, and here you make money instead of spending it. Do the math.
           </p>
           <div className="mt-4 flex items-center gap-3">
             <input
