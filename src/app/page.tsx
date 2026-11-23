@@ -4,6 +4,7 @@ import { Logo } from "@/components/Logo";
 import { getCurrentUser } from "@/lib/auth";
 import { HandleInput } from "@/components/HandleInput";
 import { SiteFooter } from "@/components/SiteFooter";
+import { FoundersSong } from "@/components/FoundersSong";
 
 async function claim(formData: FormData) {
   "use server";
@@ -51,7 +52,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
           <span className="inline-block rounded-full bg-stone-900 px-4 py-2 text-sm font-semibold text-white">Account flushed. Bye 👋💩</span>
         </p>
       )}
-      <div className="mx-auto grid max-w-5xl items-center gap-12 px-6 pb-24 pt-10 md:grid-cols-2">
+      <div className="mx-auto grid max-w-5xl items-center gap-12 px-6 pb-16 pt-10 md:grid-cols-2">
         <section>
           <h1 className="text-5xl font-black leading-[1.05] tracking-tight md:text-6xl">
             All your sh.it.<br />
@@ -86,6 +87,8 @@ export default async function Home({ searchParams }: PageProps<"/">) {
           </div>
         </section>
       </div>
+
+      <FoundersSong />
 
       <section className="border-t border-stone-200 bg-white px-6 py-24">
         <div className="mx-auto max-w-2xl">
