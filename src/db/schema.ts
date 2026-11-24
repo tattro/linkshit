@@ -68,6 +68,9 @@ export const users = pgTable(
     qaEnabled: boolean("qa_enabled").notNull().default(false),
     qaPrompt: text("qa_prompt").notNull().default(""),
     creatorType: text("creator_type").notNull().default(""),
+    // Listed in the Link Tradez creator directory, with a one-line "what I'm looking for"
+    tradezListed: boolean("tradez_listed").notNull().default(false),
+    tradezPitch: text("tradez_pitch").notNull().default(""),
     // Media kit for brands at /<handle>/kit (null = off)
     mediaKit: jsonb("media_kit").$type<MediaKit>(),
     // e.g. "links.example.com"; serves this user's page at that domain's root
@@ -342,3 +345,49 @@ export const handleRedirects = pgTable(
   },
   (t) => [index("handle_redirects_user_idx").on(t.userId)],
 );
+
+/**
+ * Link Tradez: two creators agree to show each other's link in a "Link trades" row at the bottom of their main pages.
+ * The proposer agrees by sending it; the partner agrees by accepting with their own link. Once live, both links are
+ * locked: a change has to be approved by the other side. Either side can end the trade any time.
+ * Trade links go through /go/trade/<id>/<side> so clicks are counted for both creators' stats.
+ */
+export const linkTrades = pgTable(
+  "link_trades",
+  {
+    id: serial("id").primaryKey(),
+    proposerId: integer("proposer_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    partnerId: integer("partner_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    // The proposer's link, shown on the partner's page
+    proposerTitle: text("proposer_title").notNull(),
+    proposerUrl: text("proposer_url").notNull(),
+    proposerClicks: integer("proposer_clicks").notNull().default(0),
+    // The partner's link, shown on the proposer's page (filled in when they accept)
+    partnerTitle: text("partner_title"),
+    partnerUrl: text("partner_url"),
+    partnerClicks: integer("partner_clicks").notNull().default(0),
+    note: text("note").notNull().default(""),
+    status: text("status").$type<"pending" | "active" | "declined" | "ended">().notNull().default("pending"),
+    // Trades are time-limited: the proposer picks how long, the clock starts when it's accepted
+    durationDays: integer("duration_days").notNull().default(14),
+    // A live trade past this time counts as ended (no cron needed)
+    expiresAt: timestamp("expires_at", { withTimezone: true }),
+    // A requested change to one side's link, waiting on the other side's OK
+    changeBy: integer("change_by").references(() => users.id, { onDelete: "set null" }),
+    changeTitle: text("change_title"),
+    changeUrl: text("change_url"),
+    respondedAt: timestamp("responded_at", { withTimezone: true }),
+    endedAt: timestamp("ended_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("link_trades_proposer_idx").on(t.proposerId, t.status),
+    index("link_trades_partner_idx").on(t.partnerId, t.status),
+  ],
+);
+
+export type LinkTrade = typeof linkTrades.$inferSelect;

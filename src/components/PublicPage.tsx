@@ -55,7 +55,7 @@ export async function PublicPage({ profile }: { profile: PublicProfile }) {
         </PixelConsent>
       )}
       {user.adultGate && <AdultPageGate name={user.displayName || `@${user.handle}`} />}
-      <ProfileView user={user} links={profile.links} qa={profile.qa} />
+      <ProfileView user={user} links={profile.links} qa={profile.qa} trades={profile.trades} />
     </main>
   );
 }

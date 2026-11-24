@@ -5,6 +5,7 @@ import { db, handleRedirects, links, offers, questions, users } from "@/db";
 import { redirectCutoff } from "@/lib/handleTaken";
 import { notLiveYet } from "@/lib/live";
 import { offersLast, visibleLinks } from "@/components/ProfileView";
+import { tradeLinksFor } from "@/lib/tradez";
 
 /** Everything a public page needs, by handle or by custom domain. Null if missing or banned. */
 export const getPublicProfile = cache(async (by: "handle" | "domain", key: string) => {
@@ -34,8 +35,12 @@ export const getPublicProfile = cache(async (by: "handle" | "domain", key: strin
   const live = offersLast(visibleLinks(rows)).map(({ lockCode, ...l }) => ({ ...l, locked: Boolean(lockCode) }));
   // Redirect mode only kicks in while the chosen link is live
   const redirectTo = live.find((l) => l.id === user.redirectLinkId && !l.dropsAt)?.id ?? null;
-  const qa = user.qaEnabled ? await answeredQuestions(user.id) : [];
-  return { user, links: live, redirectTo, qa };
+  const [qa, trades] = await Promise.all([
+    user.qaEnabled ? answeredQuestions(user.id) : [],
+    // Link trades sit at the bottom of the list (only main pages trade, so extra pages get none)
+    tradeLinksFor(user.id),
+  ]);
+  return { user, links: live, redirectTo, qa, trades };
 });
 
 export type PublicProfile = NonNullable<Awaited<ReturnType<typeof getPublicProfile>>>;
