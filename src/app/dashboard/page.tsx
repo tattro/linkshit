@@ -13,6 +13,7 @@ import { SetupHide } from "./SetupHide";
 import { CreatorTypePicker } from "./CreatorTypePicker";
 import { categoryIdeas, CREATOR_TYPES, isCreatorType, suggestedGrow } from "@/lib/creatorTypes";
 import { siteUrl } from "@/lib/request";
+import { tradeLinksFor } from "@/lib/tradez";
 import { PLATFORMS } from "@/lib/socials";
 import { avatarUrl, backgroundUrl, offersLast, visibleLinks } from "@/components/ProfileView";
 import { LivePreview } from "./LivePreview";
@@ -149,6 +150,7 @@ export default async function Dashboard({ searchParams }: PageProps<"/dashboard"
   const waiting = await db.select({ id: questions.id, body: questions.body, createdAt: questions.createdAt })
     .from(questions).where(and(eq(questions.userId, user.id), isNull(questions.answeredAt))).orderBy(desc(questions.createdAt)).limit(50);
   const answered = await answeredQuestions(user.id);
+  const trades = await tradeLinksFor(user.id);
   const recentSubs = await db.select({ email: subscribers.email, createdAt: subscribers.createdAt }).from(subscribers)
     .where(eq(subscribers.userId, user.id)).orderBy(desc(subscribers.createdAt)).limit(5);
   const pageUrl = `${await siteUrl()}/${user.handle}`;
@@ -350,6 +352,7 @@ export default async function Dashboard({ searchParams }: PageProps<"/dashboard"
               }}
               links={offersLast(visibleLinks(rows)).map((l) => ({ ...l, locked: Boolean(l.lockCode) }))}
               qa={answered}
+              trades={trades}
             />
           </div>
         </PreviewDock>

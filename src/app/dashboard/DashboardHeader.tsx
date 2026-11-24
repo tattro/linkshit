@@ -6,8 +6,9 @@ import { logout } from "@/app/actions/auth";
 import { Logo } from "@/components/Logo";
 import { accountPages, getSession, isAdmin } from "@/lib/auth";
 import { PageSwitcher } from "./PageSwitcher";
+import { canUseTradez, tradezLaunched } from "@/lib/tradez";
 
-export async function DashboardHeader({ active }: { active: "editor" | "analytics" | "marketplace" | "admin" }) {
+export async function DashboardHeader({ active }: { active: "editor" | "analytics" | "marketplace" | "tradez" | "admin" }) {
   const s = await getSession();
   if (!s) return null;
   const { account, page } = s;
@@ -26,6 +27,11 @@ export async function DashboardHeader({ active }: { active: "editor" | "analytic
             <Link href="/dashboard/marketplace" className={`${tab("marketplace")} whitespace-nowrap`}>
               Marketplace
             </Link>
+            {canUseTradez(account) && (
+              <Link href="/dashboard/tradez" className={`${tab("tradez")} whitespace-nowrap`}>
+                🤝 Link Tradez{!tradezLaunched() && <span className="ml-1 text-[10px] font-black uppercase opacity-70">preview</span>}
+              </Link>
+            )}
             {isAdmin(account) && <Link href="/admin" className={tab("admin")}>Admin</Link>}
           </nav>
         </div>

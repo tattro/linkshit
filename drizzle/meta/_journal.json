@@ -197,6 +197,13 @@
       "when": 1793720879798,
       "tag": "0027_verified_by",
       "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1795561880318,
+      "tag": "0028_link_tradez",
+      "breakpoints": true
     }
   ]
 }

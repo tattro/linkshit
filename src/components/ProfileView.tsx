@@ -27,6 +27,9 @@ export type ProfileLink = Pick<LinkRow, "id" | "title" | "url" | "embed" | "sens
   locked?: boolean;
 };
 
+/** One side of a live link trade, shown at the bottom of the page. "a" = the proposer's link, "b" = the partner's. */
+export type TradeLink = { id: number; side: "a" | "b"; title: string; partnerHandle: string };
+
 // The three apps most fans use get logo buttons; the rest sit behind "more apps"
 const MAIN_APPS: Record<string, string> = { spotify: siSpotify.path, appleMusic: siApplemusic.path, youtube: siYoutube.path, youtubeMusic: siYoutubemusic.path };
 
@@ -86,8 +89,9 @@ export function backgroundUrl(u: Pick<User, "id" | "bgVersion">) {
   return u.bgVersion > 0 ? `/bg/${u.id}?v=${u.bgVersion}` : null;
 }
 
-export function ProfileView({ user, links, preview = false, avatarOverride, qa = [] }: {
+export function ProfileView({ user, links, preview = false, avatarOverride, qa = [], trades = [] }: {
   user: ProfileData;
+  trades?: TradeLink[];
   qa?: { id: number; body: string; answer: string; answeredAt: Date }[];
   links: ProfileLink[];
   preview?: boolean;
@@ -337,6 +341,31 @@ export function ProfileView({ user, links, preview = false, avatarOverride, qa =
           })}
           {links.length === 0 && <li className={`text-center text-sm ${theme.muted}`} style={mutedStyle}>Nothing here yet. Check back soon.</li>}
         </ul>
+
+        {trades.length > 0 && (
+          <div className="mt-6 w-full">
+            <p className={`mb-2 text-center text-[11px] font-semibold uppercase tracking-wide ${theme.muted}`} style={mutedStyle}>🤝 Link trades</p>
+            <ul className="space-y-3" aria-label="Link trades">
+              {trades.map((t) => (
+                <li key={`${t.id}-${t.side}`}>
+                  <a
+                    href={`/go/trade/${t.id}/${t.side}`}
+                    target={preview ? "_blank" : undefined}
+                    // A trade is a paid-in-kind placement, so search engines get told not to follow it
+                    rel="nofollow sponsored noopener"
+                    className={`${btnClass} py-3 text-sm`}
+                    style={btnStyle}
+                  >
+                    {t.title}
+                  </a>
+                  <p className={`mt-1 text-center text-[11px] ${theme.muted}`} style={mutedStyle}>
+                    Trading with <NextLink href={`/${t.partnerHandle}`} className="font-semibold hover:underline">@{t.partnerHandle}</NextLink>
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         {user.qaEnabled && (
           <div className="mt-6 w-full">
